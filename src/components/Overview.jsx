@@ -1,0 +1,7 @@
+export default function Overview() {
+  return <div className="overview-grid">
+    <section className="panel"><div className="panel-head"><h3>Current Ops</h3><span className="chip red">ACTIVE</span></div><p className="headline">Three fires are competing for limited collection and production capacity.</p><div className="list"><div><span>Protected Mission</span><strong>Fire Alpha evacuation corridor coverage</strong></div><div><span>Closing Window</span><strong>Fire Charlie closes at 1230 Local</strong></div></div></section>
+    <section className="panel"><div className="panel-head"><h3>Tomorrow's Plan</h3><span className="chip amber">NOT READY</span></div><div className="readiness"><span>Planning Readiness</span><strong>62%</strong></div><div className="progress"><div/></div><ul><li>Fire Bravo requirement lacks approved EEIs</li><li>UPAD support not confirmed</li><li>Partner collection opportunity pending</li></ul></section>
+    <section className="panel full"><div className="panel-head"><h3>Regional Mission Picture</h3><span className="chip teal">3 ACTIVE FIRES</span></div><div className="fire-grid">{[['Fire Alpha','HIGH','Evacuation route and perimeter monitoring'],['Fire Bravo','HIGH','Life-safety request under refinement'],['Fire Charlie','MEDIUM','Coverage gap during afternoon window']].map(([name,priority,note])=><article className="fire-card" key={name}><div><strong>{name}</strong><span>{priority}</span></div><p>{note}</p></article>)}</div></section>
+  </div>
+}

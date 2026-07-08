@@ -1,9 +1,17 @@
-export const SYNC={version:1,status:'COORDINATING',asOf:'0930 PT',brief:'1000',planning:'1600 Local',publication:'1800 Local',rows:['MQ-9','LUH-72','CAP','DoD Partner Asset','Forest Service Asset','BLM Asset','State Partner Asset','Contract Collection Asset','Satellite Source'],entries:[
-{id:'e1',asset:'MQ-9',identifier:'MQ9-01',start:7,end:13,area:'Fire Alpha',req:'REQ-014',objective:'Fire perimeter / evacuation route',upad:'UPAD-CA',status:'ACTIVE',protected:true,agency:'DoD',product:'Perimeter update',airspace:'Approved'},
-{id:'e2',asset:'LUH-72',identifier:'LUH72-01',start:10,end:14,area:'Fire Bravo',req:'REQ-021',objective:'Route and structure impacts',upad:'UPAD-NW',status:'PLANNED',protected:false,agency:'National Guard',product:'Rapid overview',airspace:'Coordination'},
-{id:'e3',asset:'CAP',identifier:'CAP-01',start:16,end:19,area:'Fire Charlie',req:'REQ-008',objective:'Damage overview',upad:'UPAD-SW',status:'PLANNED',protected:false,agency:'Civil Air Patrol',product:'Still imagery package',airspace:'Approved'}],
-unmet:[{req:'REQ-024',area:'Fire Charlie',window:'1400–1700',reason:'No NEXUS-controlled asset available',deadline:'1230 Local'}],
-gaps:[{area:'Fire Alpha',window:'1300–1600',req:'REQ-014',consequence:'Loss of persistent coverage during evacuation window'}],
-partners:[{agency:'US Forest Service',asset:'Forest Service Asset',window:'1100–1600 Local',status:'Support Requested'},{agency:'BLM',asset:'BLM Asset',window:'1400–1800 Local',status:'Visible Only'}],
-airspace:[{area:'Fire Bravo',status:'PENDING UPDATE',asset:'LUH-72',deadline:'1045 Local'}],
-notes:['Fire Charlie has an unmet afternoon collection need.','Fire Alpha protected coverage may conflict with life-safety retask.','UPAD-NW delivery estimate requires confirmation before brief.']};
+export const MATRIX = {
+  version: 1,
+  status: 'COORDINATING',
+  asOf: '0930 PT',
+  operationalPeriod: 'Operational Period 1',
+  date: '12 August 2026',
+  deadlines: [
+    ['Leadership Brief', '1000'],
+    ['Planning Deadline', '1600 Local'],
+    ['Publication Deadline', '1800 Local'],
+  ],
+  sorties: [
+    { id: 's1', asset: 'MQ-9', identifier: 'MQ9-01', start: 7, end: 13, fire: 'Fire Alpha', requirement: 'REQ-014', upad: 'UPAD-CA', protected: true },
+    { id: 's2', asset: 'LUH-72', identifier: 'LUH72-01', start: 10, end: 14, fire: 'Fire Bravo', requirement: 'REQ-021', upad: 'UPAD-NW', protected: false },
+    { id: 's3', asset: 'CAP', identifier: 'CAP-01', start: 16, end: 19, fire: 'Fire Charlie', requirement: 'REQ-008', upad: 'UPAD-SW', protected: false },
+  ],
+}
