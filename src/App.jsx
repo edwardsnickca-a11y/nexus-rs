@@ -12,6 +12,6 @@ export default function App(){
  const [role,setRole]=useState('remote_sensing_coordinator')
  const [active,setActive]=useState('mission')
  if(!started) return <SetupScreen role={role} setRole={setRole} onStart={()=>setStarted(true)}/>
- const content={mission:<Overview/>,current:<Overview/>,tomorrow:<Overview/>,sync:<SyncMatrix/>,requirements:<Placeholder title="Requirements and EEIs"/>,platforms:<Placeholder title="Platforms and Availability"/>,upad:<Placeholder title="UPAD Status"/>,airspace:<Placeholder title="Airspace / TFR"/>,oversight:<Placeholder title="Intelligence Oversight"/>,deadlines:<Placeholder title="Mission Deadlines"/>,log:<Placeholder title="Decision Log"/>}[active]
- return <div className="app-shell"><Sidebar active={active} setActive={setActive}/><div className="main-shell"><Header role={role} onExit={()=>setStarted(false)}/><main className="workspace"><div>{content}</div><AdvisorPanel role={role}/></main></div></div>
+ const content={mission:<Overview role={role}/>,current:<Overview role={role}/>,tomorrow:<Overview role={role}/>,sync:<SyncMatrix role={role}/>,requirements:<Placeholder title="Requirements and EEIs"/>,platforms:<Placeholder title="Platforms and Availability"/>,upad:<Placeholder title="UPAD Status"/>,airspace:<Placeholder title="Airspace / TFR"/>,oversight:<Placeholder title="Intelligence Oversight"/>,deadlines:<Placeholder title="Mission Deadlines"/>,log:<Placeholder title="Decision Log"/>}[active]
+ return <div className="app-shell"><Sidebar active={active} setActive={setActive} role={role}/><div className="main-shell"><Header role={role} onExit={()=>setStarted(false)}/><main className="workspace"><div>{content}</div><AdvisorPanel role={role}/></main></div></div>
 }
