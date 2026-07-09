@@ -8,6 +8,7 @@ import CurrentOps from './components/CurrentOps.jsx'
 import TomorrowPlan from './components/TomorrowPlan.jsx'
 import SyncMatrix from './components/SyncMatrix.jsx'
 import AssetAllocation from './components/AssetAllocation.jsx'
+import Platforms from './components/Platforms.jsx'
 import Requirements from './components/Requirements.jsx'
 import { INITIAL_MISSION_STATE } from './data/missionState.js'
 import { INITIAL_MATRIX } from './data/syncMatrix.js'
@@ -81,7 +82,7 @@ export default function App(){
   current:<CurrentOps role={role} missionState={missionState} onToggleProtection={toggleProtection} onNotifyCoordinator={notifyCoordinator} onOpenTomorrow={()=>setActive('tomorrow')}/>,
   tomorrow:<TomorrowPlan role={role} missionState={missionState} onMarkTaskable={markTaskable} onAssignUpad={assignUpad} onApprovePlan={approvePlan} onOpenCurrent={()=>setActive('current')}/>,
   sync:<SyncMatrix role={role} matrix={syncMatrix} onUpdateSortie={updateSortie} onResolveNeed={resolveNeed} onResolveGap={resolveGap} onApprove={approveMatrix} onAddLeadershipNote={addLeadershipNote}/>,
-  requirements:<Requirements role={role} missionState={missionState} onUpdateRequirement={updateRequirement} onValidateRequirement={validateRequirement} onSendForward={sendRequirementForward} onAddRequirement={addRequirement}/>,platforms:<AssetAllocation role={role} missionState={missionState} onReleaseAsset={releaseAsset} onSubmitRequest={submitAssetRequest} onCancelRequest={cancelAssetRequest}/>,upad:<Placeholder title="UPAD Status"/>,airspace:<Placeholder title="Airspace / TFR"/>,oversight:<Placeholder title="Intelligence Oversight"/>,deadlines:<Placeholder title="Mission Deadlines"/>,log:<Placeholder title="Decision Log"/>
+  requirements:<Requirements role={role} missionState={missionState} onUpdateRequirement={updateRequirement} onValidateRequirement={validateRequirement} onSendForward={sendRequirementForward} onAddRequirement={addRequirement}/>,platforms:<Platforms role={role} missionState={missionState}/>,upad:<Placeholder title="UPAD Status"/>,airspace:<Placeholder title="Airspace / TFR"/>,oversight:<Placeholder title="Intelligence Oversight"/>,deadlines:<Placeholder title="Mission Deadlines"/>,log:<Placeholder title="Decision Log"/>
  }[active]
  return <div className="app-shell"><Sidebar active={active} setActive={setActive} role={role}/><div className="main-shell"><Header role={role} onExit={()=>setStarted(false)}/><main className="workspace"><div>{content}</div><AdvisorPanel role={role}/></main></div></div>
 }

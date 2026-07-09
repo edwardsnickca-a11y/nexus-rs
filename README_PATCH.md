@@ -1,14 +1,23 @@
-# NEXUS RS Step 4B Patch
+# NEXUS RS Step 4C Patch
 
-Adds the Collection Requirement Validation and EEI Quality workspace.
+Adds the controlled platform capability and PAD architecture library for MQ-9, LUH-72, and CAP.
 
 ## Included
-- Requirement queue and filters
-- WHAT / WHERE / WHEN / WHY / WHO development
-- Decision-to-support, NAI, PIR, EEI, effect/capability, alternate-source, dissemination fields
-- Acceptable / feasible / complete validation
-- Existing-source and organic-asset checks
-- Collection Manager edit authority; other roles receive coordination visibility
-- Taskable / needs clarification / sent forward state
-- Tomorrow-plan readiness, decision log, and Sync Matrix linkage hooks
-- No AI integration yet
+
+- Controlled capabilities, supported effects, best-fit requirements, and constraints
+- Weather, airspace, availability, state-control, and recall context
+- Requirement-to-capability suitability aid using taskable requirements
+- Role-specific platform emphasis
+- PAD flow from collection through verified customer receipt
+- Product types, delivery timing, and UPAD production burden
+- Hard guardrails that prevent unsupported platform claims
+- Current state allocation visibility
+
+## Files
+
+- `src/App.jsx`
+- `src/components/Platforms.jsx`
+- `src/data/platformLibrary.js`
+- `src/styles.css`
+
+All user-facing times remain local incident time only.
