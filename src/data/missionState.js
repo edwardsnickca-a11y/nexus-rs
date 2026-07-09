@@ -91,6 +91,42 @@ export const INITIAL_MISSION_STATE = {
       { id:'asset-history-1', time:'0900 PT', actor:'State J3', action:'Initial allocation issued: 1 MQ-9, 2 LUH-72, 2 CAP.' }
     ],
   },
+
+  dissemination: {
+    deliveries: [
+      {
+        id: 'delivery-alpha-01', missionId: 'mission-alpha', requirementId: 'req-alpha', fire: 'Fire Alpha',
+        customer: 'County Emergency Management', productType: 'Assessed perimeter and route-status update',
+        sourcePlatform: 'MQ-9-01', assignedUpad: 'UPAD-CA', collectionComplete: true, processingStatus: 'complete',
+        assessmentStatus: 'complete', disseminationMethod: 'Approved shared repository + customer notification',
+        deliveryDeadline: '1500 Local', estimatedDelivery: '1440 Local', deliveryStatus: 'ready_to_send',
+        receiptStatus: 'not_verified', feedbackStatus: 'not_requested', customerNeed: 'Decision-ready route status and perimeter movement',
+        lastUpdate: '0930 PT', notes: 'Customer POC and repository access confirmed.'
+      },
+      {
+        id: 'delivery-bravo-01', missionId: 'mission-bravo', requirementId: 'req-bravo', fire: 'Fire Bravo',
+        customer: 'Fire Bravo ICP', productType: 'Rapid route and structure-impact report',
+        sourcePlatform: 'LUH-72-01', assignedUpad: 'Unassigned', collectionComplete: false, processingStatus: 'not_started',
+        assessmentStatus: 'not_started', disseminationMethod: '', deliveryDeadline: '1530 Local', estimatedDelivery: 'Unknown',
+        deliveryStatus: 'at_risk', receiptStatus: 'not_verified', feedbackStatus: 'not_requested',
+        customerNeed: 'Actionable ingress/egress and structure-impact information', lastUpdate: '0930 PT',
+        notes: 'Requirement remains incomplete and UPAD support is not assigned.'
+      },
+      {
+        id: 'delivery-charlie-01', missionId: 'mission-charlie', requirementId: 'req-charlie', fire: 'Fire Charlie',
+        customer: 'State EOC', productType: 'Assessed still-imagery damage package',
+        sourcePlatform: 'CAP-01', assignedUpad: 'UPAD-SW', collectionComplete: false, processingStatus: 'awaiting_collection',
+        assessmentStatus: 'not_started', disseminationMethod: 'Approved repository + direct State EOC notification',
+        deliveryDeadline: '2100 Local', estimatedDelivery: '2045 Local', deliveryStatus: 'planned',
+        receiptStatus: 'not_verified', feedbackStatus: 'not_requested', customerNeed: 'Damage summary for debris-removal and infrastructure support',
+        lastUpdate: '0930 PT', notes: 'Full imagery package expected after post-flight upload.'
+      }
+    ],
+    feedback: [],
+    history: [
+      { id: 'delivery-history-1', time: '0930 PT', actor: 'UPAD LNO', action: 'Initial dissemination tracker established for current missions.' }
+    ]
+  },
   crossPeriodImpacts: [
     { id: 'x1', source: 'Current Ops', impact: 'Protecting MQ-9-01 through 1300 reduces OP 2 reposition time.', target: "Tomorrow's Plan" },
     { id: 'x2', source: "Tomorrow's Plan", impact: 'Fire Bravo requirement is not taskable, so the OP 2 sortie cannot be finalized.', target: 'Current Ops' },
