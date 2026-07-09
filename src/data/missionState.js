@@ -6,9 +6,9 @@ export const INITIAL_MISSION_STATE = {
     status: 'active',
     protectedMissionId: 'mission-alpha',
     missions: [
-      { id: 'mission-alpha', fire: 'Fire Alpha', platform: 'MQ-9-01', window: '0700–1300', objective: 'Evacuation corridor and fire perimeter', status: 'active', protected: true, risk: 'Coverage ends before late evacuation window', coordinatorNotified: true },
-      { id: 'mission-bravo', fire: 'Fire Bravo', platform: 'LUH-72-01', window: '1000–1400', objective: 'Route and structure impacts', status: 'at_risk', protected: false, risk: 'TFR update pending', coordinatorNotified: false },
-      { id: 'mission-charlie', fire: 'Fire Charlie', platform: 'CAP-01', window: '1600–1900', objective: 'Damage overview', status: 'planned', protected: false, risk: 'Afternoon gap remains', coordinatorNotified: false },
+      { id: 'mission-alpha', fire: 'Fire Alpha', platform: 'MQ-9-01', assetId: 'asset-mq9-01', window: '0700–1300', objective: 'Evacuation corridor and fire perimeter', status: 'active', protected: true, risk: 'Coverage ends before late evacuation window', coordinatorNotified: true },
+      { id: 'mission-bravo', fire: 'Fire Bravo', platform: 'LUH-72-01', assetId: 'asset-luh72-01', window: '1000–1400', objective: 'Route and structure impacts', status: 'at_risk', protected: false, risk: 'TFR update pending', coordinatorNotified: false },
+      { id: 'mission-charlie', fire: 'Fire Charlie', platform: 'CAP-01', assetId: 'asset-cap-01', window: '1600–1900', objective: 'Damage overview', status: 'planned', protected: false, risk: 'Afternoon gap remains', coordinatorNotified: false },
     ],
     deadlines: [
       { id: 'd1', label: 'Fire Alpha product cutoff', time: '1500 Local', severity: 'high' },
@@ -32,6 +32,21 @@ export const INITIAL_MISSION_STATE = {
     planningDeadline: '1600 Local',
     publicationDeadline: '1800 Local',
     approved: false,
+  },
+  assetControl: {
+    stateAuthority: 'State J3',
+    allocationStatus: 'ACTIVE STATE ALLOCATION',
+    assets: [
+      { id:'asset-mq9-01', type:'MQ-9', identifier:'MQ-9-01', quantity:1, controlRelationship:'State Allocated', status:'assigned', assignment:'Fire Alpha', missionId:'mission-alpha', returnable:true, recallRisk:'Medium', notes:'Protected current mission.' },
+      { id:'asset-luh72-01', type:'LUH-72', identifier:'LUH-72-01', quantity:1, controlRelationship:'State Allocated', status:'assigned', assignment:'Fire Bravo', missionId:'mission-bravo', returnable:true, recallRisk:'Low', notes:'Current sortie scheduled.' },
+      { id:'asset-luh72-02', type:'LUH-72', identifier:'LUH-72-02', quantity:1, controlRelationship:'State Allocated', status:'reserve', assignment:'Regional Reserve', missionId:null, returnable:true, recallRisk:'High', notes:'Unassigned state asset held for emerging need.' },
+      { id:'asset-cap-01', type:'CAP', identifier:'CAP-01', quantity:1, controlRelationship:'State Allocated', status:'assigned', assignment:'Fire Charlie', missionId:'mission-charlie', returnable:true, recallRisk:'Medium', notes:'Afternoon collection window.' },
+      { id:'asset-cap-02', type:'CAP', identifier:'CAP-02', quantity:1, controlRelationship:'State Allocated', status:'reserve', assignment:'Regional Reserve', missionId:null, returnable:true, recallRisk:'High', notes:'Available for tasking or release.' },
+    ],
+    requests: [],
+    history: [
+      { id:'asset-history-1', time:'0900 PT', actor:'State J3', action:'Initial allocation issued: 1 MQ-9, 2 LUH-72, 2 CAP.' }
+    ],
   },
   crossPeriodImpacts: [
     { id: 'x1', source: 'Current Ops', impact: 'Protecting MQ-9-01 through 1300 reduces OP 2 reposition time.', target: "Tomorrow's Plan" },

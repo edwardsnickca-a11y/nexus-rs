@@ -1,5 +1,17 @@
-# NEXUS RS Step 3 Patch — Stateful Sync Matrix
+# NEXUS RS Step 4A Patch
 
-Replace the included files in the project root.
+Adds the Asset Allocation, Release, Recall-Risk, and State J3 request workflow.
 
-Adds state-driven sortie edits, role-based permissions, requirement and UPAD linkage, gap resolution, Coordinator approval, automatic version increments, and change history.
+## Files changed
+- src/App.jsx
+- src/components/AssetAllocation.jsx
+- src/data/missionState.js
+- src/styles.css
+
+## Key behavior
+- STARTEX allocation: 1 MQ-9, 2 LUH-72, 2 CAP
+- Coordinator-only release authority
+- Additional/different capability requests routed to State J3
+- Requests require operational need, current shortfall, consequence, quantity, and deadline
+- Asset release changes current mission state and creates cross-period impacts
+- Local incident time only
