@@ -1,22 +1,18 @@
-# NEXUS RS Steps 5 and 6 Patch
+# NEXUS RS Step 7 Patch
 
-## Step 5 — Structured Decision Records
+## Mission Advisor and Consequence Progression
 
-- Connects the Lt Col Edwards free-text response box to mission state
-- Preserves exact trainee text
-- Records interpreted decision, role authority, authority concern, immediate consequence, planning impact, and required follow-up
-- Adds a real Decision Log workspace with filters and AAR-ready records
-- Allows out-of-authority decisions to be recorded rather than blocked
-- Preserves role-specific chain-of-command redirection
+This patch converts the Lt Col Edwards panel from a static role brief into a state-aware local simulation-controller foundation.
 
-## Step 6 — Operational Period Transition
+It adds:
+- Role-authority evaluation for free-text decisions
+- Role-specific chain-of-command redirection
+- Consequence and planning-impact records
+- Role-specific mission inject progression
+- Mission turn tracking
+- Advisor response history
+- Active decision windows
+- Mission Updates workspace
+- AAR-ready observations
 
-- Adds an OP Transition workspace
-- Displays unresolved requirements, incomplete products, oversight concerns, protected missions, pending State J3 requests, and cross-period consequences
-- Requires an approved Tomorrow Plan and RS Coordinator authority
-- Carries unresolved mission state into the next operational period
-- Converts approved tomorrow-plan requirements into current operational commitments
-- Resets the new Tomorrow Plan for development without resetting the scenario
-- Creates an operational-period transition history and structured decision record
-
-All user-facing time remains local incident time only.
+This is a deterministic application-side controller foundation. It does not call an external model or require an API key yet.

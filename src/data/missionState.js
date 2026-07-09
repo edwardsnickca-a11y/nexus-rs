@@ -171,6 +171,12 @@ export const INITIAL_MISSION_STATE = {
     ],
   },
   operationalPeriodHistory: [],
+  simulation: {
+    turn: 0,
+    injects: [],
+    advisorHistory: [],
+    activeDecisionPoint: null,
+  },
   lastAdvisorUpdate: null,
   decisions: [],
 }

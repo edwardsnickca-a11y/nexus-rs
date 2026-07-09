@@ -15,6 +15,8 @@ import ResourceDesk from './components/ResourceDesk.jsx'
 import IntelligenceOversight from './components/IntelligenceOversight.jsx'
 import DecisionLog from './components/DecisionLog.jsx'
 import OperationalTransition from './components/OperationalTransition.jsx'
+import MissionUpdates from './components/MissionUpdates.jsx'
+import { evaluateMissionDecision } from './engine/missionAdvisor.js'
 import { INITIAL_MISSION_STATE } from './data/missionState.js'
 import { INITIAL_MATRIX } from './data/syncMatrix.js'
 
@@ -84,22 +86,11 @@ export default function App(){
 
 
  const submitFreeTextDecision=(exactText)=>setMissionState(prev=>{
-  const authorityPatterns={
-   remote_sensing_coordinator:[/retask/i,/assign analyst/i],
-   remote_sensing_manager:[/approve.*regional/i,/allocate.*across/i,/publish.*plan/i],
-   collection_manager:[/retask/i,/approve.*plan/i,/allocate.*asset/i],
-   upad_lno:[/retask/i,/change.*priority/i,/allocate.*asset/i,/approve.*plan/i],
-  };
-  const concern=(authorityPatterns[role]||[]).find(pattern=>pattern.test(exactText));
-  const withinRoleAuthority=!concern;
-  const chain={
-   remote_sensing_coordinator:'Provide the regional decision and leadership-ready rationale.',
-   remote_sensing_manager:'Notify the Remote Sensing Coordinator and pass the mission impact up.',
-   collection_manager:'Refine the requirement and send the recommendation to the RS Manager.',
-   upad_lno:'Take the production action within the UPAD and pass collection impacts to the RS Manager.',
-  }[role];
-  const record={id:`decision-${prev.decisions.length+1}`,type:'free_text_decision',exactText,interpretedDecision:exactText,detail:exactText,asOf:'CURRENT LOCAL',role,withinRoleAuthority,authorityConcern:withinRoleAuthority?null:'The action appears to exceed the selected role authority.',immediateConsequence:withinRoleAuthority?'Decision entered for mission-state evaluation.':'Coordination friction and trust risk recorded; action requires redirection.',planningImpact:'Current Ops and Tomorrow’s Plan must be checked for downstream effects.',requiredFollowUp:chain};
-  return {...prev,decisions:[...prev.decisions,record],lastAdvisorUpdate:{time:'CURRENT LOCAL',text:withinRoleAuthority?'Decision recorded. Mission consequences require follow-up through the role chain.':`You do not hold that authority. ${chain}`}};
+  const evaluated=evaluateMissionDecision({state:prev,role,exactText});
+  const turn=(prev.simulation?.turn||0)+1;
+  const inject={...evaluated.inject,id:`inject-${turn}`,createdAt:'CURRENT LOCAL',role};
+  const record={id:`decision-${prev.decisions.length+1}`,type:'free_text_decision',exactText,detail:exactText,asOf:'CURRENT LOCAL',role,turn,...evaluated.decisionRecord};
+  return {...prev,decisions:[...prev.decisions,record],simulation:{...(prev.simulation||{}),turn,injects:[...(prev.simulation?.injects||[]),inject],advisorHistory:[...(prev.simulation?.advisorHistory||[]),{id:`advisor-${turn}`,time:'CURRENT LOCAL',role,text:evaluated.advisorText}],activeDecisionPoint:inject},lastAdvisorUpdate:{time:'CURRENT LOCAL',text:evaluated.advisorText}};
  })
 
  const transitionOperationalPeriod=()=>setMissionState(prev=>{
@@ -123,7 +114,7 @@ export default function App(){
   current:<CurrentOps role={role} missionState={missionState} onToggleProtection={toggleProtection} onNotifyCoordinator={notifyCoordinator} onOpenTomorrow={()=>setActive('tomorrow')}/>,
   tomorrow:<TomorrowPlan role={role} missionState={missionState} onMarkTaskable={markTaskable} onAssignUpad={assignUpad} onApprovePlan={approvePlan} onOpenCurrent={()=>setActive('current')}/>,
   sync:<SyncMatrix role={role} matrix={syncMatrix} onUpdateSortie={updateSortie} onResolveNeed={resolveNeed} onResolveGap={resolveGap} onApprove={approveMatrix} onAddLeadershipNote={addLeadershipNote}/>,
-  requirements:<Requirements role={role} missionState={missionState} onUpdateRequirement={updateRequirement} onValidateRequirement={validateRequirement} onSendForward={sendRequirementForward} onAddRequirement={addRequirement}/>,platforms:<Platforms role={role} missionState={missionState}/>,upad:<Dissemination role={role} missionState={missionState} onUpdateDelivery={updateDelivery} onVerifyReceipt={verifyReceipt} onRecordFeedback={recordCustomerFeedback}/>,airspace:<Placeholder title="Airspace / TFR"/>,resources:<ResourceDesk role={role} missionState={missionState} onRecordUse={recordResourceUse}/>,oversight:<IntelligenceOversight role={role} missionState={missionState} onUpdateCase={updateOversightCase} onAddCase={addOversightCase}/>,transition:<OperationalTransition role={role} missionState={missionState} onTransition={transitionOperationalPeriod}/>,log:<DecisionLog role={role} missionState={missionState}/>
+  requirements:<Requirements role={role} missionState={missionState} onUpdateRequirement={updateRequirement} onValidateRequirement={validateRequirement} onSendForward={sendRequirementForward} onAddRequirement={addRequirement}/>,platforms:<Platforms role={role} missionState={missionState}/>,upad:<Dissemination role={role} missionState={missionState} onUpdateDelivery={updateDelivery} onVerifyReceipt={verifyReceipt} onRecordFeedback={recordCustomerFeedback}/>,airspace:<Placeholder title="Airspace / TFR"/>,resources:<ResourceDesk role={role} missionState={missionState} onRecordUse={recordResourceUse}/>,oversight:<IntelligenceOversight role={role} missionState={missionState} onUpdateCase={updateOversightCase} onAddCase={addOversightCase}/>,transition:<OperationalTransition role={role} missionState={missionState} onTransition={transitionOperationalPeriod}/>,updates:<MissionUpdates missionState={missionState}/>,log:<DecisionLog role={role} missionState={missionState}/>
  }[active]
- return <div className="app-shell"><Sidebar active={active} setActive={setActive} role={role}/><div className="main-shell"><Header role={role} onExit={()=>setStarted(false)}/><main className="workspace"><div>{content}</div><AdvisorPanel role={role} onSubmitDecision={submitFreeTextDecision}/></main></div></div>
+ return <div className="app-shell"><Sidebar active={active} setActive={setActive} role={role}/><div className="main-shell"><Header role={role} onExit={()=>setStarted(false)}/><main className="workspace"><div>{content}</div><AdvisorPanel role={role} missionState={missionState} onSubmitDecision={submitFreeTextDecision}/></main></div></div>
 }
