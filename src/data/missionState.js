@@ -131,5 +131,44 @@ export const INITIAL_MISSION_STATE = {
     { id: 'x1', source: 'Current Ops', impact: 'Protecting MQ-9-01 through 1300 reduces OP 2 reposition time.', target: "Tomorrow's Plan" },
     { id: 'x2', source: "Tomorrow's Plan", impact: 'Fire Bravo requirement is not taskable, so the OP 2 sortie cannot be finalized.', target: 'Current Ops' },
   ],
+
+  resources: {
+    useHistory: [],
+  },
+  oversight: {
+    cases: [
+      {
+        id: 'IO-001',
+        requirementId: 'req-bravo',
+        title: 'Collection purpose and scope require clarification',
+        owner: 'Collection Manager',
+        severity: 'high',
+        deadline: '1100 Local',
+        status: 'open',
+        concern: 'The request names a platform but does not define the authorized decision, collection area, or limits needed to keep the activity within the approved domestic mission purpose.',
+        knownFacts: 'The customer needs route-status information near Fire Bravo. The collection requirement is incomplete and has not been sent forward.',
+        uncertainty: 'The exact area, dissemination audience, and whether existing sources can answer the need are not yet confirmed.',
+        selectedAction: '',
+        resolutionNote: '',
+      },
+      {
+        id: 'IO-002',
+        requirementId: 'req-charlie',
+        title: 'Releasability review for partner imagery',
+        owner: 'UPAD LNO',
+        severity: 'medium',
+        deadline: '1730 Local',
+        status: 'coordinating',
+        concern: 'Partner imagery may carry dissemination restrictions that affect delivery to the State EOC.',
+        knownFacts: 'The requirement is taskable and the customer needs an assessed damage summary by 2100 Local.',
+        uncertainty: 'Partner source terms and approved dissemination path require confirmation.',
+        selectedAction: 'Modify dissemination',
+        resolutionNote: 'Confirm partner release terms before assigning the final delivery method.',
+      },
+    ],
+    history: [
+      { id:'io-history-1', time:'0930 PT', actor:'Collection Manager', action:'Initial oversight queue established.' }
+    ],
+  },
   decisions: [],
 }

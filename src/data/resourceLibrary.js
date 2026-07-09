@@ -1,0 +1,22 @@
+export const RESOURCE_CATEGORIES = [
+  { id:'situational', label:'Situational Awareness' },
+  { id:'federal', label:'Federal / FEMA' },
+  { id:'fire', label:'Wildfire' },
+  { id:'weather', label:'Weather / Flood / Earthquake' },
+  { id:'geospatial', label:'Geospatial / Imagery' },
+  { id:'airspace', label:'Airspace / TFR' },
+  { id:'state_local', label:'State / Local' },
+]
+
+export const CONTROLLED_RESOURCES = [
+  { id:'res-fema-sitrep', name:'FEMA National Situation Report', category:'federal', access:'Distribution / approved access', use:'Regional resource allocation and FEMA operational status.', limitations:'May lag local developments; use with state and local reporting.', verification:'Corroborate with current state and local sources.', scenarioTags:['regional','leadership','resource'] },
+  { id:'res-fema-rs', name:'FEMA Remote Sensing Resources', category:'geospatial', access:'Public / approved partner access', use:'Remote sensing coordination, available imagery, and incident geospatial products.', limitations:'Availability and update cadence vary by incident.', verification:'Confirm collection date, source, and product currency.', scenarioTags:['imagery','partner','collection'] },
+  { id:'res-hdds', name:'USGS Hazards Data Distribution System', category:'geospatial', access:'Account may be required', use:'Repository for incident imagery and remote sensing products.', limitations:'Not all imagery is near-real-time; user access must be established before operations.', verification:'Verify source, collection time, processing status, and customer access.', scenarioTags:['imagery','dissemination','repository'] },
+  { id:'res-dataminr', name:'First Alert by Dataminr', category:'situational', access:'Approved account required', use:'Early awareness of emerging public events and reports.', limitations:'Publicly available information may be incomplete, duplicated, or wrong.', verification:'Trust but verify; corroborate before operational use.', scenarioTags:['awareness','rumor','public'] },
+  { id:'res-fireguard', name:'FireGuard', category:'fire', access:'Approved AOR access', use:'Fire perimeters, hotspots, and wildfire situational awareness.', limitations:'Access and coverage depend on approved area and current support.', verification:'Confirm timestamp and compare with incident and field reporting.', scenarioTags:['fire','perimeter','hotspot'] },
+  { id:'res-nifc', name:'NIFC / Geographic Area Coordination Centers', category:'fire', access:'Public and partner resources', use:'Fire intelligence, predictive services, resource status, and coordination context.', limitations:'Operational products vary by geographic area.', verification:'Use current incident products and local coordination channels.', scenarioTags:['fire','predictive','coordination'] },
+  { id:'res-nws', name:'National Weather Service', category:'weather', access:'Public', use:'Official forecasts, warnings, observations, and hazard information.', limitations:'Local impacts still require incident-specific interpretation.', verification:'Use the responsible forecast office and current issuance time.', scenarioTags:['weather','aviation','risk'] },
+  { id:'res-faa-tfr', name:'FAA Temporary Flight Restrictions', category:'airspace', access:'Public', use:'Current TFR status and airspace restriction awareness.', limitations:'Does not replace direct aviation coordination or current NOTAM review.', verification:'Confirm current effective times and coordinate through the proper airspace channel.', scenarioTags:['airspace','tfr','aviation'] },
+  { id:'res-state-eoc', name:'State / County Emergency Operations Centers', category:'state_local', access:'Established operational relationship', use:'Customer priorities, local impact reporting, resource needs, and decision context.', limitations:'Capabilities and reporting formats differ by jurisdiction.', verification:'Confirm POC, operational period, and source of information.', scenarioTags:['customer','local','requirements'] },
+  { id:'res-transportation', name:'State / Local Transportation Sources', category:'state_local', access:'Public and agency access', use:'Road status, closures, bridges, ingress, and egress information.', limitations:'Public maps may not reflect field conditions immediately.', verification:'Cross-check with incident command, transportation officials, and collection results.', scenarioTags:['routes','transportation','access'] },
+]
