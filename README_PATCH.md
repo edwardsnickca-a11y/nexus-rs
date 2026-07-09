@@ -1,35 +1,22 @@
-# NEXUS RS Step 4E + 4F Patch
+# NEXUS RS Steps 5 and 6 Patch
 
-## Step 4E — Contextual Resource Desk
+## Step 5 — Structured Decision Records
 
-- Controlled operational resource library
-- Contextual link to the active requirement
-- Search and category filtering
-- Existing-source-first workflow
-- Access, limitation, and verification guidance
-- Role-specific resource emphasis
-- Resource-use notes recorded in mission state and decision history
-- Trust-but-verify guardrails
+- Connects the Lt Col Edwards free-text response box to mission state
+- Preserves exact trainee text
+- Records interpreted decision, role authority, authority concern, immediate consequence, planning impact, and required follow-up
+- Adds a real Decision Log workspace with filters and AAR-ready records
+- Allows out-of-authority decisions to be recorded rather than blocked
+- Preserves role-specific chain-of-command redirection
 
-## Step 4F — Intelligence Oversight Workflow
+## Step 6 — Operational Period Transition
 
-- Stateful oversight case queue
-- Potential concern, known facts, uncertainty, owner, and deadline
-- Collection Manager clarification and action selection
-- Coordinator / Collection Manager elevation and resolution workflow
-- Permitted response options without automatic cancellation
-- No invented legal conclusions
-- Role-specific oversight emphasis
-- Oversight actions recorded in mission state and decision history
+- Adds an OP Transition workspace
+- Displays unresolved requirements, incomplete products, oversight concerns, protected missions, pending State J3 requests, and cross-period consequences
+- Requires an approved Tomorrow Plan and RS Coordinator authority
+- Carries unresolved mission state into the next operational period
+- Converts approved tomorrow-plan requirements into current operational commitments
+- Resets the new Tomorrow Plan for development without resetting the scenario
+- Creates an operational-period transition history and structured decision record
 
-## Files
-
-- `src/App.jsx`
-- `src/components/Sidebar.jsx`
-- `src/components/ResourceDesk.jsx`
-- `src/components/IntelligenceOversight.jsx`
-- `src/data/missionState.js`
-- `src/data/resourceLibrary.js`
-- `src/styles.css`
-
-All user-facing times remain local incident time only.
+All user-facing time remains local incident time only.

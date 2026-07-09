@@ -13,6 +13,8 @@ import Requirements from './components/Requirements.jsx'
 import Dissemination from './components/Dissemination.jsx'
 import ResourceDesk from './components/ResourceDesk.jsx'
 import IntelligenceOversight from './components/IntelligenceOversight.jsx'
+import DecisionLog from './components/DecisionLog.jsx'
+import OperationalTransition from './components/OperationalTransition.jsx'
 import { INITIAL_MISSION_STATE } from './data/missionState.js'
 import { INITIAL_MATRIX } from './data/syncMatrix.js'
 
@@ -80,6 +82,34 @@ export default function App(){
  const updateOversightCase=(caseId,changes)=>setMissionState(prev=>({...prev,oversight:{...prev.oversight,cases:prev.oversight.cases.map(c=>c.id===caseId?{...c,...changes,lastUpdated:'CURRENT LOCAL'}:c),history:[...prev.oversight.history,{id:`io-history-${Date.now()}`,time:'CURRENT LOCAL',actor:role,action:`Updated oversight case ${caseId}: ${Object.keys(changes).join(', ')}`} ]},decisions:[...prev.decisions,{id:`decision-${prev.decisions.length+1}`,type:'oversight_update',detail:`Updated ${caseId}`,asOf:'CURRENT LOCAL',role}]}))
  const addOversightCase=(payload)=>setMissionState(prev=>({...prev,oversight:{...prev.oversight,cases:[...prev.oversight.cases,{id:`IO-${String(prev.oversight.cases.length+1).padStart(3,'0')}`,requirementId:'UNLINKED',owner:'Collection Manager',severity:'medium',deadline:'TBD Local',status:'open',knownFacts:'',uncertainty:'Requires clarification.',selectedAction:'',resolutionNote:'',...payload}],history:[...prev.oversight.history,{id:`io-history-${Date.now()}`,time:'CURRENT LOCAL',actor:role,action:`Added oversight concern: ${payload.title}.`} ]}}))
 
+
+ const submitFreeTextDecision=(exactText)=>setMissionState(prev=>{
+  const authorityPatterns={
+   remote_sensing_coordinator:[/retask/i,/assign analyst/i],
+   remote_sensing_manager:[/approve.*regional/i,/allocate.*across/i,/publish.*plan/i],
+   collection_manager:[/retask/i,/approve.*plan/i,/allocate.*asset/i],
+   upad_lno:[/retask/i,/change.*priority/i,/allocate.*asset/i,/approve.*plan/i],
+  };
+  const concern=(authorityPatterns[role]||[]).find(pattern=>pattern.test(exactText));
+  const withinRoleAuthority=!concern;
+  const chain={
+   remote_sensing_coordinator:'Provide the regional decision and leadership-ready rationale.',
+   remote_sensing_manager:'Notify the Remote Sensing Coordinator and pass the mission impact up.',
+   collection_manager:'Refine the requirement and send the recommendation to the RS Manager.',
+   upad_lno:'Take the production action within the UPAD and pass collection impacts to the RS Manager.',
+  }[role];
+  const record={id:`decision-${prev.decisions.length+1}`,type:'free_text_decision',exactText,interpretedDecision:exactText,detail:exactText,asOf:'CURRENT LOCAL',role,withinRoleAuthority,authorityConcern:withinRoleAuthority?null:'The action appears to exceed the selected role authority.',immediateConsequence:withinRoleAuthority?'Decision entered for mission-state evaluation.':'Coordination friction and trust risk recorded; action requires redirection.',planningImpact:'Current Ops and Tomorrow’s Plan must be checked for downstream effects.',requiredFollowUp:chain};
+  return {...prev,decisions:[...prev.decisions,record],lastAdvisorUpdate:{time:'CURRENT LOCAL',text:withinRoleAuthority?'Decision recorded. Mission consequences require follow-up through the role chain.':`You do not hold that authority. ${chain}`}};
+ })
+
+ const transitionOperationalPeriod=()=>setMissionState(prev=>{
+  if(!prev.tomorrowPlan.approved || role!=='remote_sensing_coordinator') return prev;
+  const nextOp=prev.operationalPeriod+1;
+  const nextMissions=prev.tomorrowPlan.requirements.filter(r=>r.status==='ready'||r.taskable).map((r,index)=>({id:`op${nextOp}-mission-${index+1}`,fire:r.fire,platform:r.platform||'Capability assignment pending',window:r.window||'TBD Local',objective:r.objective||r.title||'Approved collection requirement',status:'planned',risk:r.upad==='Unassigned'?'Production support unresolved':'Normal',protected:false,coordinatorNotified:false}));
+  const transitionRecord={id:`decision-${prev.decisions.length+1}`,type:'op_transition',detail:`Transitioned from OP ${prev.operationalPeriod} to OP ${nextOp}`,interpretedDecision:`Approved operational-period transition to OP ${nextOp}`,asOf:'CURRENT LOCAL',role,withinRoleAuthority:true,immediateConsequence:'Approved tomorrow-plan requirements became current operational commitments.',planningImpact:'Unresolved requirements, products, oversight cases, asset requests, and protected missions carried forward.',requiredFollowUp:'Revalidate mission windows, UPAD support, airspace, and partner commitments at the new OP start.'};
+  return {...prev,operationalPeriod:nextOp,asOf:'OP START LOCAL',currentOps:{...prev.currentOps,status:'ACTIVE',missions:nextMissions.length?nextMissions:prev.currentOps.missions.map(m=>({...m,status:'carry_forward'}))},tomorrowPlan:{...prev.tomorrowPlan,status:'development',approved:false,readiness:0,blockers:['New operational-period requirements require development.'],requirements:[]},crossPeriodImpacts:prev.crossPeriodImpacts.map(x=>({...x,carriedIntoOperationalPeriod:nextOp})),decisions:[...prev.decisions,transitionRecord],operationalPeriodHistory:[...(prev.operationalPeriodHistory||[]),{from:prev.operationalPeriod,to:nextOp,time:'CURRENT LOCAL',approvedBy:'Remote Sensing Coordinator'}]};
+ })
+
  const matrixChange=(updatedBy,note,mutate)=>setSyncMatrix(prev=>{const next=mutate(prev);const version=prev.version+1;return {...next,version,asOf:'CURRENT LOCAL',coordinatorApprovalStatus:'pending',status:'UPDATE REQUIRED',changeHistory:[...prev.changeHistory,{version,asOf:'CURRENT LOCAL',updatedBy,note}]}})
  const updateSortie=(sortieId,changes)=>matrixChange(role,`Updated ${sortieId}: ${Object.keys(changes).join(', ')}.`,prev=>({...prev,sorties:prev.sorties.map(s=>s.id===sortieId?{...s,...changes}:s)}))
  const resolveNeed=(id)=>matrixChange(role,`Unmet need ${id} moved to coordinating.`,prev=>({...prev,unmetNeeds:prev.unmetNeeds.map(x=>x.id===id?{...x,status:'COORDINATING'}:x)}))
@@ -93,7 +123,7 @@ export default function App(){
   current:<CurrentOps role={role} missionState={missionState} onToggleProtection={toggleProtection} onNotifyCoordinator={notifyCoordinator} onOpenTomorrow={()=>setActive('tomorrow')}/>,
   tomorrow:<TomorrowPlan role={role} missionState={missionState} onMarkTaskable={markTaskable} onAssignUpad={assignUpad} onApprovePlan={approvePlan} onOpenCurrent={()=>setActive('current')}/>,
   sync:<SyncMatrix role={role} matrix={syncMatrix} onUpdateSortie={updateSortie} onResolveNeed={resolveNeed} onResolveGap={resolveGap} onApprove={approveMatrix} onAddLeadershipNote={addLeadershipNote}/>,
-  requirements:<Requirements role={role} missionState={missionState} onUpdateRequirement={updateRequirement} onValidateRequirement={validateRequirement} onSendForward={sendRequirementForward} onAddRequirement={addRequirement}/>,platforms:<Platforms role={role} missionState={missionState}/>,upad:<Dissemination role={role} missionState={missionState} onUpdateDelivery={updateDelivery} onVerifyReceipt={verifyReceipt} onRecordFeedback={recordCustomerFeedback}/>,airspace:<Placeholder title="Airspace / TFR"/>,resources:<ResourceDesk role={role} missionState={missionState} onRecordUse={recordResourceUse}/>,oversight:<IntelligenceOversight role={role} missionState={missionState} onUpdateCase={updateOversightCase} onAddCase={addOversightCase}/>,deadlines:<Placeholder title="Mission Deadlines"/>,log:<Placeholder title="Decision Log"/>
+  requirements:<Requirements role={role} missionState={missionState} onUpdateRequirement={updateRequirement} onValidateRequirement={validateRequirement} onSendForward={sendRequirementForward} onAddRequirement={addRequirement}/>,platforms:<Platforms role={role} missionState={missionState}/>,upad:<Dissemination role={role} missionState={missionState} onUpdateDelivery={updateDelivery} onVerifyReceipt={verifyReceipt} onRecordFeedback={recordCustomerFeedback}/>,airspace:<Placeholder title="Airspace / TFR"/>,resources:<ResourceDesk role={role} missionState={missionState} onRecordUse={recordResourceUse}/>,oversight:<IntelligenceOversight role={role} missionState={missionState} onUpdateCase={updateOversightCase} onAddCase={addOversightCase}/>,transition:<OperationalTransition role={role} missionState={missionState} onTransition={transitionOperationalPeriod}/>,log:<DecisionLog role={role} missionState={missionState}/>
  }[active]
- return <div className="app-shell"><Sidebar active={active} setActive={setActive} role={role}/><div className="main-shell"><Header role={role} onExit={()=>setStarted(false)}/><main className="workspace"><div>{content}</div><AdvisorPanel role={role}/></main></div></div>
+ return <div className="app-shell"><Sidebar active={active} setActive={setActive} role={role}/><div className="main-shell"><Header role={role} onExit={()=>setStarted(false)}/><main className="workspace"><div>{content}</div><AdvisorPanel role={role} onSubmitDecision={submitFreeTextDecision}/></main></div></div>
 }

@@ -1,7 +1,7 @@
 import { ROLES } from '../data/roles.js'
 
 const ITEMS = [
-  ['mission','Mission'],['current','Current Ops'],['tomorrow',"Tomorrow's Plan"],['sync','Sync Matrix'],['requirements','Requirements'],['platforms','Platforms'],['upad','UPAD Status'],['airspace','Airspace'],['resources','Resource Desk'],['oversight','Intelligence Oversight'],['deadlines','Deadlines'],['log','Decision Log']
+  ['mission','Mission'],['current','Current Ops'],['tomorrow',"Tomorrow's Plan"],['sync','Sync Matrix'],['requirements','Requirements'],['platforms','Platforms'],['upad','UPAD Status'],['airspace','Airspace'],['resources','Resource Desk'],['oversight','Intelligence Oversight'],['transition','OP Transition'],['log','Decision Log']
 ]
 export default function Sidebar({ active, setActive, role }) {
   const selected = ROLES.find((item)=>item.id===role)

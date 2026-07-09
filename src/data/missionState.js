@@ -170,5 +170,7 @@ export const INITIAL_MISSION_STATE = {
       { id:'io-history-1', time:'0930 PT', actor:'Collection Manager', action:'Initial oversight queue established.' }
     ],
   },
+  operationalPeriodHistory: [],
+  lastAdvisorUpdate: null,
   decisions: [],
 }
