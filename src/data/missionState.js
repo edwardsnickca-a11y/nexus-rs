@@ -33,6 +33,49 @@ export const INITIAL_MISSION_STATE = {
     publicationDeadline: '1800 Local',
     approved: false,
   },
+  requirements: {
+    items: [
+      {
+        id: 'req-alpha', fire: 'Fire Alpha', title: 'Late-period perimeter coverage', requestType: 'standing', priority: 1,
+        customer: 'County Emergency Management', who: 'County Emergency Management',
+        decisionToSupport: 'Determine whether evacuation routes remain usable through the late operational period.',
+        what: 'Report fire perimeter movement and conditions affecting designated evacuation corridors.',
+        where: 'Fire Alpha evacuation corridor NAI', when: 'Collect 1200–1400; information no later than 1430 Local',
+        why: 'Supports evacuation and road-access decisions before the late-period weather shift.',
+        requiredEffect: 'Persistent EO/IR observation and assessed route-status reporting',
+        requestedPlatform: '', nai: 'NAI-ALPHA-01', pir: 'PIR-1', eeis: ['Identify fire spread toward evacuation corridors.', 'Report visible obstructions or fire impacts affecting route usability.'],
+        disseminationMethod: 'Post assessed product to approved shared repository and notify county EOC POC.',
+        existingSourceCheck: true, organicSuitability: 'MQ-9 or LUH-72 could satisfy; match effect and timing, not platform preference.',
+        alternateSource: 'FireGuard perimeter data may partially answer perimeter movement but not route condition.', duplicateStatus: 'unique', oversightFlag: false,
+        validation: {acceptable:true,feasible:true,complete:true,existingSourceChecked:true,organicSuitabilityChecked:true}, missingFields: [], status: 'taskable', lastUpdatedBy: 'collection_manager', lastUpdatedAt: '0915 PT'
+      },
+      {
+        id: 'req-bravo', fire: 'Fire Bravo', title: 'Blocked roads', requestType: 'ad_hoc', priority: 1,
+        customer: 'Fire Bravo ICP', who: 'Fire Bravo ICP', decisionToSupport: '', what: 'Blocked roads', where: '', when: '', why: '',
+        requiredEffect: '', requestedPlatform: 'Use LUH-72', nai: '', pir: '', eeis: [], disseminationMethod: '',
+        existingSourceCheck: false, organicSuitability: '', alternateSource: '', duplicateStatus: 'unknown', oversightFlag: false,
+        validation: {acceptable:false,feasible:false,complete:false,existingSourceChecked:false,organicSuitabilityChecked:false},
+        missingFields: ['WHERE','WHEN','WHY','decision to support','EEIs'], status: 'needs_clarification', lastUpdatedBy: 'collection_manager', lastUpdatedAt: '0930 PT'
+      },
+      {
+        id: 'req-charlie', fire: 'Fire Charlie', title: 'Damage assessment', requestType: 'standing', priority: 2,
+        customer: 'State EOC', who: 'State EOC',
+        decisionToSupport: 'Prioritize state debris-removal and infrastructure support.',
+        what: 'Identify structures and critical infrastructure with visible major damage.',
+        where: 'Fire Charlie impact area NAI', when: '1600–1900; assessed summary by 2100 Local',
+        why: 'Supports allocation of debris-removal teams and infrastructure assessment resources.',
+        requiredEffect: 'Georeferenced still imagery with assessed damage summary', requestedPlatform: '', nai: 'NAI-CHARLIE-02', pir: 'PIR-3',
+        eeis: ['Identify visibly destroyed or major-damage structures.', 'Identify visible damage to critical infrastructure and access routes.'],
+        disseminationMethod: 'Deliver assessed imagery package to State EOC and verify receipt.',
+        existingSourceCheck: true, organicSuitability: 'CAP still imagery is suitable if weather and daylight permit.', alternateSource: 'Partner imagery may supplement gaps.', duplicateStatus: 'possible_overlap', oversightFlag: false,
+        validation: {acceptable:true,feasible:true,complete:true,existingSourceChecked:true,organicSuitabilityChecked:true}, missingFields: [], status: 'taskable', lastUpdatedBy: 'collection_manager', lastUpdatedAt: '0920 PT'
+      }
+    ],
+    history: [
+      { id:'req-history-1', time:'0930 PT', actor:'Collection Manager', action:'Initial requirement queue established; Fire Bravo request requires clarification.' }
+    ]
+  },
+  syncRequirementLinks: [],
   assetControl: {
     stateAuthority: 'State J3',
     allocationStatus: 'ACTIVE STATE ALLOCATION',

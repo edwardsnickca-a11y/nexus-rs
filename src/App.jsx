@@ -8,6 +8,7 @@ import CurrentOps from './components/CurrentOps.jsx'
 import TomorrowPlan from './components/TomorrowPlan.jsx'
 import SyncMatrix from './components/SyncMatrix.jsx'
 import AssetAllocation from './components/AssetAllocation.jsx'
+import Requirements from './components/Requirements.jsx'
 import { INITIAL_MISSION_STATE } from './data/missionState.js'
 import { INITIAL_MATRIX } from './data/syncMatrix.js'
 
@@ -31,6 +32,42 @@ export default function App(){
  const submitAssetRequest=(request)=>setMissionState(prev=>({...prev,assetControl:{...prev.assetControl,requests:[...prev.assetControl.requests,{...request,id:`asset-request-${Date.now()}`,status:'PENDING STATE J3',submittedAt:'CURRENT LOCAL',submittedBy:'Remote Sensing Coordinator'}],history:[...prev.assetControl.history,{id:`asset-history-${Date.now()}`,time:'CURRENT LOCAL',actor:'Remote Sensing Coordinator',action:`Submitted ${request.quantity} × ${request.requestType} request to State J3.`}]},decisions:[...prev.decisions,{id:`decision-${prev.decisions.length+1}`,type:'asset_request',detail:`Requested ${request.quantity} × ${request.requestType} from State J3`,asOf:'CURRENT LOCAL',role}]}))
  const cancelAssetRequest=(requestId)=>setMissionState(prev=>({...prev,assetControl:{...prev.assetControl,requests:prev.assetControl.requests.filter(r=>r.id!==requestId)}}))
 
+
+ const updateRequirement=(reqId,changes)=>setMissionState(prev=>{
+  const current=prev.requirements.items.find(r=>r.id===reqId);
+  if(!current) return prev;
+  const updated={...current,...changes,lastUpdatedBy:role,lastUpdatedAt:'CURRENT LOCAL'};
+  const items=prev.requirements.items.map(r=>r.id===reqId?updated:r);
+  const taskableCount=items.filter(r=>r.status==='taskable').length;
+  const total=items.length||1;
+  const readiness=Math.round((taskableCount/total)*100);
+  const linkedTomorrow=prev.tomorrowPlan.requirements.map(r=>r.id===reqId?{...r,taskable:updated.status==='taskable',status:updated.status==='taskable'?(r.upad==='Unassigned'?'draft':'ready'):'draft'}:r);
+  return {...prev,requirements:{...prev.requirements,items,history:[...prev.requirements.history,{id:`req-history-${Date.now()}`,time:'CURRENT LOCAL',actor:role,action:`Updated ${reqId}: ${Object.keys(changes).join(', ')}`} ]},tomorrowPlan:{...prev.tomorrowPlan,requirements:linkedTomorrow,readiness:Math.max(prev.tomorrowPlan.readiness,readiness)},decisions:[...prev.decisions,{id:`decision-${prev.decisions.length+1}`,type:'requirement_update',detail:`Updated ${reqId}`,asOf:'CURRENT LOCAL',role}]};
+ })
+ const validateRequirement=(reqId)=>setMissionState(prev=>{
+  const req=prev.requirements.items.find(r=>r.id===reqId);
+  if(!req) return prev;
+  const checks={
+   acceptable:Boolean(req.decisionToSupport&&req.why),
+   feasible:Boolean(req.requiredEffect&&req.where&&req.when),
+   complete:Boolean(req.what&&req.where&&req.when&&req.why&&req.who&&req.decisionToSupport&&req.eeis?.length),
+   existingSourceChecked:Boolean(req.existingSourceCheck),
+   organicSuitabilityChecked:Boolean(req.organicSuitability),
+  };
+  const missing=[];
+  if(!req.what) missing.push('WHAT'); if(!req.where) missing.push('WHERE'); if(!req.when) missing.push('WHEN'); if(!req.why) missing.push('WHY'); if(!req.who) missing.push('WHO'); if(!req.decisionToSupport) missing.push('decision to support'); if(!req.eeis?.length) missing.push('EEIs');
+  const status=checks.acceptable&&checks.feasible&&checks.complete&&checks.existingSourceChecked&&checks.organicSuitabilityChecked?'taskable':'needs_clarification';
+  const items=prev.requirements.items.map(r=>r.id===reqId?{...r,validation:checks,missingFields:missing,status,lastUpdatedBy:role,lastUpdatedAt:'CURRENT LOCAL'}:r);
+  const blockers=status==='taskable'?prev.tomorrowPlan.blockers.filter(b=>!b.includes(req.fire)):prev.tomorrowPlan.blockers;
+  return {...prev,requirements:{...prev.requirements,items,history:[...prev.requirements.history,{id:`req-history-${Date.now()}`,time:'CURRENT LOCAL',actor:role,action:`Validated ${reqId}: ${status}.`} ]},tomorrowPlan:{...prev.tomorrowPlan,blockers,readiness:status==='taskable'?Math.min(100,prev.tomorrowPlan.readiness+10):prev.tomorrowPlan.readiness},decisions:[...prev.decisions,{id:`decision-${prev.decisions.length+1}`,type:'requirement_validation',detail:`${reqId} marked ${status}`,asOf:'CURRENT LOCAL',role}]};
+ })
+ const sendRequirementForward=(reqId)=>setMissionState(prev=>{
+  const req=prev.requirements.items.find(r=>r.id===reqId);
+  if(!req||req.status!=='taskable') return prev;
+  return {...prev,requirements:{...prev.requirements,items:prev.requirements.items.map(r=>r.id===reqId?{...r,status:'sent_forward',sentTo:'Remote Sensing Manager',sentAt:'CURRENT LOCAL'}:r),history:[...prev.requirements.history,{id:`req-history-${Date.now()}`,time:'CURRENT LOCAL',actor:role,action:`Sent ${reqId} forward to Remote Sensing Manager.`}]},syncRequirementLinks:[...(prev.syncRequirementLinks||[]),{id:`link-${Date.now()}`,requirementId:reqId,fire:req.fire,decisionToSupport:req.decisionToSupport,eeis:req.eeis,status:'READY FOR MATRIX',linkedAt:'CURRENT LOCAL'}],decisions:[...prev.decisions,{id:`decision-${prev.decisions.length+1}`,type:'requirement_forward',detail:`Sent ${reqId} to RS Manager`,asOf:'CURRENT LOCAL',role}]};
+ })
+ const addRequirement=(payload)=>setMissionState(prev=>({...prev,requirements:{...prev.requirements,items:[...prev.requirements.items,{...payload,id:`req-${Date.now()}`,status:'needs_clarification',validation:{acceptable:false,feasible:false,complete:false,existingSourceChecked:false,organicSuitabilityChecked:false},missingFields:['WHAT','WHERE','WHEN','WHY','WHO','decision to support','EEIs'],lastUpdatedBy:role,lastUpdatedAt:'CURRENT LOCAL'}],history:[...prev.requirements.history,{id:`req-history-${Date.now()}`,time:'CURRENT LOCAL',actor:role,action:`Added new requirement: ${payload.title||'Untitled requirement'}.`} ]}}))
+
  const matrixChange=(updatedBy,note,mutate)=>setSyncMatrix(prev=>{const next=mutate(prev);const version=prev.version+1;return {...next,version,asOf:'CURRENT LOCAL',coordinatorApprovalStatus:'pending',status:'UPDATE REQUIRED',changeHistory:[...prev.changeHistory,{version,asOf:'CURRENT LOCAL',updatedBy,note}]}})
  const updateSortie=(sortieId,changes)=>matrixChange(role,`Updated ${sortieId}: ${Object.keys(changes).join(', ')}.`,prev=>({...prev,sorties:prev.sorties.map(s=>s.id===sortieId?{...s,...changes}:s)}))
  const resolveNeed=(id)=>matrixChange(role,`Unmet need ${id} moved to coordinating.`,prev=>({...prev,unmetNeeds:prev.unmetNeeds.map(x=>x.id===id?{...x,status:'COORDINATING'}:x)}))
@@ -44,7 +81,7 @@ export default function App(){
   current:<CurrentOps role={role} missionState={missionState} onToggleProtection={toggleProtection} onNotifyCoordinator={notifyCoordinator} onOpenTomorrow={()=>setActive('tomorrow')}/>,
   tomorrow:<TomorrowPlan role={role} missionState={missionState} onMarkTaskable={markTaskable} onAssignUpad={assignUpad} onApprovePlan={approvePlan} onOpenCurrent={()=>setActive('current')}/>,
   sync:<SyncMatrix role={role} matrix={syncMatrix} onUpdateSortie={updateSortie} onResolveNeed={resolveNeed} onResolveGap={resolveGap} onApprove={approveMatrix} onAddLeadershipNote={addLeadershipNote}/>,
-  requirements:<Placeholder title="Requirements and EEIs"/>,platforms:<AssetAllocation role={role} missionState={missionState} onReleaseAsset={releaseAsset} onSubmitRequest={submitAssetRequest} onCancelRequest={cancelAssetRequest}/>,upad:<Placeholder title="UPAD Status"/>,airspace:<Placeholder title="Airspace / TFR"/>,oversight:<Placeholder title="Intelligence Oversight"/>,deadlines:<Placeholder title="Mission Deadlines"/>,log:<Placeholder title="Decision Log"/>
+  requirements:<Requirements role={role} missionState={missionState} onUpdateRequirement={updateRequirement} onValidateRequirement={validateRequirement} onSendForward={sendRequirementForward} onAddRequirement={addRequirement}/>,platforms:<AssetAllocation role={role} missionState={missionState} onReleaseAsset={releaseAsset} onSubmitRequest={submitAssetRequest} onCancelRequest={cancelAssetRequest}/>,upad:<Placeholder title="UPAD Status"/>,airspace:<Placeholder title="Airspace / TFR"/>,oversight:<Placeholder title="Intelligence Oversight"/>,deadlines:<Placeholder title="Mission Deadlines"/>,log:<Placeholder title="Decision Log"/>
  }[active]
  return <div className="app-shell"><Sidebar active={active} setActive={setActive} role={role}/><div className="main-shell"><Header role={role} onExit={()=>setStarted(false)}/><main className="workspace"><div>{content}</div><AdvisorPanel role={role}/></main></div></div>
 }
