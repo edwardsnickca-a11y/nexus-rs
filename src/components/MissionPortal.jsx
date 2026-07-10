@@ -50,7 +50,6 @@ function ScenarioCard({ scenario, selected, onSelect }) {
   >
     <div className="eoc-rs-scenario-image">
       <img src={scenario.image} alt={`${scenario.title} scenario`} />
-      <span className="scenario-type-chip">{incidentCategory(scenario)}</span>
       {selected && <span className="selected-scenario-badge">Selected</span>}
     </div>
     <div className="eoc-rs-scenario-body">
@@ -223,11 +222,6 @@ export default function MissionPortal({
       </div>
 
       <aside className="eoc-rs-readiness-panel">
-        <div className="readiness-panel-header">
-          <div><span>Confirmation</span><h2>Mission Readiness</h2></div>
-          <span className="portal-status-pill">{status.label}</span>
-        </div>
-
         {selectedScenario ? <div className="readiness-scenario-visual">
           <img src={selectedScenario.image} alt={`${selectedScenario.title} scenario`} />
           <div>

@@ -598,3 +598,12 @@
 .eoc-rs-scenario-image>img,.readiness-scenario-visual>img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
 .eoc-rs-scenario-image>img{z-index:0}
 .readiness-scenario-visual>img{z-index:0}
+
+/* Start Exercise spacing cleanup */
+.scenario-section-title h2{margin-bottom:0}
+.scenario-tools-filter-only{margin:7px 0 8px}
+.eoc-rs-config-panel:has(.scenario-section-title){padding-top:13px}
+.eoc-rs-config-panel:has(.scenario-section-title) .eoc-rs-scenario-grid{margin-top:0}
+.eoc-rs-readiness-panel{padding-top:14px}
+.eoc-rs-readiness-panel>.readiness-scenario-visual,
+.eoc-rs-readiness-panel>.readiness-scenario-placeholder{margin-top:0}
