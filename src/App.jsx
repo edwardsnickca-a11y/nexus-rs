@@ -3,7 +3,7 @@ import Sidebar from './components/Sidebar.jsx'
 import Header from './components/Header.jsx'
 import AdvisorPanel from './components/AdvisorPanel.jsx'
 import Overview from './components/Overview.jsx'
-import CurrentOps from './components/CurrentOps.jsx'
+import CurrentOperationsRouter from './components/current-operations/CurrentOperationsRouter.jsx'
 import TomorrowPlan from './components/TomorrowPlan.jsx'
 import SyncMatrix from './components/SyncMatrix.jsx'
 import AssetAllocation from './components/AssetAllocation.jsx'
@@ -73,6 +73,7 @@ export default function App(){
  const recordDecision=(type,detail)=>setMissionState(prev=>({...prev,decisions:[...prev.decisions,{id:`decision-${prev.decisions.length+1}`,type,detail,asOf:prev.asOf,role:currentRole}]}))
  const toggleProtection=(missionId)=>setMissionState(prev=>({...prev,currentOps:{...prev.currentOps,missions:prev.currentOps.missions.map(m=>m.id===missionId?{...m,protected:!m.protected}:m)},crossPeriodImpacts:[...prev.crossPeriodImpacts,{id:`x-${Date.now()}`,source:'Current Ops',target:"Tomorrow's Plan",impact:`Mission protection changed for ${missionId}; OP 2 availability must be rechecked.`}]}))
  const notifyCoordinator=(missionId)=>{setMissionState(prev=>({...prev,currentOps:{...prev.currentOps,missions:prev.currentOps.missions.map(m=>m.id===missionId?{...m,coordinatorNotified:true}:m)}}));recordDecision('coordination',`Coordinator notified of ${missionId} impact`)}
+ const updateCurrentMission=(missionId,changes)=>setMissionState(prev=>({...prev,currentOps:{...prev.currentOps,missions:(prev.currentOps?.missions||[]).map(m=>m.id===missionId?{...m,...changes}:m)},decisions:[...(prev.decisions||[]),{id:`decision-${Date.now()}`,type:'mission_execution_update',detail:`Updated ${missionId}: ${Object.keys(changes).join(', ')}`,asOf:prev.exercise?.localIncidentTime||prev.asOf||'CURRENT LOCAL',role:currentRole}]}))
  const markTaskable=(reqId)=>setMissionState(prev=>{const reqs=prev.tomorrowPlan.requirements.map(r=>r.id===reqId?{...r,taskable:true,status:r.upad==='Unassigned'?'draft':'ready'}:r);const blockers=prev.tomorrowPlan.blockers.filter(b=>!b.includes('Fire Bravo EEIs'));return {...prev,tomorrowPlan:{...prev.tomorrowPlan,requirements:reqs,blockers,readiness:Math.min(100,prev.tomorrowPlan.readiness+12)}}})
  const assignUpad=(reqId)=>setMissionState(prev=>{const reqs=prev.tomorrowPlan.requirements.map(r=>r.id===reqId?{...r,upad:'UPAD-NW',status:r.taskable?'ready':'draft'}:r);const blockers=prev.tomorrowPlan.blockers.filter(b=>!b.includes('UPAD support'));return {...prev,tomorrowPlan:{...prev.tomorrowPlan,requirements:reqs,blockers,readiness:Math.min(100,prev.tomorrowPlan.readiness+10)}}})
  const approvePlan=()=>setMissionState(prev=>({...prev,tomorrowPlan:{...prev.tomorrowPlan,approved:true,status:'approved',readiness:100}}))
@@ -186,7 +187,7 @@ export default function App(){
   brief:<ScenarioBrief missionState={missionState} onContinue={openRoleSelection}/>,
   roles:<RoleSelection selectedRole={role} onSelectRole={confirmRoleSelection} onStart={()=>setActive('portal')}/>,
   mission:<Overview role={currentRole}/>,
-  current:<CurrentOps role={currentRole} missionState={missionState} readOnly={readOnly} onToggleProtection={toggleProtection} onNotifyCoordinator={notifyCoordinator} onOpenTomorrow={()=>setActive('tomorrow')} onNavigate={setActive}/>,
+  current:<CurrentOperationsRouter role={currentRole} missionState={missionState} readOnly={readOnly} onNavigate={setActive} onToggleProtection={toggleProtection} onReleaseAsset={releaseAsset} onUpdateMission={updateCurrentMission} onUpdateRequirement={updateRequirement} onValidateRequirement={validateRequirement} onSendRequirementForward={sendRequirementForward} onUpdateDelivery={updateDelivery} advisorProps={{role:currentRole,missionState,operationalSummary:deriveOperationalSummary(missionState),onSubmitDecision:submitFreeTextDecision,pending:advisorPending,busy:advisorBusy,mode:advisorMode,onConfirm:confirmAdvisorAction,onCancel:cancelAdvisorAction}} onEndExercise={()=>setShowEndEx(true)}/>,
   tomorrow:<TomorrowPlan role={currentRole} missionState={missionState} readOnly={readOnly} onMarkTaskable={markTaskable} onAssignUpad={assignUpad} onApprovePlan={approvePlan} onOpenCurrent={()=>setActive('current')}/>,
   sync:<SyncMatrix role={currentRole} matrix={syncMatrix} readOnly={readOnly} onUpdateSortie={updateSortie} onResolveNeed={resolveNeed} onResolveGap={resolveGap} onApprove={approveMatrix} onAddLeadershipNote={addLeadershipNote}/>,
   requirements:<Requirements role={currentRole} missionState={missionState} readOnly={readOnly} onUpdateRequirement={updateRequirement} onValidateRequirement={validateRequirement} onSendForward={sendRequirementForward} onAddRequirement={addRequirement}/>,
@@ -205,14 +206,20 @@ export default function App(){
 
  if(active==='current'){
   return <>
-   <CurrentOps
+   <CurrentOperationsRouter
     role={currentRole}
     missionState={missionState}
     readOnly={readOnly}
-    onToggleProtection={toggleProtection}
-    onNotifyCoordinator={notifyCoordinator}
-    onOpenTomorrow={()=>setActive('tomorrow')}
     onNavigate={setActive}
+    onToggleProtection={toggleProtection}
+    onReleaseAsset={releaseAsset}
+    onUpdateMission={updateCurrentMission}
+    onUpdateRequirement={updateRequirement}
+    onValidateRequirement={validateRequirement}
+    onSendRequirementForward={sendRequirementForward}
+    onUpdateDelivery={updateDelivery}
+    advisorProps={{role:currentRole,missionState,operationalSummary:deriveOperationalSummary(missionState),onSubmitDecision:submitFreeTextDecision,pending:advisorPending,busy:advisorBusy,mode:advisorMode,onConfirm:confirmAdvisorAction,onCancel:cancelAdvisorAction}}
+    onEndExercise={()=>setShowEndEx(true)}
    />
    {showEndEx && <EndExModal missionState={missionState} onCancel={()=>setShowEndEx(false)} onConfirm={confirmEndEx}/>}
   </>
