@@ -58,7 +58,11 @@ export default function App(){
  const openScenarioBrief=(scenario)=>{setMissionState(prev=>applyPortalScenario(prev,scenario));setActive('brief')}
  const openRoleSelection=()=>{setMissionState(prev=>({...prev,exercise:{...(prev.exercise||{}),status:'role_selection',currentPhase:'Role Selection'}}));setActive('roles')}
  const confirmRoleSelection=(selectedRole)=>{setRole(selectedRole);setMissionState(prev=>controllerSelectRole(prev,selectedRole))}
- const confirmStartEx=(scenario)=>{setMissionState(prev=>startExercise(applyPortalScenario(prev,scenario)));setActive('current')}
+ const confirmStartEx=(scenario, setup={})=>{setMissionState(prev=>{
+  const initialized=applyPortalScenario(prev,scenario)
+  const configured={...initialized,exercise:{...(initialized.exercise||{}),participantName:(setup.participantName||initialized.exercise?.participantName||'').trim(),operationalContext:setup.operationalContext||initialized.exercise?.operationalContext||'',exerciseFocus:setup.exerciseFocus||initialized.exercise?.exerciseFocus||'Full Mission Cycle'}}
+  return startExercise(configured)
+ });setActive('current')}
  const advanceExercise=()=>setMissionState(prev=>advanceTurn(prev))
  const reviewTransition=()=>{setMissionState(prev=>beginTransition(prev));setActive('transition')}
  const approveLifecycleTransition=()=>{setMissionState(prev=>approveTransition(prev));setActive('current')}

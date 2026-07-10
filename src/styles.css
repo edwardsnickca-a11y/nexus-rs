@@ -740,3 +740,35 @@
   .co-footer{grid-row:4}.co-main{overflow:visible}.co-sidebar{grid-row:2/4}
   .co-header{grid-template-columns:180px minmax(190px,1fr) minmax(160px,1fr) 120px 60px 125px 130px 55px}
 }
+
+
+/* Shared participant identity and Lt Col Edwards advisor presentation */
+.advisor-identity{padding:12px 14px;border-bottom:1px solid #234057;background:#07182a}
+.advisor-identity-header{display:grid;grid-template-columns:48px minmax(0,1fr) auto;align-items:center;gap:10px}
+.advisor-avatar-wrap{position:relative;width:48px;height:48px}
+.advisor-avatar{width:48px;height:48px;display:block;object-fit:cover;border-radius:6px;border:1px solid #31516a;background:#071522}
+.advisor-online-dot{position:absolute;right:-2px;bottom:-2px;width:11px;height:11px;border-radius:50%;border:2px solid #07182a;background:#ffb51b}
+.advisor-online-dot.online{background:#31d889}
+.advisor-identity-copy{min-width:0;display:flex;flex-direction:column;gap:2px}
+.advisor-identity-copy strong{color:#eef7fb;font-size:13px;letter-spacing:.05em}
+.advisor-identity-copy span{color:#8fb4c7;font-size:10px;line-height:1.25}
+.advisor-presence{font-size:8px;letter-spacing:.08em;color:#31d889;border:1px solid rgba(49,216,137,.35);background:rgba(49,216,137,.08);padding:4px 6px;border-radius:3px}
+.advisor-presence.fallback{color:#ffb51b;border-color:rgba(255,181,27,.35);background:rgba(255,181,27,.08)}
+.advisor-identity-message{position:relative;margin-top:10px;padding:9px 10px;background:#0a2035;border:1px solid #234057;border-radius:5px}
+.advisor-identity-message:before{content:"";position:absolute;left:18px;top:-6px;width:10px;height:10px;background:#0a2035;border-left:1px solid #234057;border-top:1px solid #234057;transform:rotate(45deg)}
+.advisor-identity-message p{position:relative;margin:0;color:#dce9ef;font-size:11px;line-height:1.45}
+.advisor-identity-message time{display:block;margin-top:6px;color:#6f8a9c;font-size:9px;font-variant-numeric:tabular-nums}
+.advisor-identity.compact{padding:10px 11px}
+.advisor-identity.compact .advisor-identity-header{grid-template-columns:40px minmax(0,1fr);gap:8px}
+.advisor-identity.compact .advisor-avatar-wrap,.advisor-identity.compact .advisor-avatar{width:40px;height:40px}
+.advisor-identity.compact .advisor-presence{grid-column:2;justify-self:start;margin-top:-2px}
+.advisor-identity.compact .advisor-identity-copy strong{font-size:11px}
+.advisor-identity.compact .advisor-identity-copy span{font-size:8px}
+.advisor-identity.compact .advisor-identity-message{margin-top:8px;padding:8px}
+.advisor-identity.compact .advisor-identity-message p{font-size:9px}
+.advisor-brief-summary-only{padding-top:8px}
+.readiness-participant-identity dd{display:flex;flex-direction:column;gap:2px}
+.readiness-participant-identity dd strong{font-size:inherit}
+.readiness-participant-identity dd small{color:#7fa6b8;font-size:10px}
+.topmeta>div small,.co-header-role small{display:block;color:#7f96a7;font-size:9px;margin-top:2px}
+.co-attention>.advisor-identity{border-bottom:1px solid var(--co-border);background:#07182a}

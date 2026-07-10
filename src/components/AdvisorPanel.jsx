@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { getInitialAdvisorMessage } from '../engine/missionAdvisor.js'
+import AdvisorIdentity from './AdvisorIdentity.jsx'
 
 const label = (value='') => value.replaceAll('_',' ')
 
@@ -23,13 +24,13 @@ export default function AdvisorPanel({ role, missionState, operationalSummary, o
 
   return (
     <section className="panel advisor advisor-connected">
-      <div className="panel-head">
-        <div><span className="eyebrow">Senior Remote Sensing Mission Advisor</span><h3>Lt Col Edwards</h3></div>
-        <span className={`advisor-mode ${mode==='connected'?'connected':'fallback'}`}>Advisor mode: {mode==='connected'?'Connected':'Local fallback'}</span>
-      </div>
+      <AdvisorIdentity
+        mode={mode}
+        timestamp={missionState.asOf || missionState.exercise?.localIncidentTime || 'Local incident time'}
+        message={advisorText}
+      />
 
-      <div className="advisor-brief">
-        <p>{advisorText}</p>
+      <div className="advisor-brief advisor-brief-summary-only">
         {operationalSummary && <div className="advisor-summary-line">
           <span>{operationalSummary.openRequirements} open requirements</span>
           <span>{operationalSummary.activeMissions} active missions</span>

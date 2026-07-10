@@ -1,4 +1,6 @@
 import React, { useMemo, useState } from 'react'
+import AdvisorIdentity from './AdvisorIdentity.jsx'
+import { getParticipantIdentity } from '../utils/participantIdentity.js'
 
 const NAV_ITEMS = [
   ['current', '◉', 'Current Operations'],
@@ -81,8 +83,9 @@ function MiniIcon({children, tone=''}) {
   return <span className={`co-mini-icon ${tone}`}>{children}</span>
 }
 
-export default function CurrentOps({ missionState, onToggleProtection, onNavigate }) {
+export default function CurrentOps({ role, missionState, onToggleProtection, onNavigate }) {
   const [filter, setFilter] = useState('All')
+  const participant = getParticipantIdentity(missionState, role)
   const [selectedMission, setSelectedMission] = useState('RS-101')
 
   const visibleMissions = useMemo(() => MISSIONS.filter((mission) => {
@@ -105,7 +108,7 @@ export default function CurrentOps({ missionState, onToggleProtection, onNavigat
       </div>
 
       <div className="co-header-field co-header-scenario"><span>SCENARIO</span><strong>Cascade Complex Wildfire <b>⌄</b></strong></div>
-      <div className="co-header-field co-header-role"><span>ROLE</span><strong>♙&nbsp; Lt Col Edwards <b>⌄</b></strong></div>
+      <div className="co-header-field co-header-role"><span>USER / ROLE</span><strong>{participant.primary} <b>⌄</b></strong>{participant.secondary && <small>{participant.secondary}</small>}</div>
       <div className="co-header-field"><span>OPERATIONAL PERIOD</span><strong>DAY 2</strong></div>
       <div className="co-header-field co-turn"><span>TURN</span><strong>12</strong></div>
       <div className="co-header-field"><span>LOCAL TIME</span><strong>1038L</strong><small>AUG 25, 2025</small></div>
@@ -195,7 +198,7 @@ export default function CurrentOps({ missionState, onToggleProtection, onNavigat
 
     <aside className="co-right">
       <section className="co-panel co-attention">
-        <div className="co-panel-head"><h2>› LT COL EDWARDS – ATTENTION</h2></div>
+        <AdvisorIdentity compact mode="connected" timestamp={missionState.asOf || '1038L'} message="These items need your attention before the next decision window closes." />
         <article><MiniIcon tone="red">△</MiniIcon><div><strong>REQ-07 Structure Threat</strong><p>Decision deadline 1115L</p><p>Insufficient current imagery</p><b className="red-text">HIGH RISK</b></div></article>
         <article><MiniIcon tone="amber">◷</MiniIcon><div><strong>Decision Window Closing</strong><p>Retask window for RS-103</p><p>Closes in 37 min (1115L)</p><b className="amber-text">ACTION REQUIRED</b></div></article>
         <article><MiniIcon tone="amber">!</MiniIcon><div><strong>Weather Impact</strong><p>Cloud deck reducing CAP coverage over Fire Bravo</p><b className="amber-text">MONITOR</b></div></article>

@@ -218,10 +218,15 @@ export default function MissionPortal({
         {selectedScenario && <p className="readiness-scenario-description">{selectedScenario.summary}</p>}
 
         <dl className="eoc-rs-readiness-summary">
-          <div><dt>Participant</dt><dd>{participantName.trim() || 'Not provided'}</dd></div>
+          <div className="readiness-participant-identity">
+            <dt>Participant / Role</dt>
+            <dd>
+              <strong>{participantName.trim() || selectedRoleRecord?.name || 'Not selected'}</strong>
+              {participantName.trim() && selectedRoleRecord?.name && <small>{selectedRoleRecord.name}</small>}
+            </dd>
+          </div>
           <div><dt>Scenario</dt><dd>{selectedScenario?.title || 'Not selected'}</dd></div>
           <div><dt>Location</dt><dd>{selectedScenario?.location || '—'}</dd></div>
-          <div><dt>Role</dt><dd>{selectedRoleRecord?.name || 'Not selected'}</dd></div>
           {selectedRoleRecord && <div className="readiness-role-focus"><dt>Role Functional Focus</dt><dd>{ROLE_FOCUS[selectedRoleRecord.id]}</dd></div>}
           <div><dt>Operational Context</dt><dd>{operationalContext}</dd></div>
           <div><dt>Exercise Focus</dt><dd>{exerciseFocus}</dd></div>

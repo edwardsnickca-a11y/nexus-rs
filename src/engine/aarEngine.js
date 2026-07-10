@@ -309,6 +309,7 @@ function buildExecutiveSummary(state, role, requirementOutcomes) {
   const challenge = arr(state.tomorrowPlan?.blockers)[0] || arr(state.currentOps?.missions).find((m) => m.risk)?.risk || 'Maintaining PCPAD closure across active requirements'
   return {
     scenarioName: state.scenarioName || 'NEXUS RS Remote Sensing Coordination and Mission Management Simulator',
+    participantName: state.exercise?.participantName || '',
     playedRole: roleName(role),
     operationalPeriodsCompleted: arr(state.operationalPeriodHistory).length,
     exerciseDuration: `${state.simulation?.turn || arr(state.decisions).length || 0} turn(s) / decision record(s)`,

@@ -50,7 +50,8 @@ export default function AfterActionReview({ role, missionState, syncMatrix }) {
       <div className="panel-head"><div><span className="eyebrow">Section 1</span><h3>Executive Summary</h3></div></div>
       <DetailGrid items={[
         ['Scenario', summary.scenarioName],
-        ['Played role', summary.playedRole],
+        ['Participant', summary.participantName || summary.playedRole],
+        ...(summary.participantName ? [['Played role', summary.playedRole]] : []),
         ['Operational periods completed', summary.operationalPeriodsCompleted],
         ['Duration / turns', summary.exerciseDuration],
         ['Major challenge', summary.majorOperationalChallenge],

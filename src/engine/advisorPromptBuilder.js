@@ -30,6 +30,7 @@ export function buildAdvisorContext(state, activeRole, exactText = '') {
   const products = list(state.dissemination?.deliveries).filter((x)=>referenced(x) || x.receiptStatus !== 'verified')
   return {
     scenario: state.exercise?.scenarioName || state.scenario?.name || 'NEXUS RS exercise',
+    participantName: state.exercise?.participantName || '',
     role: activeRole,
     authority: AUTHORITY[activeRole] || AUTHORITY.remote_sensing_coordinator,
     exerciseStatus: state.exercise?.status,
