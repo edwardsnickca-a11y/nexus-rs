@@ -1128,3 +1128,119 @@
     overflow-x:auto;
   }
 }
+
+
+/* Coordinator workspace fix pass 3: no center divider, bottom row spans through advisor column. */
+.rx-shell.rx-shell-resizable{
+  grid-template-columns:var(--rx-sidebar-width,152px) 5px minmax(0,1fr) 330px!important;
+  grid-template-rows:70px minmax(0,1fr)!important;
+}
+.rx-shell.rx-shell-resizable .rx-header{grid-column:1/-1}
+.rx-shell.rx-shell-resizable .rx-sidebar{grid-column:1;grid-row:2}
+.rx-shell.rx-shell-resizable .rx-main{
+  grid-column:3;
+  grid-row:2;
+  scrollbar-width:none;
+  -ms-overflow-style:none;
+}
+.rx-shell.rx-shell-resizable .rx-main::-webkit-scrollbar{display:none}
+.rx-shell.rx-shell-resizable .rx-advisor-column{
+  grid-column:4;
+  grid-row:2;
+  padding-left:10px;
+}
+.rx-drag-handle.shell-right{display:none!important}
+
+.rx-shell.rx-coordinator-shell{
+  grid-template-columns:var(--rx-sidebar-width,152px) 5px minmax(0,1fr) 330px!important;
+  grid-template-rows:70px minmax(0,1fr) 270px!important;
+}
+.rx-shell.rx-coordinator-shell .rx-sidebar{
+  grid-column:1;
+  grid-row:2/4;
+}
+.rx-shell.rx-coordinator-shell .rx-main{
+  grid-column:3;
+  grid-row:2;
+  padding-bottom:10px;
+}
+.rx-shell.rx-coordinator-shell .rx-advisor-column{
+  grid-column:4;
+  grid-row:2;
+  padding:10px 10px 10px 10px;
+}
+.rx-coordinator-bottom-shell{
+  grid-column:3/5;
+  grid-row:3;
+  min-width:0;
+  overflow:hidden;
+  padding:0 10px 10px;
+  background:#03111e;
+}
+.rx-coordinator-bottom-shell .rx-coordinator-lower-resizable{
+  height:100%;
+  min-height:0;
+}
+.rx-coordinator-bottom-shell .rx-panel{
+  height:100%;
+  min-height:0;
+}
+.rx-coordinator-bottom-shell .rx-mini-sync{
+  min-width:0;
+}
+.rx-coordinator-bottom-shell .rx-table{
+  width:100%;
+}
+
+/* Clean advisor identity block: avatar, name, title only. */
+.rx-advisor-column .advisor-identity-header{
+  grid-template-columns:72px minmax(0,1fr)!important;
+  gap:14px!important;
+  align-items:center!important;
+  min-height:76px;
+  padding:0 0 12px!important;
+}
+.rx-advisor-column .advisor-avatar-wrap{
+  width:72px!important;
+  height:72px!important;
+  align-self:center;
+}
+.rx-advisor-column .advisor-avatar{
+  width:72px!important;
+  height:72px!important;
+  object-fit:cover!important;
+  object-position:center 22%!important;
+}
+.rx-advisor-column .advisor-identity-copy{
+  min-width:0;
+  align-self:center;
+  gap:5px;
+}
+.rx-advisor-column .advisor-identity-copy strong{
+  display:block;
+  font-size:17px!important;
+  line-height:1.1!important;
+  white-space:normal;
+  letter-spacing:.02em;
+}
+.rx-advisor-column .advisor-identity-copy span{
+  display:block;
+  max-width:190px;
+  font-size:9px!important;
+  line-height:1.35!important;
+}
+.advisor-presence{display:none!important}
+
+/* Keep wheel zoom inside the map instead of scrolling the workspace. */
+.rx-operational-map{
+  overscroll-behavior:contain;
+}
+@media(max-width:1250px){
+  .rx-shell.rx-shell-resizable{
+    grid-template-columns:132px 4px minmax(0,1fr) 300px!important;
+  }
+  .rx-shell.rx-coordinator-shell{
+    grid-template-columns:132px 4px minmax(0,1fr) 300px!important;
+    grid-template-rows:70px minmax(0,1fr) 270px!important;
+  }
+}

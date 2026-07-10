@@ -101,11 +101,21 @@ function OperationalMap({missionState}){
 
  useEffect(()=>{
   if(!hostRef.current) return
-  const update=()=>setSize({width:hostRef.current.clientWidth,height:hostRef.current.clientHeight})
+  const node=hostRef.current
+  const update=()=>setSize({width:node.clientWidth,height:node.clientHeight})
+  const handleWheel=(event)=>{
+   event.preventDefault()
+   event.stopPropagation()
+   setView(current=>({...current,zoom:clamp(current.zoom+(event.deltaY<0?1:-1),5,13)}))
+  }
   update()
   const observer=new ResizeObserver(update)
-  observer.observe(hostRef.current)
-  return ()=>observer.disconnect()
+  observer.observe(node)
+  node.addEventListener('wheel',handleWheel,{passive:false})
+  return ()=>{
+   observer.disconnect()
+   node.removeEventListener('wheel',handleWheel)
+  }
  },[])
 
  const centerWorld=projectLatLng(view.lat,view.lng,view.zoom)
@@ -168,7 +178,6 @@ function OperationalMap({missionState}){
   onPointerMove={pointerMove}
   onPointerUp={pointerUp}
   onPointerCancel={pointerUp}
-  onWheel={event=>{event.preventDefault();zoomBy(event.deltaY<0?1:-1)}}
  >
   <div className="rx-map-tiles">{tiles.map(tile=><img key={tile.key} src={tile.url} alt="" draggable="false" style={{left:tile.x,top:tile.y}}/>)}</div>
   <svg className="rx-map-overlays" viewBox={`0 0 ${size.width} ${size.height}`} preserveAspectRatio="none" aria-hidden="true">
@@ -391,13 +400,16 @@ function CoordinatorView(props){
    </ResizableStack>
   </ResizableRow>
 
-  <ResizableRow storageKey="nexus-rs-coordinator-lower-panels" initial={[40,20,19,21]} min={13} className="rx-coordinator-lower rx-coordinator-lower-resizable">
-   <MiniSyncMatrix missionState={missionState} onNavigate={onNavigate}/>
-   <AirspacePanel/>
-   <OversightPanel missionState={missionState}/>
-   <DecisionWindows/>
-  </ResizableRow>
  </div>
+}
+
+function CoordinatorBottom({missionState,onNavigate}){
+ return <ResizableRow storageKey="nexus-rs-coordinator-lower-panels" initial={[40,20,19,21]} min={13} className="rx-coordinator-lower rx-coordinator-lower-resizable">
+  <MiniSyncMatrix missionState={missionState} onNavigate={onNavigate}/>
+  <AirspacePanel/>
+  <OversightPanel missionState={missionState}/>
+  <DecisionWindows/>
+ </ResizableRow>
 }
 function ManagerView(props){
  const {missionState,role,onNavigate,onUpdateMission}=props
@@ -434,15 +446,14 @@ export default function CurrentOperationsRouter({
  const common={role,missionState,onNavigate,onToggleProtection,onReleaseAsset,onUpdateMission,onUpdateRequirement,onValidateRequirement,onSendRequirementForward,onUpdateDelivery}
  const View=role==='remote_sensing_manager'?ManagerView:role==='collection_manager'?CollectionView:role==='upad_lno'?UPADView:CoordinatorView
  const [sidebarWidth,setSidebarWidth]=useStoredSize('nexus-rs-sidebar-width',152,118,250)
- const [advisorWidth,setAdvisorWidth]=useStoredSize('nexus-rs-advisor-width',330,280,500)
  const resizeSidebar=(delta)=>setSidebarWidth(v=>Math.max(118,Math.min(250,v+delta.dx)))
- const resizeAdvisor=(delta)=>setAdvisorWidth(v=>Math.max(280,Math.min(500,v-delta.dx)))
- return <div className="rx-shell rx-shell-resizable" style={{'--rx-sidebar-width':`${sidebarWidth}px`,'--rx-advisor-width':`${advisorWidth}px`}}>
+ const coordinator=role==='remote_sensing_coordinator'
+ return <div className={`rx-shell rx-shell-resizable ${coordinator?'rx-coordinator-shell':''}`} style={{'--rx-sidebar-width':`${sidebarWidth}px`}}>
   <LiveHeader role={role} missionState={missionState} onEnd={onEndExercise}/>
   <Sidebar role={role} active={role==='collection_manager'?'requirements':role==='upad_lno'?'upad':'mission'} onNavigate={onNavigate}/>
   <DragHandle className="shell-left" onDrag={resizeSidebar}/>
   <main className="rx-main"><View {...common}/></main>
-  <DragHandle className="shell-right" onDrag={resizeAdvisor}/>
   <AdvisorColumn {...advisorProps}/>
+  {coordinator&&<div className="rx-coordinator-bottom-shell"><CoordinatorBottom missionState={missionState} onNavigate={onNavigate}/></div>}
  </div>
 }
