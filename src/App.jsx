@@ -166,7 +166,9 @@ export default function App(){
  const approveMatrix=()=>setSyncMatrix(prev=>{const version=prev.version+1;return {...prev,version,status:'APPROVED',coordinatorApprovalStatus:'approved',asOf:'CURRENT LOCAL',changeHistory:[...prev.changeHistory,{version,asOf:'CURRENT LOCAL',updatedBy:'Remote Sensing Coordinator',note:'Regional Sync Matrix approved for leadership brief.'}]}})
 
  const content={
-  portal:<MissionPortal missionState={missionState} onOpenBrief={openScenarioBrief} onOpenRoles={openRoleSelection} onStart={confirmStartEx} onResume={()=>setActive('current')} onReviewAar={()=>setActive('aar')}/>,
+  'portal-help':<Placeholder title="Help & Support"/>,
+  'portal-resources':<Placeholder title="Mission Portal Resources"/>,
+  portal:<MissionPortal missionState={missionState} selectedRole={missionState.exercise?.selectedRole || role} onSelectRole={confirmRoleSelection} onOpenBrief={openScenarioBrief} onStart={confirmStartEx} onResume={()=>setActive('current')} onReviewAar={()=>setActive('aar')}/>,
   brief:<ScenarioBrief missionState={missionState} onContinue={openRoleSelection}/>,
   roles:<RoleSelection selectedRole={role} onSelectRole={confirmRoleSelection} onStart={()=>setActive('portal')}/>,
   mission:<Overview role={currentRole}/>,
@@ -183,14 +185,19 @@ export default function App(){
   aar:<AfterActionReview role={currentRole} missionState={missionState} syncMatrix={syncMatrix}/>,
   updates:<MissionUpdates missionState={missionState}/>,
   log:<DecisionLog role={currentRole} missionState={missionState}/>
- }[active] || <MissionPortal missionState={missionState} onOpenBrief={openScenarioBrief} onOpenRoles={openRoleSelection} onStart={confirmStartEx} onResume={()=>setActive('current')} onReviewAar={()=>setActive('aar')}/>
+ }[active] || <MissionPortal missionState={missionState} selectedRole={missionState.exercise?.selectedRole || role} onSelectRole={confirmRoleSelection} onOpenBrief={openScenarioBrief} onStart={confirmStartEx} onResume={()=>setActive('current')} onReviewAar={()=>setActive('aar')}/>
 
- return <div className="app-shell">
-   <Sidebar active={active} setActive={setActive} role={currentRole} missionState={missionState}/>
+ const portalMode=active==='portal' || active==='portal-resources' || active==='portal-help'
+
+ return <div className={`app-shell ${portalMode?'portal-app-shell':''}`}>
+   <Sidebar active={active} setActive={setActive} role={currentRole} missionState={missionState} portalMode={portalMode}/>
    <div className="main-shell">
-     <Header role={currentRole} missionState={missionState} onReset={resetActiveExercise}/>
-     <ExerciseStatusBar missionState={missionState} onStart={confirmStartEx} onAdvance={advanceExercise} onTransition={reviewTransition} onEnd={()=>setShowEndEx(true)} onAar={()=>setActive('aar')}/>
-     <main className="workspace"><div>{content}</div><AdvisorPanel role={currentRole} missionState={missionState} operationalSummary={deriveOperationalSummary(missionState)} onSubmitDecision={submitFreeTextDecision} pending={advisorPending} busy={advisorBusy} mode={advisorMode} onConfirm={confirmAdvisorAction} onCancel={cancelAdvisorAction}/></main>
+     <Header role={currentRole} missionState={missionState} onReset={resetActiveExercise} portalMode={portalMode}/>
+     {!portalMode && <ExerciseStatusBar missionState={missionState} onStart={confirmStartEx} onAdvance={advanceExercise} onTransition={reviewTransition} onEnd={()=>setShowEndEx(true)} onAar={()=>setActive('aar')}/>}
+     <main className={portalMode?'portal-workspace':'workspace'}>
+       <div>{content}</div>
+       {!portalMode && <AdvisorPanel role={currentRole} missionState={missionState} operationalSummary={deriveOperationalSummary(missionState)} onSubmitDecision={submitFreeTextDecision} pending={advisorPending} busy={advisorBusy} mode={advisorMode} onConfirm={confirmAdvisorAction} onCancel={cancelAdvisorAction}/>}
+     </main>
    </div>
    {showEndEx && <EndExModal missionState={missionState} onCancel={()=>setShowEndEx(false)} onConfirm={confirmEndEx}/>}
  </div>
