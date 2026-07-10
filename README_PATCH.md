@@ -1,32 +1,97 @@
-# NEXUS RS — Mission Portal Fix Pass 1
+# NEXUS RS — EOC-Style Start Exercise Patch
 
 ## Summary
-Targeted Mission Portal-only refinement.
 
-## Changed
-- Replaced the California Wildfire Complex hero background with an incident-driven aerial wildfire image showing active smoke, fireline, and terrain.
-- Reduced the selected-scenario hero height from 430px to 380px.
-- Compressed the Mission Readiness panel to match the tighter hero height.
-- Converted readiness metadata and checklist content to compact two-column layouts on desktop.
-- Reduced upper-panel padding, text spacing, metadata-box height, CTA spacing, and the gap below the hero area.
-- Preserved the existing two-column portal structure, typography hierarchy, palette, and all in-exercise workspaces.
+This patch aligns the NEXUS RS Mission Portal / Start Exercise experience with the proven NEXUS EOC structure while preserving NEXUS RS as the functional source of truth.
+
+The updated page now presents a compact setup flow:
+
+1. Select scenario
+2. Select role
+3. Review mission readiness
+4. Start exercise
+
+## EOC elements adapted
+
+- Compact Start Exercise page hierarchy
+- Searchable scenario catalog
+- Incident-type filter
+- Three-column image-led scenario grid on desktop
+- Selected scenario border and badge treatment
+- Right-side sticky confirmation panel
+- Compact card proportions and information density
+- Professional dark navy panel system
+- Responsive collapse behavior
+
+## RS logic preserved
+
+- Existing RS scenarios and metadata
+- RS role options and authority model
+- Existing exercise controller and STARTEX action
+- Mission-state initialization
+- Operational period lifecycle
+- Anthropic advisor integration
+- Downstream operational workspaces
+- AAR behavior
+- Local incident time conventions
+
+The patch does not introduce EOC roles, doctrine, difficulty logic, or state management.
 
 ## Files changed
+
+- `src/App.jsx`
+- `src/components/MissionPortal.jsx`
 - `src/styles.css`
 
-## Installation target
+## Installation path
+
 `C:\Dev\nexus-rs`
 
-## Replacement instructions
-Copy `src/styles.css` from this patch into the matching project path and replace the existing file.
+## Installation instructions
 
-## Verification
-This is a CSS-only targeted patch. No component structure or application logic was changed.
+1. Extract this ZIP.
+2. Copy the included files into `C:\Dev\nexus-rs`.
+3. Preserve the folder structure.
+4. Replace the existing files when prompted.
+5. Run:
 
-## Manual checks
-1. Open Mission Portal with California Wildfire Complex selected.
-2. Confirm the hero shows an active wildfire incident rather than scenic forest imagery.
-3. Confirm both top panels have aligned, reduced height.
-4. Confirm more of the role-selection section is visible above the fold.
-5. Resize below 760px and confirm readiness content returns to one column.
-6. Confirm in-exercise workspaces are unchanged.
+```powershell
+npm install
+npm run build
+```
+
+## Build verification result
+
+Verified successfully with:
+
+```text
+vite v6.4.3
+63 modules transformed
+production build completed successfully
+```
+
+## Known limitations
+
+- Scenario imagery continues to use the existing RS portal image sources.
+- Custom Scenario remains a selectable baseline card; a dedicated custom-scenario editor is outside this patch.
+- Scenario Brief content remains based on the current RS brief implementation.
+- This patch does not redesign in-exercise workspaces.
+
+## Manual test checklist
+
+- [ ] Mission Portal loads without errors.
+- [ ] Scenario search filters cards by title, description, location, and incident type.
+- [ ] Incident-type filter works for all configured categories.
+- [ ] Scenario cards display in a three-column desktop grid.
+- [ ] Selected scenario receives a visible border and Selected badge.
+- [ ] Selecting a scenario updates Mission Readiness.
+- [ ] Role cards remain disabled until a scenario is selected.
+- [ ] Selecting a role updates Mission Readiness.
+- [ ] Readiness checklist updates without numeric scoring.
+- [ ] View Scenario Brief uses the selected scenario context.
+- [ ] Start Exercise remains disabled until scenario and role are selected.
+- [ ] Start Exercise invokes the existing RS lifecycle controller.
+- [ ] Resume Exercise and Review AAR behavior remain intact.
+- [ ] Anthropic advisor remains available after entering the exercise.
+- [ ] Existing operational modules continue to load.
+- [ ] Responsive layout collapses cleanly at tablet and mobile widths.

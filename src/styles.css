@@ -180,3 +180,77 @@
   .portal-hero,.portal-hero-content{min-height:360px}
   .portal-hero-content{padding:22px}
 }
+
+
+/* EOC-aligned RS Start Exercise */
+.eoc-rs-start-page{display:grid;gap:16px;color:#edf5fb}
+.eoc-rs-start-heading{display:flex;align-items:flex-end;justify-content:space-between;gap:24px;padding:19px 22px;border:1px solid rgba(87,146,198,.3);border-radius:5px;background:linear-gradient(180deg,rgba(5,20,34,.94),rgba(4,16,28,.88));box-shadow:0 20px 58px rgba(0,0,0,.24)}
+.eoc-rs-start-heading>div:first-child>span,.eoc-rs-section-title span,.readiness-panel-header>div>span{color:#5fd8cf;font-size:10px;font-weight:900;letter-spacing:.16em;text-transform:uppercase}
+.eoc-rs-start-heading h1{margin:5px 0 6px;font-size:34px;line-height:1.05}
+.eoc-rs-start-heading p{margin:0;max-width:760px;color:#9fb2c2;font-size:13px;line-height:1.55}
+.exercise-sequence{display:flex;align-items:center;gap:7px;flex-wrap:wrap;justify-content:flex-end}
+.exercise-sequence span{padding:7px 9px;border:1px solid #1c3a50;border-radius:999px;background:#071725;color:#6e8799;font-size:10px;font-weight:800;letter-spacing:.04em}
+.exercise-sequence span.current{border-color:#4fa9c2;color:#bceef0;background:rgba(39,122,139,.18)}
+.exercise-sequence span.complete{border-color:rgba(92,210,201,.38);color:#65d8d0;background:rgba(39,143,137,.13)}
+.eoc-rs-start-layout{display:grid;grid-template-columns:minmax(720px,1fr) 390px;gap:16px;align-items:start}
+.eoc-rs-start-main{display:grid;gap:16px;min-width:0}
+.eoc-rs-config-panel,.eoc-rs-readiness-panel{border:1px solid rgba(87,146,198,.3);border-radius:5px;background:rgba(4,17,29,.86);box-shadow:0 20px 58px rgba(0,0,0,.22)}
+.eoc-rs-config-panel{padding:20px}
+.eoc-rs-section-title,.readiness-panel-header{display:flex;align-items:flex-start;justify-content:space-between;gap:20px}
+.eoc-rs-section-title h2,.readiness-panel-header h2{margin:5px 0 0;font-size:21px}
+.eoc-rs-section-title p{max-width:620px;margin:1px 0 0;color:#7f96a8;font-size:12px;line-height:1.5}
+.scenario-tools{display:grid;grid-template-columns:minmax(0,1fr) 190px;gap:12px;margin:17px 0 14px}
+.scenario-tools label>span{display:block;margin-bottom:6px;color:#8ea4b5;font-size:9px;font-weight:900;letter-spacing:.13em;text-transform:uppercase}
+.scenario-tools input,.scenario-tools select{width:100%;height:40px;box-sizing:border-box;padding:0 11px;border:1px solid rgba(87,146,198,.26);border-radius:4px;outline:none;background:#071421;color:#edf5fb;font:inherit;font-size:12px}
+.scenario-tools input:focus,.scenario-tools select:focus{border-color:#438bab;box-shadow:0 0 0 2px rgba(68,139,171,.1)}
+.eoc-rs-scenario-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.eoc-rs-scenario-card{min-width:0;padding:0;overflow:hidden;text-align:left;color:#edf5fb;border:1px solid rgba(87,146,198,.28);border-radius:4px;background:rgba(3,14,24,.9);box-shadow:0 13px 28px rgba(0,0,0,.16);transition:border-color .16s,transform .16s,box-shadow .16s}
+.eoc-rs-scenario-card:hover{transform:translateY(-1px);border-color:#3f7898}
+.eoc-rs-scenario-card.selected{border-color:#4b9fff;box-shadow:0 0 0 1px rgba(75,159,255,.22),0 12px 34px rgba(15,94,165,.18)}
+.eoc-rs-scenario-image{position:relative;aspect-ratio:16/8;overflow:hidden;background:#061522}
+.eoc-rs-scenario-image::before,.readiness-scenario-visual::before{content:"";position:absolute;inset:0;background-size:cover;background-position:center;opacity:.82}
+.eoc-rs-scenario-image::after,.readiness-scenario-visual::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(2,9,16,.04),rgba(2,9,16,.62))}
+.scenario-type-chip,.selected-scenario-badge{position:absolute;z-index:2;top:9px;padding:4px 7px;border-radius:999px;font-size:8px;font-weight:900;letter-spacing:.08em;text-transform:uppercase}
+.scenario-type-chip{left:9px;color:#b9d9e6;border:1px solid rgba(123,190,215,.28);background:rgba(3,15,25,.8)}
+.selected-scenario-badge{right:9px;color:#04111b;background:#58d6cd}
+.eoc-rs-scenario-body{display:flex;flex-direction:column;justify-content:space-between;min-height:155px;padding:11px 12px 12px}
+.eoc-rs-scenario-body h3{margin:0 0 6px;font-size:14px;line-height:1.22}
+.eoc-rs-scenario-body p{margin:0;color:#8fa4b5;font-size:11px;line-height:1.43}
+.scenario-card-metadata{display:flex;flex-wrap:wrap;gap:5px;margin-top:11px}
+.scenario-card-metadata span{padding:4px 6px;border:1px solid #17374d;border-radius:999px;color:#73cfc9;background:#071725;font-size:8px;line-height:1.1}
+.scenario-empty-state{padding:34px;text-align:center;border:1px dashed #21445b;color:#7f96a7;background:#071725}
+.role-step-panel{padding-bottom:18px}
+.eoc-rs-role-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-top:16px}
+.eoc-rs-role-card{min-height:134px;padding:14px;text-align:left;border:1px solid rgba(87,146,198,.26);border-radius:4px;background:#071725;color:#e7f0f6;transition:border-color .16s,background .16s}
+.eoc-rs-role-card:hover:not(:disabled){border-color:#3f7898;background:#092033}
+.eoc-rs-role-card.selected{border-color:#5dd5cd;box-shadow:inset 0 0 0 1px rgba(93,213,205,.18)}
+.eoc-rs-role-card:disabled{opacity:.52;cursor:not-allowed}
+.eoc-rs-role-card>span{display:block;margin-bottom:9px;color:#63d4cc;font-size:8px;font-weight:900;letter-spacing:.09em;text-transform:uppercase}
+.eoc-rs-role-card strong{display:block;font-size:13px;line-height:1.3}
+.eoc-rs-role-card p{margin:7px 0 0;color:#849bac;font-size:10px;line-height:1.45}
+.eoc-rs-readiness-panel{position:sticky;top:102px;padding:18px}
+.readiness-panel-header{padding-bottom:13px;border-bottom:1px solid #17354a}
+.readiness-scenario-visual{position:relative;height:132px;margin:14px 0;overflow:hidden;border:1px solid #1a4158;border-radius:4px;background:#071725}
+.readiness-scenario-visual>div{position:absolute;z-index:2;inset:auto 13px 12px;display:grid;gap:3px}
+.readiness-scenario-visual span{color:#70d9d2;font-size:8px;font-weight:900;letter-spacing:.12em;text-transform:uppercase}
+.readiness-scenario-visual strong{font-size:15px}
+.readiness-scenario-visual small{color:#adc1ce}
+.readiness-scenario-placeholder{display:grid;place-items:center;min-height:132px;margin:14px 0;padding:16px;text-align:center;border:1px dashed #24465d;border-radius:4px;background:#071725}
+.readiness-scenario-placeholder span{color:#c4d5df;font-weight:800}
+.readiness-scenario-placeholder p{margin:6px 0 0;color:#748b9d;font-size:11px}
+.eoc-rs-readiness-summary{margin:0}
+.eoc-rs-readiness-summary>div{display:grid;grid-template-columns:112px minmax(0,1fr);gap:10px;padding:8px 0;border-top:1px solid #163247}
+.eoc-rs-readiness-summary dt{color:#6f8799;font-size:9px;letter-spacing:.08em;text-transform:uppercase}
+.eoc-rs-readiness-summary dd{margin:0;color:#d8e6ef;font-size:11px;line-height:1.4;overflow-wrap:anywhere}
+.eoc-rs-readiness-checklist{display:grid;gap:7px;margin:13px 0;padding:11px;border:1px solid #17384d;border-radius:4px;background:#071725}
+.eoc-rs-readiness-checklist>div{display:flex;align-items:center;gap:8px;color:#778e9f;font-size:11px}
+.eoc-rs-readiness-checklist>div span{width:17px;height:17px;display:grid;place-items:center;border:1px solid #29475b;border-radius:50%;font-size:9px}
+.eoc-rs-readiness-checklist>div.ready{color:#d3e5ec}
+.eoc-rs-readiness-checklist>div.ready span{color:#082027;border-color:#5dd5cd;background:#5dd5cd}
+.eoc-rs-readiness-actions{display:grid;gap:8px}
+.eoc-rs-readiness-actions button{width:100%;min-height:42px}
+.eoc-rs-readiness-actions .primary{background:linear-gradient(180deg,#2d8cd4,#17618f);box-shadow:0 12px 28px rgba(30,110,165,.2)}
+.eoc-rs-readiness-actions .primary:disabled,.eoc-rs-readiness-actions .ghost:disabled{opacity:.42;cursor:not-allowed}
+@media(max-width:1380px){.eoc-rs-start-layout{grid-template-columns:minmax(620px,1fr) 350px}.eoc-rs-role-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:1120px){.eoc-rs-start-layout{grid-template-columns:1fr}.eoc-rs-readiness-panel{position:static}.eoc-rs-scenario-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:760px){.eoc-rs-start-heading{align-items:flex-start;flex-direction:column}.exercise-sequence{justify-content:flex-start}.scenario-tools{grid-template-columns:1fr}.eoc-rs-scenario-grid,.eoc-rs-role-grid{grid-template-columns:1fr}.eoc-rs-config-panel{padding:15px}.eoc-rs-section-title{flex-direction:column}.eoc-rs-section-title p{max-width:none}}

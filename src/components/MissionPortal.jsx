@@ -10,147 +10,238 @@ const ROLE_COPY = {
   upad_lno: 'Manages processing, assessment, production, dissemination, and customer verification.',
 }
 
-const LIFECYCLE = [
-  ['Not Started', 'Choose the scenario and role, then review readiness.'],
-  ['Active Operational Period 1', 'Execute current operations and begin tomorrow planning.'],
-  ['Transition Planning', 'Carry unresolved requirements, products, and risks forward.'],
-  ['Active Operational Period 2', 'Execute the approved plan with preserved mission history.'],
-  ['Ended', 'Freeze the final state and review the After-Action Review.'],
-]
+const INCIDENT_FILTERS = ['All', 'Wildfire', 'Hurricane', 'Flood', 'Earthquake', 'Planned Event', 'Custom']
+
+function incidentCategory(scenario) {
+  const type = `${scenario.type} ${scenario.title}`.toLowerCase()
+  if (type.includes('wildfire')) return 'Wildfire'
+  if (type.includes('hurricane') || type.includes('storm')) return 'Hurricane'
+  if (type.includes('flood')) return 'Flood'
+  if (type.includes('earthquake')) return 'Earthquake'
+  if (type.includes('event')) return 'Planned Event'
+  return 'Custom'
+}
+
+function ScenarioCard({ scenario, selected, onSelect }) {
+  return <button
+    type="button"
+    className={`eoc-rs-scenario-card ${selected ? 'selected' : ''}`}
+    onClick={() => onSelect(scenario.id)}
+  >
+    <div className={`eoc-rs-scenario-image portal-image-${scenario.imageClass}`}>
+      <span className="scenario-type-chip">{incidentCategory(scenario)}</span>
+      {selected && <span className="selected-scenario-badge">Selected</span>}
+    </div>
+    <div className="eoc-rs-scenario-body">
+      <div>
+        <h3>{scenario.title}</h3>
+        <p>{scenario.summary}</p>
+      </div>
+      <div className="scenario-card-metadata">
+        <span>{scenario.location}</span>
+        <span>{scenario.complexity} complexity</span>
+        <span>{scenario.periods} operational periods</span>
+        <span>{scenario.status}</span>
+      </div>
+    </div>
+  </button>
+}
+
+function RoleCard({ role, selected, disabled, onSelect }) {
+  return <button
+    type="button"
+    className={`eoc-rs-role-card ${selected ? 'selected' : ''}`}
+    disabled={disabled}
+    onClick={() => onSelect(role.id)}
+  >
+    <span>{selected ? 'Selected' : disabled ? 'Select scenario first' : 'Select role'}</span>
+    <strong>{role.name}</strong>
+    <p>{ROLE_COPY[role.id]}</p>
+  </button>
+}
 
 export default function MissionPortal({
   missionState,
   selectedRole,
   onSelectRole,
+  onSelectScenario,
   onOpenBrief,
   onStart,
   onResume,
   onReviewAar,
 }) {
   const status = buildExerciseStatus(missionState)
-  const [selectedScenarioId, setSelectedScenarioId] = useState(PORTAL_SCENARIOS[0].id)
+  const activeScenarioId = missionState.exercise?.scenarioId
+  const initialScenarioId = PORTAL_SCENARIOS.some((scenario) => scenario.id === activeScenarioId)
+    ? activeScenarioId
+    : null
+
+  const [selectedScenarioId, setSelectedScenarioId] = useState(initialScenarioId)
+  const [query, setQuery] = useState('')
+  const [filter, setFilter] = useState('All')
+
   const selectedScenario = useMemo(
-    () => PORTAL_SCENARIOS.find((scenario) => scenario.id === selectedScenarioId) || PORTAL_SCENARIOS[0],
+    () => PORTAL_SCENARIOS.find((scenario) => scenario.id === selectedScenarioId) || null,
     [selectedScenarioId],
   )
+
+  const filteredScenarios = useMemo(() => PORTAL_SCENARIOS.filter((scenario) => {
+    const search = query.trim().toLowerCase()
+    const matchesSearch = !search || [
+      scenario.title,
+      scenario.summary,
+      scenario.location,
+      scenario.type,
+    ].some((value) => value.toLowerCase().includes(search))
+    const matchesFilter = filter === 'All' || incidentCategory(scenario) === filter
+    return matchesSearch && matchesFilter
+  }), [query, filter])
 
   const active = ['active_op1', 'transition_to_op2', 'active_op2'].includes(status.status)
   const ended = status.status === 'ended'
   const roleReady = Boolean(selectedRole)
-  const briefReviewed = Boolean(missionState.exercise?.scenarioId)
-  const readyForStart = roleReady && Boolean(selectedScenario)
+  const scenarioReady = Boolean(selectedScenario)
+  const briefReviewed = Boolean(
+    selectedScenario && missionState.exercise?.scenarioId === selectedScenario.id,
+  )
+  const readyForStart = scenarioReady && roleReady
   const selectedRoleRecord = ROLES.find((role) => role.id === selectedRole)
+
+  function selectScenario(scenarioId) {
+    setSelectedScenarioId(scenarioId)
+    onSelectScenario?.(PORTAL_SCENARIOS.find((scenario) => scenario.id === scenarioId))
+  }
+
+  function startSelectedExercise() {
+    if (!readyForStart) return
+    onStart?.(selectedScenario)
+  }
+
+  function openSelectedBrief() {
+    if (!selectedScenario) return
+    onOpenBrief?.(selectedScenario)
+  }
 
   const primaryAction = active
     ? { label: 'Resume Exercise', action: onResume }
     : ended
       ? { label: 'Review AAR', action: onReviewAar }
-      : { label: 'Start Exercise', action: onStart, disabled: !readyForStart }
+      : { label: 'Start Exercise', action: startSelectedExercise, disabled: !readyForStart }
 
-  return <div className="portal-page">
-    <section className="portal-hero-grid">
-      <article className={`portal-hero portal-image-${selectedScenario.imageClass}`}>
-        <div className="portal-hero-overlay" />
-        <div className="portal-hero-content">
-          <span className="portal-kicker">Selected Scenario</span>
-          <h1>{selectedScenario.title}</h1>
-          <div className="portal-location">{selectedScenario.location}</div>
-          <p>{selectedScenario.summary}</p>
-          <div className="portal-meta-grid">
-            <div><span>Operational Periods</span><strong>{selectedScenario.periods}</strong></div>
-            <div><span>Complexity</span><strong>{selectedScenario.complexity}</strong></div>
-            <div><span>Duration</span><strong>{selectedScenario.duration}</strong></div>
-            <div><span>Last Updated</span><strong>{selectedScenario.lastUpdated}</strong></div>
+  return <div className="eoc-rs-start-page">
+    <header className="eoc-rs-start-heading">
+      <div>
+        <span>Mission Portal</span>
+        <h1>Start Exercise</h1>
+        <p>Select a remote-sensing scenario, choose the role you will play, review mission readiness, and begin STARTEX.</p>
+      </div>
+      <div className="exercise-sequence" aria-label="Exercise setup sequence">
+        <span className={scenarioReady ? 'complete' : 'current'}>1 Scenario</span>
+        <span className={roleReady ? 'complete' : scenarioReady ? 'current' : ''}>2 Role</span>
+        <span className={readyForStart ? 'complete' : roleReady ? 'current' : ''}>3 Readiness</span>
+        <span className={readyForStart ? 'current' : ''}>4 STARTEX</span>
+      </div>
+    </header>
+
+    <div className="eoc-rs-start-layout">
+      <div className="eoc-rs-start-main">
+        <section className="eoc-rs-config-panel">
+          <div className="eoc-rs-section-title">
+            <div><span>Step 1</span><h2>Select scenario</h2></div>
+            <p>Choose the incident environment that will drive requirements, asset demand, PCPAD workload, and coordination pressure.</p>
           </div>
-        </div>
-      </article>
 
-      <aside className="portal-readiness">
-        <div className="portal-section-heading">
-          <div><span>Mission Readiness</span><h2>Exercise setup</h2></div>
+          <div className="scenario-tools">
+            <label>
+              <span>Scenario search</span>
+              <input
+                type="search"
+                value={query}
+                onChange={(event) => setQuery(event.target.value)}
+                placeholder="Search scenarios, locations, or incident types..."
+              />
+            </label>
+            <label>
+              <span>Incident type</span>
+              <select value={filter} onChange={(event) => setFilter(event.target.value)}>
+                {INCIDENT_FILTERS.map((option) => <option key={option} value={option}>{option}</option>)}
+              </select>
+            </label>
+          </div>
+
+          <div className="eoc-rs-scenario-grid">
+            {filteredScenarios.map((scenario) => <ScenarioCard
+              key={scenario.id}
+              scenario={scenario}
+              selected={selectedScenarioId === scenario.id}
+              onSelect={selectScenario}
+            />)}
+          </div>
+          {!filteredScenarios.length && <div className="scenario-empty-state">No scenarios match the current search and filter.</div>}
+        </section>
+
+        <section className="eoc-rs-config-panel role-step-panel">
+          <div className="eoc-rs-section-title">
+            <div><span>Step 2</span><h2>Select role</h2></div>
+            <p>The role controls authority checks, workspace emphasis, advisor context, editable actions, and AAR criteria.</p>
+          </div>
+          <div className="eoc-rs-role-grid">
+            {ROLES.map((role) => <RoleCard
+              key={role.id}
+              role={role}
+              selected={selectedRole === role.id}
+              disabled={!scenarioReady || active || ended}
+              onSelect={onSelectRole}
+            />)}
+          </div>
+        </section>
+      </div>
+
+      <aside className="eoc-rs-readiness-panel">
+        <div className="readiness-panel-header">
+          <div><span>Step 3</span><h2>Mission Readiness</h2></div>
           <span className="portal-status-pill">{status.label}</span>
         </div>
-        <dl className="readiness-summary">
-          <div><dt>Scenario</dt><dd>{selectedScenario.title}</dd></div>
+
+        {selectedScenario ? <div className={`readiness-scenario-visual portal-image-${selectedScenario.imageClass}`}>
+          <div>
+            <span>Selected scenario</span>
+            <strong>{selectedScenario.title}</strong>
+            <small>{selectedScenario.location}</small>
+          </div>
+        </div> : <div className="readiness-scenario-placeholder">
+          <span>No scenario selected</span>
+          <p>Choose a scenario card to populate mission readiness.</p>
+        </div>}
+
+        <dl className="eoc-rs-readiness-summary">
+          <div><dt>Scenario</dt><dd>{selectedScenario?.title || 'Not selected'}</dd></div>
           <div><dt>Role</dt><dd>{selectedRoleRecord?.name || 'Not selected'}</dd></div>
-          <div><dt>Operational Periods</dt><dd>{selectedScenario.periods}</dd></div>
-          <div><dt>Asset Package</dt><dd>{selectedScenario.assetPackage}</dd></div>
-          <div><dt>Partner Agencies</dt><dd>{selectedScenario.partners}</dd></div>
+          <div><dt>Operational Periods</dt><dd>{selectedScenario?.periods || '—'}</dd></div>
+          <div><dt>Asset Package</dt><dd>{selectedScenario?.assetPackage || '—'}</dd></div>
+          <div><dt>Partner Agencies</dt><dd>{selectedScenario?.partners || '—'}</dd></div>
           <div><dt>Exercise Status</dt><dd>{status.label}</dd></div>
         </dl>
-        <div className="readiness-checklist">
-          <div className="ready"><span>✓</span> Scenario selected</div>
-          <div className={roleReady ? 'ready' : ''}><span>{roleReady ? '✓' : '—'}</span> Role selected</div>
-          <div className={briefReviewed ? 'ready' : ''}><span>{briefReviewed ? '✓' : '—'}</span> Scenario brief reviewed</div>
-          <div className={readyForStart ? 'ready' : ''}><span>{readyForStart ? '✓' : '—'}</span> Ready for STARTEX</div>
+
+        <div className="eoc-rs-readiness-checklist">
+          <div className={scenarioReady ? 'ready' : ''}><span>{scenarioReady ? '✓' : '—'}</span>Scenario selected</div>
+          <div className={roleReady ? 'ready' : ''}><span>{roleReady ? '✓' : '—'}</span>Role selected</div>
+          <div className={briefReviewed ? 'ready' : ''}><span>{briefReviewed ? '✓' : '—'}</span>Scenario brief reviewed</div>
+          <div className={readyForStart ? 'ready' : ''}><span>{readyForStart ? '✓' : '—'}</span>Ready for STARTEX</div>
         </div>
-        <div className="portal-cta-stack">
-          <button className="primary portal-primary" disabled={primaryAction.disabled} onClick={primaryAction.action}>{primaryAction.label}</button>
-          {!ended && <button className="ghost" onClick={onOpenBrief}>View Scenario Brief</button>}
+
+        <div className="eoc-rs-readiness-actions">
+          <button className="primary portal-primary" disabled={primaryAction.disabled} onClick={primaryAction.action}>
+            {primaryAction.label}
+          </button>
+          {!ended && <button className="ghost" disabled={!scenarioReady} onClick={openSelectedBrief}>View Scenario Brief</button>}
         </div>
+
         <div className="resume-block">
           <span>Existing Exercise</span>
-          <strong>{active ? `${status.label} · Turn ${status.turnNumber}` : 'No active exercise'}</strong>
+          <strong>{active ? `${status.label} · Turn ${status.turnNumber}` : ended ? 'Exercise ended · AAR available' : 'No active exercise'}</strong>
         </div>
       </aside>
-    </section>
-
-    <section className="portal-section">
-      <div className="portal-section-heading">
-        <div><span>Step 2</span><h2>Choose your role</h2></div>
-        <p>The selected role controls workspace emphasis, authority checks, advisor context, and AAR criteria.</p>
-      </div>
-      <div className="portal-role-grid">
-        {ROLES.map((role) => <button
-          type="button"
-          key={role.id}
-          className={`portal-role-card ${selectedRole === role.id ? 'selected' : ''}`}
-          onClick={() => onSelectRole(role.id)}
-        >
-          <span className="role-select-indicator">{selectedRole === role.id ? 'Selected' : 'Select role'}</span>
-          <strong>{role.name}</strong>
-          <p>{ROLE_COPY[role.id]}</p>
-          <small>{role.authorityLabel}</small>
-        </button>)}
-      </div>
-    </section>
-
-    <section className="portal-section">
-      <div className="portal-section-heading">
-        <div><span>Step 1</span><h2>Choose a scenario</h2></div>
-        <p>Selecting a card updates the mission overview and readiness summary.</p>
-      </div>
-      <div className="scenario-card-grid">
-        {PORTAL_SCENARIOS.map((scenario) => <button
-          type="button"
-          key={scenario.id}
-          className={`scenario-card ${selectedScenarioId === scenario.id ? 'selected' : ''}`}
-          onClick={() => setSelectedScenarioId(scenario.id)}
-        >
-          <div className={`scenario-thumb portal-image-${scenario.imageClass}`}><span>{scenario.status}</span></div>
-          <div className="scenario-card-body">
-            <strong>{scenario.title}</strong>
-            <p>{scenario.type} · {scenario.location}</p>
-            <small>{scenario.complexity} complexity · {scenario.periods} operational periods</small>
-          </div>
-        </button>)}
-      </div>
-    </section>
-
-    <section className="portal-section lifecycle-section">
-      <div className="portal-section-heading">
-        <div><span>Exercise Lifecycle</span><h2>From setup to review</h2></div>
-      </div>
-      <div className="portal-lifecycle-strip">
-        {LIFECYCLE.map(([label, detail], index) => <div key={label} className={index === 0 ? 'current' : ''}>
-          <span>{index + 1}</span><strong>{label}</strong><p>{detail}</p>
-        </div>)}
-      </div>
-    </section>
-
-    <section className="portal-quick-links">
-      {['Scenario Brief', 'Role Reference', 'System Status', 'User Guide', 'Help & Support', 'Provide Feedback'].map((item) =>
-        <button type="button" key={item} onClick={item === 'Scenario Brief' ? onOpenBrief : undefined}>{item}<span>→</span></button>)}
-    </section>
+    </div>
   </div>
 }

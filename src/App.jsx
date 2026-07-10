@@ -45,10 +45,20 @@ export default function App(){
 
  const currentRole=missionState.exercise?.selectedRole || role || 'remote_sensing_coordinator'
  const updateMission=(updater)=>setMissionState(prev=>typeof updater==='function'?updater(prev):updater)
- const openScenarioBrief=()=>{setMissionState(prev=>initializeScenario(prev));setActive('brief')}
+ const applyPortalScenario=(state,scenario)=>{
+  if(!scenario) return state
+  const initialized=state.exercise?.scenarioId ? state : initializeScenario(state)
+  return {
+   ...initialized,
+   scenario:{...(initialized.scenario||{}),id:scenario.id,name:scenario.title,location:scenario.location,description:scenario.summary,periods:Array.from({length:scenario.periods},(_,index)=>`Operational Period ${index+1}`)},
+   exercise:{...(initialized.exercise||{}),scenarioId:scenario.id,scenarioName:scenario.title,currentPhase:'Mission Portal'},
+  }
+ }
+ const selectPortalScenario=(scenario)=>setMissionState(prev=>applyPortalScenario(prev,scenario))
+ const openScenarioBrief=(scenario)=>{setMissionState(prev=>applyPortalScenario(prev,scenario));setActive('brief')}
  const openRoleSelection=()=>{setMissionState(prev=>({...prev,exercise:{...(prev.exercise||{}),status:'role_selection',currentPhase:'Role Selection'}}));setActive('roles')}
  const confirmRoleSelection=(selectedRole)=>{setRole(selectedRole);setMissionState(prev=>controllerSelectRole(prev,selectedRole))}
- const confirmStartEx=()=>{setMissionState(prev=>startExercise(prev));setActive('current')}
+ const confirmStartEx=(scenario)=>{setMissionState(prev=>startExercise(applyPortalScenario(prev,scenario)));setActive('current')}
  const advanceExercise=()=>setMissionState(prev=>advanceTurn(prev))
  const reviewTransition=()=>{setMissionState(prev=>beginTransition(prev));setActive('transition')}
  const approveLifecycleTransition=()=>{setMissionState(prev=>approveTransition(prev));setActive('current')}
@@ -168,7 +178,7 @@ export default function App(){
  const content={
   'portal-help':<Placeholder title="Help & Support"/>,
   'portal-resources':<Placeholder title="Mission Portal Resources"/>,
-  portal:<MissionPortal missionState={missionState} selectedRole={missionState.exercise?.selectedRole || role} onSelectRole={confirmRoleSelection} onOpenBrief={openScenarioBrief} onStart={confirmStartEx} onResume={()=>setActive('current')} onReviewAar={()=>setActive('aar')}/>,
+  portal:<MissionPortal missionState={missionState} selectedRole={missionState.exercise?.selectedRole || role} onSelectRole={confirmRoleSelection} onSelectScenario={selectPortalScenario} onOpenBrief={openScenarioBrief} onStart={confirmStartEx} onResume={()=>setActive('current')} onReviewAar={()=>setActive('aar')}/>,
   brief:<ScenarioBrief missionState={missionState} onContinue={openRoleSelection}/>,
   roles:<RoleSelection selectedRole={role} onSelectRole={confirmRoleSelection} onStart={()=>setActive('portal')}/>,
   mission:<Overview role={currentRole}/>,
@@ -185,7 +195,7 @@ export default function App(){
   aar:<AfterActionReview role={currentRole} missionState={missionState} syncMatrix={syncMatrix}/>,
   updates:<MissionUpdates missionState={missionState}/>,
   log:<DecisionLog role={currentRole} missionState={missionState}/>
- }[active] || <MissionPortal missionState={missionState} selectedRole={missionState.exercise?.selectedRole || role} onSelectRole={confirmRoleSelection} onOpenBrief={openScenarioBrief} onStart={confirmStartEx} onResume={()=>setActive('current')} onReviewAar={()=>setActive('aar')}/>
+ }[active] || <MissionPortal missionState={missionState} selectedRole={missionState.exercise?.selectedRole || role} onSelectRole={confirmRoleSelection} onSelectScenario={selectPortalScenario} onOpenBrief={openScenarioBrief} onStart={confirmStartEx} onResume={()=>setActive('current')} onReviewAar={()=>setActive('aar')}/>
 
  const portalMode=active==='portal' || active==='portal-resources' || active==='portal-help'
 
