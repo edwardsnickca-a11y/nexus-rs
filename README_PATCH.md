@@ -1,18 +1,38 @@
-# NEXUS RS Step 8 AAR Patch
+# NEXUS RS Patch 9 — Exercise Controller and Scenario Flow
 
 ## Module summary
-Adds a role-based After-Action Review workspace for NEXUS RS. The AAR is generated deterministically from current mission state and Sync Matrix data. It evaluates the played role only, preserves the approved authority model, uses local incident time, avoids numeric scores, and does not invent events or outcomes that are not present in state.
+Adds an application-wide exercise lifecycle so NEXUS RS behaves as one connected exercise from Mission Portal through Scenario Brief, Role Selection, STARTEX, OP1, transition planning, OP2, ENDEX, and Final AAR.
+
+This patch adds:
+- Explicit exercise state in mission state.
+- Mission Portal with lifecycle status and primary actions.
+- Scenario Brief before role selection.
+- Required role selection before STARTEX.
+- STARTEX initialization and history recording.
+- Controlled turn advancement using local incident time only.
+- Deterministic decision-window evaluation and expiration consequences.
+- Transition planning recognition and OP2 start.
+- Explicit ENDEX confirmation with unresolved item summary.
+- Final AAR status after ENDEX using the frozen end-state snapshot where practical.
+- Persistent exercise status bar.
+- DEV-safe Reset Exercise control.
 
 ## Files changed
 - `src/App.jsx`
+- `src/components/Header.jsx`
 - `src/components/Sidebar.jsx`
+- `src/components/AfterActionReview.jsx` indirectly uses updated AAR engine status behavior
+- `src/data/missionState.js`
+- `src/engine/aarEngine.js`
 - `src/styles.css`
 
 ## Files added
-- `src/components/AfterActionReview.jsx`
-- `src/data/aarCriteria.js`
-- `src/engine/aarEngine.js`
-- `README_PATCH.md`
+- `src/components/MissionPortal.jsx`
+- `src/components/ScenarioBrief.jsx`
+- `src/components/RoleSelection.jsx`
+- `src/components/ExerciseStatusBar.jsx`
+- `src/components/EndExModal.jsx`
+- `src/engine/exerciseController.js`
 
 ## Installation path
 Install into:
@@ -20,55 +40,48 @@ Install into:
 `C:\Dev\nexus-rs`
 
 ## Replacement instructions
-1. Extract `nexus_rs_aar_step8_patch.zip`.
-2. Copy the included files into `C:\Dev\nexus-rs`, preserving folder structure.
-3. Allow the listed files to replace existing files.
-4. Run:
-   ```bash
-   npm install
-   npm run build
-   ```
+1. Unzip `nexus_rs_exercise_controller_step9_patch.zip`.
+2. Copy the contained files into `C:\Dev\nexus-rs`.
+3. Allow Windows to replace files with matching paths.
+4. From the project root, run:
 
-## Build verification result
-Verified in the provided project archive after refreshing npm optional dependencies:
-
-```bash
+```powershell
 npm install
 npm run build
 ```
 
-Result:
+## Build verification result
+Verified successfully in the patch workspace:
 
 ```text
+npm run build
 vite v6.4.3 building for production...
-✓ 53 modules transformed.
-✓ built in 871ms
+✓ built in 897ms
 ```
-
-Initial direct build from the uploaded ZIP failed because Rollup's Linux optional native dependency was missing from `node_modules`. Running `npm install` restored the dependency and the build completed successfully.
 
 ## Known limitations
-- PDF export is not included in this patch.
-- The AAR is provisional unless mission state includes an official exercise-ended flag.
-- The senior advisor narrative is deterministic and evidence based; it is structured so an external narrative layer can be added later without replacing the evidence model.
-- If a mission-state field is not present, the AAR reports it as not recorded, not observed, still open, or unverified rather than inventing data.
+- The exercise clock is controlled by the `Advance Exercise` action; it is not a continuous real-time clock.
+- Decision-window release and expiration are deterministic and intentionally limited to currently modeled state.
+- Existing operational modules receive read-only state context after ENDEX, but this patch avoids broad refactoring of every workflow button to keep the patch small and stable.
+- PDF export is not included.
+- No external API key or AI narrative service is required.
 
 ## Manual test checklist
-- Confirm `AAR` appears in the left navigation.
-- Open the AAR workspace and confirm it renders without console errors.
-- Confirm the AAR label reads `PROVISIONAL AAR` before ENDEX.
-- Make a mission-state change such as verifying a delivery receipt or updating a requirement.
-- Select `Refresh AAR` and confirm the derived review reflects the current state.
-- Confirm only the played role is formally evaluated.
-- Confirm decision records display chronologically using local incident time only.
-- Confirm requirement closure depends on product/dissemination/customer receipt evidence.
-- Confirm no numeric score, stars, gauges, or gamification are displayed.
-- Confirm authority findings preserve State J3, RS Coordinator, RS Manager, Collection Manager, and UPAD LNO relationships.
-- Run `npm run build` successfully.
-
-## Expected git commands
-```bash
-git add .
-git commit -m "feat: add role-based after-action review"
-git push origin dev
-```
+- [ ] Mission Portal loads without errors.
+- [ ] Scenario Brief opens from the portal.
+- [ ] Role Selection opens and requires selecting one of four roles.
+- [ ] STARTEX is unavailable until a role is confirmed.
+- [ ] STARTEX starts OP1, sets turn 1, and records lifecycle history.
+- [ ] Status bar shows scenario, role, status, OP, turn, and local incident time.
+- [ ] Advance Exercise increments turn and local incident time.
+- [ ] Decision windows appear in exercise state and expire deterministically.
+- [ ] Mission Updates receives lifecycle and consequence updates.
+- [ ] Review Transition moves lifecycle to transition planning.
+- [ ] OP Transition approval starts OP2 and preserves carry-forward context.
+- [ ] ENDEX confirmation shows unresolved requirements, products, dissemination, State J3 requests, and oversight cases.
+- [ ] ENDEX allows unresolved items and opens Final AAR.
+- [ ] AAR displays PROVISIONAL AAR before ENDEX and FINAL AAR after ENDEX.
+- [ ] Decision Log and mission history remain accessible after ENDEX.
+- [ ] Reset Exercise returns to Mission Portal.
+- [ ] Existing modules continue to render.
+- [ ] `npm run build` completes successfully.

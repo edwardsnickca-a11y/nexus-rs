@@ -330,7 +330,8 @@ function buildAdvisorAssessment(state, role, rolePerformance, improvements) {
 }
 
 export function buildAfterActionReview({ missionState, syncMatrix, role }) {
-  const state = missionState || {}
+  const baseState = missionState || {}
+  const state = baseState.exercise?.status === 'ended' && baseState.exercise?.endStateSnapshot ? baseState.exercise.endStateSnapshot : baseState
   const decisionTimeline = buildDecisionTimeline(state)
   const rolePerformance = buildRolePerformance(state, role)
   const requirementOutcomes = buildRequirementOutcomes(state)
@@ -342,7 +343,7 @@ export function buildAfterActionReview({ missionState, syncMatrix, role }) {
 
   return {
     generatedAt: state.asOf || 'CURRENT LOCAL',
-    status: state.exerciseEnded || state.simulation?.ended ? 'FINAL AAR' : 'PROVISIONAL AAR',
+    status: baseState.exercise?.status === 'ended' || state.exerciseEnded || state.simulation?.ended ? 'FINAL AAR' : 'PROVISIONAL AAR',
     executiveSummary: buildExecutiveSummary(state, role, requirementOutcomes),
     decisionTimeline,
     rolePerformance,
