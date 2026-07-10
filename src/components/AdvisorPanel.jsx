@@ -38,14 +38,14 @@ export default function AdvisorPanel({ role, missionState, operationalSummary, o
         </div>}
       </div>
 
-      {history.length>1 && <details className="advisor-history">
-        <summary>Recent advisor history ({Math.min(history.length,12)})</summary>
-        <div>{history.slice(-6).map((item)=><article key={item.id}>
+      <details className="advisor-history advisor-history-visible">
+        <summary>View Advisor History{history.length ? ` (${Math.min(history.length,12)})` : ''}</summary>
+        <div>{history.length ? history.slice(-6).map((item)=><article key={item.id}>
           <small>{item.time} · {item.advisorMode==='connected'?'Connected':'Local fallback'}</small>
           <strong>Trainee</strong><p>{item.traineeText}</p>
           <strong>Lt Col Edwards</strong><p>{item.advisorMessage}</p>
-        </article>)}</div>
-      </details>}
+        </article>) : <p className="advisor-history-empty">No prior advisor exchanges recorded for this exercise.</p>}</div>
+      </details>
 
       {pending && <div className="advisor-decision-card">
         <div className="panel-head"><h4>Interpreted Decision</h4><span className={`chip ${pending.result.authorityAssessment.status==='within_authority'?'teal':'amber'}`}>{label(pending.result.authorityAssessment.status).toUpperCase()}</span></div>

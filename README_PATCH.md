@@ -1,126 +1,62 @@
-# NEXUS RS Role-Specific Current Operations Pixel-Match Patch
+# NEXUS RS Coordinator Workspace Refinement
 
-## Pixel-match summary
-Implements four visually distinct Current Operations views mapped to the supplied RS Coordinator, RS Manager, Collection Manager, and UPAD LNO mockups. All four views share one live-exercise shell, one mission state, one map component, and the existing Lt Col Edwards advisor flow.
+## Summary
+Targeted Current Operations refinement for the Remote Sensing Coordinator workspace.
 
-## Mockup mapping
-- Remote Sensing Coordinator → `RS Coord mockup.png`
-- Remote Sensing Manager → `RS Man mockup.png`
-- Collection Manager → `CM Mockup.png`
-- UPAD LNO → `UPAD LNO mockup.png`
-- Advisor identity → approved `Military portrait in U.S. Air Force uniform.png`
-
-## Authority matrix usage
-The implementation follows `NEXUS_RS_Role_Workspace_Authority_Matrix.xlsx`:
-- Coordinator controls approved regional allocation and release actions.
-- RS Manager controls mission execution status.
-- Collection Manager controls requirement drafting, validation, and send-forward actions.
-- UPAD LNO controls production-status updates through the existing dissemination callback.
-- Shared awareness remains visible across roles even when controls are read-only.
+## Changes
+- Corrected Lt Col Edwards avatar sizing, alignment, and crop.
+- Removed the avatar status-dot overlay from the portrait.
+- Preserved the compact ONLINE / LOCAL FALLBACK status treatment.
+- Added an always-available View Advisor History control.
+- Added draggable EOC-style dividers between the navigation, main workspace, and advisor column.
+- Added a draggable divider between the regional map and platform/UPAD stack.
+- Divider positions persist in browser local storage.
+- Replaced the decorative regional background with a real mission-map image derived from the approved Coordinator mockup.
+- Replaced the Coordinator Customer Requirements & EEIs block with a compact Sync Matrix.
+- Added Sync Matrix to the Current Operations left navigation.
+- Rebalanced the lower Coordinator row to use the released space.
 
 ## Files changed
-- `src/App.jsx`
-- `src/styles.css`
-- `public/images/advisor/lt-col-edwards.png`
-
-## Files added
 - `src/components/current-operations/CurrentOperationsRouter.jsx`
+- `src/components/AdvisorIdentity.jsx`
+- `src/components/AdvisorPanel.jsx`
+- `src/styles.css`
+- `public/images/maps/regional-mission-picture.jpg`
 
-## Shared components
-The router includes reusable live-exercise components for:
-- Header
-- Sidebar and role card
-- Current Operational Period
-- Tomorrow's Plan
-- Deadlines
-- Regional Mission Picture
-- Platform Availability
-- Requirements Summary
-- UPAD Production
-- Airspace
-- Intelligence Oversight
-- Decision Windows
-- Shared Lt Col Edwards advisor column
+## Installation
+Extract this ZIP into:
 
-## Role-specific components
-- Coordinator Current Operations
-- RS Manager Current Operations
-- Collection Manager Current Operations
-- UPAD LNO Current Operations
+`C:\Dev\nexus-rs`
 
-## State binding notes
-The views read from existing connected records:
-- `exercise`
-- `currentOps`
-- `tomorrowPlan`
-- `assetControl`
-- `requirements`
-- `dissemination`
-- `oversight`
-- `simulation.advisorHistory`
+Allow the included folders to merge and replace matching files.
 
-Role actions use existing application callbacks or a shared mission-execution update callback added in `App.jsx`. No second state store was introduced.
-
-## Known placeholders
-- The regional map is a shared CSS operational map treatment because no live GIS basemap service is present in the supplied repository.
-- Airspace rows, countdown values, and some workload indicators use the approved mockup structure where the current mission state does not yet expose a dedicated record.
-- These placeholders are presentation-only and do not replace authoritative mission records.
+## Preserved
+- Shared mission state
+- Role authority
+- Anthropic advisor integration
+- Deterministic fallback
+- Advisor input and confirmation flow
+- Exercise lifecycle and ENDEX behavior
+- Other role-specific Current Operations layouts
 
 ## Build verification
 `npm run build` completed successfully with Vite 6.4.3.
 
-## Role-by-role test results
-- Coordinator: renders allocation-focused layout; approved asset release callback remains connected.
-- RS Manager: renders execution-focused layout; compact mission-status control updates shared `currentOps.missions`.
-- Collection Manager: renders requirement-development workspace; draft update, validation, and send-forward callbacks remain connected.
-- UPAD LNO: renders production-focused layout; delivery status update callback remains connected.
-- All roles: shared advisor history, free-text input, Anthropic/local fallback, participant identity, and ENDEX modal remain connected.
-
-## Screenshot comparison notes
-One visual refinement pass was applied against all four mockups. The implementation matches the supplied desktop composition in:
-- compact header and sidebar proportions
-- persistent right advisor column
-- role-specific panel order
-- dense panel and table spacing
-- teal, amber, red, purple, and green status hierarchy
-- large shared regional mission picture
-- compact role-specific forms and operational tables
-
-The implementation intentionally omits difficulty, performance scoring, suggested-action buttons, Zulu time, and silhouette avatars.
-
-## Installation
-Extract the ZIP into:
-
-`C:\Dev\nexus-rs`
-
-Allow the included files to overwrite or merge into the matching paths.
-
-Then run:
-
-```powershell
-npm install
-npm run build
-```
+## Known limitations
+- The regional mission picture is a local static operational map asset rather than a network tile service, avoiding a new runtime dependency and external map availability risk.
+- Resizable divider positions are stored per browser through local storage.
 
 ## Manual test checklist
-1. Start an exercise as Remote Sensing Coordinator and open Current Operations.
-2. Confirm the Coordinator layout and asset-release control.
-3. Repeat with Remote Sensing Manager and update a mission status.
-4. Repeat with Collection Manager and edit/validate a requirement.
-5. Repeat with UPAD LNO and update production status.
-6. Confirm the same advisor avatar appears in every role.
-7. Confirm advisor text submission and confirmation flow still work.
-8. Confirm participant name displays above the role when entered.
-9. Confirm local incident time only.
-10. Confirm ENDEX opens the existing unresolved-item confirmation modal.
-11. Confirm Mission Portal and other workspaces still open.
-12. Run `npm run build`.
-
-## Rollback
-Restore the previous versions of:
-- `src/App.jsx`
-- `src/styles.css`
-- `public/images/advisor/lt-col-edwards.png`
-
-Then remove:
-- `src/components/current-operations/`
+- Open Current Operations as Remote Sensing Coordinator.
+- Confirm Sync Matrix appears in the left navigation.
+- Confirm the lower-left panel is the compact Sync Matrix rather than Customer Requirements & EEIs.
+- Open the full Sync Matrix using the panel button.
+- Drag the navigation/main divider.
+- Drag the main/advisor divider.
+- Drag the map/platform-stack divider.
+- Refresh and confirm divider positions persist.
+- Confirm the regional mission picture displays geographic map detail.
+- Confirm Lt Col Edwards' avatar is centered without a dot over the face.
+- Confirm ONLINE or LOCAL FALLBACK remains visible beside the advisor identity.
+- Open View Advisor History.
+- Submit an advisor message and confirm existing behavior remains functional.

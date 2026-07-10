@@ -1,9 +1,9 @@
-import React, { useMemo, useState } from 'react'
+import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { ROLES } from '../../data/roles.js'
 import AdvisorPanel from '../AdvisorPanel.jsx'
 
 const NAV = [
-  ['mission','MISSION'],['current','CURRENT OPS'],['tomorrow',"TOMORROW'S PLAN"],['requirements','REQUIREMENTS'],
+  ['mission','MISSION'],['current','CURRENT OPS'],['tomorrow',"TOMORROW'S PLAN"],['sync','SYNC MATRIX'],['requirements','REQUIREMENTS'],
   ['platforms','PLATFORMS'],['upad','UPAD STATUS'],['airspace','AIRSPACE'],['oversight','INTEL OVERSIGHT'],
   ['updates','DEADLINES'],['log','DECISION LOG'],
 ]
@@ -82,6 +82,7 @@ function RegionalMissionPicture({role,missionState}){
  const missions=missionState.currentOps?.missions||[]
  return <Panel title="REGIONAL MISSION PICTURE – THREE FIRES" className="rx-map-panel">
   <div className={`rx-map role-${role}`}>
+   <img className="rx-map-image" src="/images/maps/regional-mission-picture.jpg" alt="Regional mission map showing three wildfire incidents and assigned remote-sensing assets"/>
    <div className="rx-map-grid"/>
    <div className="rx-legend"><strong>LEGEND</strong><span>🔴 Fire 1 – Pine Ridge</span><span>🟠 Fire 2 – Canyon Creek</span><span>🟡 Fire 3 – Eagle Peak</span><span>✈ Airborne Platform</span><span>▣ UPAD Location</span><span>▱ TFR / Airspace</span></div>
    <div className="rx-fire f1">🔥<b>F1</b><small>PINE RIDGE</small></div><div className="rx-fire f2">🔥<b>F2</b><small>CANYON CREEK</small></div><div className="rx-fire f3">🔥<b>F3</b><small>EAGLE PEAK</small></div>
@@ -108,6 +109,31 @@ function RequirementsSummary({missionState,onNavigate}){
   <div className="rx-req-list">{reqs.slice(0,4).map(r=><article key={r.id}><strong>{r.fire||r.customer}</strong><em className={r.priority===1?'high':'med'}>{r.priority===1?'HIGH':'MED'}</em><p>{r.id.toUpperCase()} &nbsp; {r.title}</p><small>EEI: {(r.eeis||[]).slice(0,2).join(', ')||'Clarification required'}</small></article>)}</div>
   <Button onClick={()=>onNavigate?.('requirements')}>VIEW ALL REQUIREMENTS</Button>
  </Panel>
+}
+
+
+function MiniSyncMatrix({missionState,onNavigate}){
+ const missions=missionState.currentOps?.missions||[]
+ return <Panel title="SYNC MATRIX — CURRENT & NEAR-TERM" className="rx-mini-sync">
+  <table className="rx-table"><thead><tr><th>MISSION</th><th>ASSET</th><th>REQUIREMENT</th><th>WINDOW</th><th>STATUS</th><th>PROT</th><th>PRODUCT</th></tr></thead><tbody>
+   {missions.slice(0,5).map((m,i)=><tr key={m.id}><td><strong>{m.id}</strong></td><td>{m.platform||m.assetId||'—'}</td><td>{m.requirementId||m.requirement||'—'}</td><td>{m.window||m.startTime||'—'}</td><td><em className={tone(m.status||'planned')}>{String(m.status||'planned').replaceAll('_',' ')}</em></td><td>{m.protected?'◆':'—'}</td><td>{m.productStatus||['Pending','Planned','At Risk','Queued','—'][i]}</td></tr>)}
+  </tbody></table>
+  <Button onClick={()=>onNavigate?.('sync')}>OPEN FULL SYNC MATRIX</Button>
+ </Panel>
+}
+
+function useStoredSize(key,initial,min,max){
+ const [value,setValue]=useState(()=>{const saved=Number(localStorage.getItem(key));return Number.isFinite(saved)&&saved>=min&&saved<=max?saved:initial})
+ useEffect(()=>localStorage.setItem(key,String(value)),[key,value])
+ return [value,setValue]
+}
+
+function DragHandle({onDrag,className=''}) {
+ const start=useRef(null)
+ const move=(event)=>{if(start.current) onDrag(event,start.current)}
+ const stop=()=>{start.current=null;window.removeEventListener('pointermove',move);window.removeEventListener('pointerup',stop)}
+ const down=(event)=>{event.preventDefault();start.current={x:event.clientX,y:event.clientY};window.addEventListener('pointermove',move);window.addEventListener('pointerup',stop)}
+ return <div className={`rx-drag-handle ${className}`} onPointerDown={down} role="separator" tabIndex="0" aria-label="Resize panels"/>
 }
 
 function UPADTable({missionState}){
@@ -173,10 +199,16 @@ function UPADOverview({missionState,onUpdateDelivery}){
 
 function CoordinatorView(props){
  const {missionState,role,onNavigate,onReleaseAsset}=props
+ const [mapPct,setMapPct]=useStoredSize('nexus-rs-coordinator-map-width',62,45,75)
+ const resizeMap=(event,start)=>setMapPct(v=>Math.max(45,Math.min(75,v+(event.clientX-start.x)/10)))
  return <div className="rx-role-layout coordinator">
   <div className="rx-top-grid"><CurrentPeriodCard role={role} missionState={missionState}/><TomorrowCard role={role} missionState={missionState} onNavigate={onNavigate}/><DeadlinesCard role={role}/></div>
-  <div className="rx-coordinator-middle"><RegionalMissionPicture role={role} missionState={missionState}/><div className="rx-stack"><PlatformTable missionState={missionState} role={role} onRelease={onReleaseAsset}/><UPADTable missionState={missionState}/></div></div>
-  <div className="rx-four-grid"><RequirementsSummary missionState={missionState} onNavigate={onNavigate}/><AirspacePanel/><OversightPanel missionState={missionState}/><DecisionWindows/></div>
+  <div className="rx-coordinator-middle rx-resizable-middle" style={{'--rx-map-pct':`${mapPct}%`}}>
+   <RegionalMissionPicture role={role} missionState={missionState}/>
+   <DragHandle className="vertical" onDrag={resizeMap}/>
+   <div className="rx-stack"><PlatformTable missionState={missionState} role={role} onRelease={onReleaseAsset}/><UPADTable missionState={missionState}/></div>
+  </div>
+  <div className="rx-four-grid rx-coordinator-lower"><MiniSyncMatrix missionState={missionState} onNavigate={onNavigate}/><AirspacePanel/><OversightPanel missionState={missionState}/><DecisionWindows/></div>
  </div>
 }
 function ManagerView(props){
@@ -213,10 +245,16 @@ export default function CurrentOperationsRouter({
 }){
  const common={role,missionState,onNavigate,onToggleProtection,onReleaseAsset,onUpdateMission,onUpdateRequirement,onValidateRequirement,onSendRequirementForward,onUpdateDelivery}
  const View=role==='remote_sensing_manager'?ManagerView:role==='collection_manager'?CollectionView:role==='upad_lno'?UPADView:CoordinatorView
- return <div className="rx-shell">
+ const [sidebarWidth,setSidebarWidth]=useStoredSize('nexus-rs-sidebar-width',152,126,250)
+ const [advisorWidth,setAdvisorWidth]=useStoredSize('nexus-rs-advisor-width',380,300,560)
+ const resizeSidebar=(event,start)=>setSidebarWidth(v=>Math.max(126,Math.min(250,v+(event.clientX-start.x))))
+ const resizeAdvisor=(event,start)=>setAdvisorWidth(v=>Math.max(300,Math.min(560,v-(event.clientX-start.x))))
+ return <div className="rx-shell rx-shell-resizable" style={{'--rx-sidebar-width':`${sidebarWidth}px`,'--rx-advisor-width':`${advisorWidth}px`}}>
   <LiveHeader role={role} missionState={missionState} onEnd={onEndExercise}/>
   <Sidebar role={role} active={role==='collection_manager'?'requirements':role==='upad_lno'?'upad':'mission'} onNavigate={onNavigate}/>
+  <DragHandle className="shell-left" onDrag={resizeSidebar}/>
   <main className="rx-main"><View {...common}/></main>
+  <DragHandle className="shell-right" onDrag={resizeAdvisor}/>
   <AdvisorColumn {...advisorProps}/>
  </div>
 }

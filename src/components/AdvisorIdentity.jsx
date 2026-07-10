@@ -14,7 +14,6 @@ export default function AdvisorIdentity({
     <div className="advisor-identity-header">
       <div className="advisor-avatar-wrap">
         <img src={LT_COL_EDWARDS_AVATAR} alt="Lt Col Edwards" className="advisor-avatar" />
-        <span className={`advisor-online-dot ${online ? 'online' : 'fallback'}`} aria-label={online ? 'Online' : 'Local fallback'} />
       </div>
       <div className="advisor-identity-copy">
         <strong>LT COL EDWARDS</strong>
