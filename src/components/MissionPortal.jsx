@@ -48,7 +48,8 @@ function ScenarioCard({ scenario, selected, onSelect }) {
     className={`eoc-rs-scenario-card ${selected ? 'selected' : ''}`}
     onClick={() => onSelect(scenario.id)}
   >
-    <div className={`eoc-rs-scenario-image portal-image-${scenario.imageClass}`}>
+    <div className="eoc-rs-scenario-image">
+      <img src={scenario.image} alt={`${scenario.title} scenario`} />
       <span className="scenario-type-chip">{incidentCategory(scenario)}</span>
       {selected && <span className="selected-scenario-badge">Selected</span>}
     </div>
@@ -227,7 +228,8 @@ export default function MissionPortal({
           <span className="portal-status-pill">{status.label}</span>
         </div>
 
-        {selectedScenario ? <div className={`readiness-scenario-visual portal-image-${selectedScenario.imageClass}`}>
+        {selectedScenario ? <div className="readiness-scenario-visual">
+          <img src={selectedScenario.image} alt={`${selectedScenario.title} scenario`} />
           <div>
             <span>Selected scenario</span>
             <strong>{selectedScenario.title}</strong>

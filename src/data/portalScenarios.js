@@ -1,6 +1,7 @@
 export const PORTAL_SCENARIOS = [
   {
     id: 'california-wildfire-complex',
+    image: '/images/scenarios/rs-california-wildfire-complex.png',
     title: 'California Wildfire Complex',
     type: 'Wildfire coordination',
     location: 'Northern California',
@@ -16,6 +17,7 @@ export const PORTAL_SCENARIOS = [
   },
   {
     id: 'hurricane-coastal-impact',
+    image: '/images/scenarios/rs-hurricane-coastal-impact.png',
     title: 'Hurricane Coastal Impact',
     type: 'Coastal storm response',
     location: 'Gulf Coast',
@@ -31,6 +33,7 @@ export const PORTAL_SCENARIOS = [
   },
   {
     id: 'major-river-flooding',
+    image: '/images/scenarios/rs-major-river-flooding.png',
     title: 'Major River Flooding',
     type: 'Flood response',
     location: 'Central River Basin',
@@ -46,6 +49,7 @@ export const PORTAL_SCENARIOS = [
   },
   {
     id: 'earthquake-urban-response',
+    image: '/images/scenarios/rs-earthquake-urban-response.png',
     title: 'Earthquake Urban Response',
     type: 'Urban damage assessment',
     location: 'Southern California',
@@ -61,6 +65,7 @@ export const PORTAL_SCENARIOS = [
   },
   {
     id: 'special-event-support',
+    image: '/images/scenarios/rs-special-event-support.png',
     title: 'Special Event Support',
     type: 'Planned event support',
     location: 'Metropolitan Area',
@@ -76,6 +81,7 @@ export const PORTAL_SCENARIOS = [
   },
   {
     id: 'custom-scenario',
+    image: '/images/scenarios/rs-custom-scenario.png',
     title: 'Custom Scenario',
     type: 'Configurable exercise',
     location: 'User defined',

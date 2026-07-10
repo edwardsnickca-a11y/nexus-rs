@@ -593,3 +593,8 @@
   .scenario-tools-filter-only{grid-template-columns:1fr;justify-content:stretch}
   .scenario-tools-filter-only label{width:100%}
 }
+
+
+.eoc-rs-scenario-image>img,.readiness-scenario-visual>img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.eoc-rs-scenario-image>img{z-index:0}
+.readiness-scenario-visual>img{z-index:0}

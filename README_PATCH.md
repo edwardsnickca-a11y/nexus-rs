@@ -1,40 +1,47 @@
-# NEXUS RS Start Exercise Targeted Simplification
+# NEXUS RS Scenario Graphics Patch
 
 ## Summary
-This patch applies a focused Mission Portal cleanup based on the latest review.
+Crops the supplied six-panel scenario contact sheet into six consistent web image assets and maps them to the existing NEXUS RS scenario catalog. The same scenario image property now drives scenario-card thumbnails and the Mission Readiness preview.
+
+## Source contact sheet used
+`Urban landscapes in disaster aftermath.png`
+
+## Crop mapping
+- Top left → California Wildfire Complex
+- Top right → Hurricane Coastal Impact
+- Middle left → Major River Flooding
+- Middle right → Earthquake Urban Response
+- Bottom left → Special Event Support
+- Bottom right → Custom Scenario
+
+## Image output paths
+All assets are stored in `public/images/scenarios/`:
+- `rs-california-wildfire-complex.png`
+- `rs-hurricane-coastal-impact.png`
+- `rs-major-river-flooding.png`
+- `rs-earthquake-urban-response.png`
+- `rs-special-event-support.png`
+- `rs-custom-scenario.png`
+
+Each image is 1200 × 675 pixels with a consistent 16:9 landscape ratio.
 
 ## Files changed
-- `src/components/Header.jsx`
+- `src/data/portalScenarios.js`
 - `src/components/MissionPortal.jsx`
 - `src/styles.css`
-
-## Changes
-- Renamed the pre-exercise page label from **Mission Portal** to **Start Exercise**.
-- Removed the large introductory **Start Exercise** panel beneath the product header.
-- Removed scenario search.
-- Removed the **Scenario Selection** eyebrow label.
-- Retained a single **Select Scenario** heading.
-- Preserved incident-type filtering, scenario cards, readiness behavior, role selection, STARTEX logic, and all downstream RS workflows.
+- six new files under `public/images/scenarios/`
 
 ## Installation
-Copy the patch contents into:
+Extract this patch into `C:\Dev\nexus-rs` and allow the included paths to merge with the existing project.
 
-`C:\Dev\nexus-rs`
-
-Allow the files to replace their existing counterparts.
-
-## Build verification
-Run:
-
-```powershell
-npm run build
-```
+## Build verification result
+`npm run build` completed successfully with Vite 6.4.3.
 
 ## Manual test checklist
-- Confirm the top product bar says **Start Exercise**.
-- Confirm the large introductory panel is gone.
-- Confirm no scenario search field appears.
-- Confirm the scenario section heading reads **Select Scenario**.
-- Confirm incident-type filtering still works.
-- Confirm scenario selection still updates Mission Readiness.
-- Confirm role selection and STARTEX still work.
+- Open Start Exercise.
+- Verify all six cards show the correct scenario image.
+- Select each scenario and verify Mission Readiness shows the matching image.
+- Confirm selected-state badges remain visible.
+- Confirm images are not stretched or squashed.
+- Confirm scenario selection and incident-type filtering still work.
+- Confirm Start Exercise behavior is unchanged.
