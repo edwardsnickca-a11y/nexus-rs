@@ -182,7 +182,7 @@ export default function App(){
   brief:<ScenarioBrief missionState={missionState} onContinue={openRoleSelection}/>,
   roles:<RoleSelection selectedRole={role} onSelectRole={confirmRoleSelection} onStart={()=>setActive('portal')}/>,
   mission:<Overview role={currentRole}/>,
-  current:<CurrentOps role={currentRole} missionState={missionState} readOnly={readOnly} onToggleProtection={toggleProtection} onNotifyCoordinator={notifyCoordinator} onOpenTomorrow={()=>setActive('tomorrow')}/>,
+  current:<CurrentOps role={currentRole} missionState={missionState} readOnly={readOnly} onToggleProtection={toggleProtection} onNotifyCoordinator={notifyCoordinator} onOpenTomorrow={()=>setActive('tomorrow')} onNavigate={setActive}/>,
   tomorrow:<TomorrowPlan role={currentRole} missionState={missionState} readOnly={readOnly} onMarkTaskable={markTaskable} onAssignUpad={assignUpad} onApprovePlan={approvePlan} onOpenCurrent={()=>setActive('current')}/>,
   sync:<SyncMatrix role={currentRole} matrix={syncMatrix} readOnly={readOnly} onUpdateSortie={updateSortie} onResolveNeed={resolveNeed} onResolveGap={resolveGap} onApprove={approveMatrix} onAddLeadershipNote={addLeadershipNote}/>,
   requirements:<Requirements role={currentRole} missionState={missionState} readOnly={readOnly} onUpdateRequirement={updateRequirement} onValidateRequirement={validateRequirement} onSendForward={sendRequirementForward} onAddRequirement={addRequirement}/>,
@@ -198,6 +198,21 @@ export default function App(){
  }[active] || <MissionPortal missionState={missionState} selectedRole={missionState.exercise?.selectedRole || role} onSelectRole={confirmRoleSelection} onSelectScenario={selectPortalScenario} onOpenBrief={openScenarioBrief} onStart={confirmStartEx} onResume={()=>setActive('current')} onReviewAar={()=>setActive('aar')}/>
 
  const portalMode=active==='portal' || active==='portal-resources' || active==='portal-help'
+
+ if(active==='current'){
+  return <>
+   <CurrentOps
+    role={currentRole}
+    missionState={missionState}
+    readOnly={readOnly}
+    onToggleProtection={toggleProtection}
+    onNotifyCoordinator={notifyCoordinator}
+    onOpenTomorrow={()=>setActive('tomorrow')}
+    onNavigate={setActive}
+   />
+   {showEndEx && <EndExModal missionState={missionState} onCancel={()=>setShowEndEx(false)} onConfirm={confirmEndEx}/>}
+  </>
+ }
 
  return <div className={`app-shell ${portalMode?'portal-app-shell portal-app-shell-full':''}`}>
    {!portalMode && <Sidebar active={active} setActive={setActive} role={currentRole} missionState={missionState} portalMode={portalMode}/>}
