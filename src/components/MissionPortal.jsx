@@ -3,14 +3,27 @@ import { ROLES } from '../data/roles.js'
 import { PORTAL_SCENARIOS } from '../data/portalScenarios.js'
 import { buildExerciseStatus } from '../engine/exerciseController.js'
 
-const ROLE_COPY = {
-  remote_sensing_coordinator: 'Sets regional priorities, allocates approved assets, and coordinates unmet needs.',
-  remote_sensing_manager: 'Manages mission execution, sortie timing, retasking, and operational risk.',
-  collection_manager: 'Develops, validates, prioritizes, and matches requirements to capabilities.',
-  upad_lno: 'Manages processing, assessment, production, dissemination, and customer verification.',
+const ROLE_FOCUS = {
+  remote_sensing_coordinator: 'Sets regional priorities, allocates approved assets, approves the collection plan, and coordinates unmet needs through State J3 and partner organizations.',
+  remote_sensing_manager: 'Manages approved mission execution, sortie timing, operational retasking, and gain-loss assessment.',
+  collection_manager: 'Develops, validates, prioritizes, and matches collection requirements to available effects and capabilities.',
+  upad_lno: 'Manages processing, assessment, product prioritization, dissemination, customer verification, and remaining information gaps.',
 }
 
 const INCIDENT_FILTERS = ['All', 'Wildfire', 'Hurricane', 'Flood', 'Earthquake', 'Planned Event', 'Custom']
+const OPERATIONAL_CONTEXTS = [
+  'State-Led Multi-Incident Response',
+  'Regional Coordination Mission',
+  'Single-Incident Support',
+  'Planned Event Support',
+]
+const EXERCISE_FOCUSES = [
+  'Full Mission Cycle',
+  'Requirements and Collection Management',
+  'Asset Allocation and Mission Execution',
+  'Processing, Assessment, and Dissemination',
+  'Operational Period Transition',
+]
 
 function incidentCategory(scenario) {
   const type = `${scenario.type} ${scenario.title}`.toLowerCase()
@@ -20,6 +33,13 @@ function incidentCategory(scenario) {
   if (type.includes('earthquake')) return 'Earthquake'
   if (type.includes('event')) return 'Planned Event'
   return 'Custom'
+}
+
+function defaultOperationalContext(scenario) {
+  const category = scenario ? incidentCategory(scenario) : ''
+  if (category === 'Planned Event') return 'Planned Event Support'
+  if (category === 'Custom') return 'Regional Coordination Mission'
+  return 'State-Led Multi-Incident Response'
 }
 
 function ScenarioCard({ scenario, selected, onSelect }) {
@@ -47,19 +67,6 @@ function ScenarioCard({ scenario, selected, onSelect }) {
   </button>
 }
 
-function RoleCard({ role, selected, disabled, onSelect }) {
-  return <button
-    type="button"
-    className={`eoc-rs-role-card ${selected ? 'selected' : ''}`}
-    disabled={disabled}
-    onClick={() => onSelect(role.id)}
-  >
-    <span>{selected ? 'Selected' : disabled ? 'Select scenario first' : 'Select role'}</span>
-    <strong>{role.name}</strong>
-    <p>{ROLE_COPY[role.id]}</p>
-  </button>
-}
-
 export default function MissionPortal({
   missionState,
   selectedRole,
@@ -79,6 +86,9 @@ export default function MissionPortal({
   const [selectedScenarioId, setSelectedScenarioId] = useState(initialScenarioId)
   const [query, setQuery] = useState('')
   const [filter, setFilter] = useState('All')
+  const [participantName, setParticipantName] = useState(missionState.exercise?.participantName || '')
+  const [operationalContext, setOperationalContext] = useState('State-Led Multi-Incident Response')
+  const [exerciseFocus, setExerciseFocus] = useState('Full Mission Cycle')
 
   const selectedScenario = useMemo(
     () => PORTAL_SCENARIOS.find((scenario) => scenario.id === selectedScenarioId) || null,
@@ -108,13 +118,19 @@ export default function MissionPortal({
   const selectedRoleRecord = ROLES.find((role) => role.id === selectedRole)
 
   function selectScenario(scenarioId) {
+    const scenario = PORTAL_SCENARIOS.find((item) => item.id === scenarioId)
     setSelectedScenarioId(scenarioId)
-    onSelectScenario?.(PORTAL_SCENARIOS.find((scenario) => scenario.id === scenarioId))
+    setOperationalContext(defaultOperationalContext(scenario))
+    onSelectScenario?.(scenario)
   }
 
   function startSelectedExercise() {
     if (!readyForStart) return
-    onStart?.(selectedScenario)
+    onStart?.(selectedScenario, {
+      participantName: participantName.trim(),
+      operationalContext,
+      exerciseFocus,
+    })
   }
 
   function openSelectedBrief() {
@@ -128,18 +144,12 @@ export default function MissionPortal({
       ? { label: 'Review AAR', action: onReviewAar }
       : { label: 'Start Exercise', action: startSelectedExercise, disabled: !readyForStart }
 
-  return <div className="eoc-rs-start-page">
-    <header className="eoc-rs-start-heading">
+  return <div className="eoc-rs-start-page eoc-rs-start-page-simplified">
+    <header className="eoc-rs-start-heading simplified">
       <div>
         <span>Mission Portal</span>
         <h1>Start Exercise</h1>
-        <p>Select a remote-sensing scenario, choose the role you will play, review mission readiness, and begin STARTEX.</p>
-      </div>
-      <div className="exercise-sequence" aria-label="Exercise setup sequence">
-        <span className={scenarioReady ? 'complete' : 'current'}>1 Scenario</span>
-        <span className={roleReady ? 'complete' : scenarioReady ? 'current' : ''}>2 Role</span>
-        <span className={readyForStart ? 'complete' : roleReady ? 'current' : ''}>3 Readiness</span>
-        <span className={readyForStart ? 'current' : ''}>4 STARTEX</span>
+        <p>Select a remote-sensing scenario, configure the participant context, and review mission readiness before STARTEX.</p>
       </div>
     </header>
 
@@ -147,7 +157,7 @@ export default function MissionPortal({
       <div className="eoc-rs-start-main">
         <section className="eoc-rs-config-panel">
           <div className="eoc-rs-section-title">
-            <div><span>Step 1</span><h2>Select scenario</h2></div>
+            <div><span>Scenario Selection</span><h2>Select scenario</h2></div>
             <p>Choose the incident environment that will drive requirements, asset demand, PCPAD workload, and coordination pressure.</p>
           </div>
 
@@ -180,26 +190,64 @@ export default function MissionPortal({
           {!filteredScenarios.length && <div className="scenario-empty-state">No scenarios match the current search and filter.</div>}
         </section>
 
-        <section className="eoc-rs-config-panel role-step-panel">
+        <section className="eoc-rs-config-panel setup-input-panel">
           <div className="eoc-rs-section-title">
-            <div><span>Step 2</span><h2>Select role</h2></div>
-            <p>The role controls authority checks, workspace emphasis, advisor context, editable actions, and AAR criteria.</p>
+            <div><span>Exercise Configuration</span><h2>Configure participant and exercise inputs</h2></div>
+            <p>Role selection continues to control workspace authority, advisor context, exercise initialization, and AAR criteria.</p>
           </div>
-          <div className="eoc-rs-role-grid">
-            {ROLES.map((role) => <RoleCard
-              key={role.id}
-              role={role}
-              selected={selectedRole === role.id}
-              disabled={!scenarioReady || active || ended}
-              onSelect={onSelectRole}
-            />)}
+
+          <div className="eoc-rs-setup-form">
+            <label>
+              <span>Enter participant name — optional</span>
+              <input
+                type="text"
+                value={participantName}
+                onChange={(event) => setParticipantName(event.target.value)}
+                placeholder="N. Edwards"
+                disabled={active || ended}
+              />
+            </label>
+
+            <label>
+              <span>Select exercise role</span>
+              <select
+                value={selectedRole || ''}
+                onChange={(event) => onSelectRole?.(event.target.value)}
+                disabled={!scenarioReady || active || ended}
+              >
+                <option value="">{scenarioReady ? 'Select role...' : 'Select scenario first'}</option>
+                {ROLES.map((role) => <option key={role.id} value={role.id}>{role.name}</option>)}
+              </select>
+            </label>
+
+            <label>
+              <span>Select operational context</span>
+              <select
+                value={operationalContext}
+                onChange={(event) => setOperationalContext(event.target.value)}
+                disabled={active || ended}
+              >
+                {OPERATIONAL_CONTEXTS.map((option) => <option key={option} value={option}>{option}</option>)}
+              </select>
+            </label>
+
+            <label>
+              <span>Select exercise focus</span>
+              <select
+                value={exerciseFocus}
+                onChange={(event) => setExerciseFocus(event.target.value)}
+                disabled={active || ended}
+              >
+                {EXERCISE_FOCUSES.map((option) => <option key={option} value={option}>{option}</option>)}
+              </select>
+            </label>
           </div>
         </section>
       </div>
 
       <aside className="eoc-rs-readiness-panel">
         <div className="readiness-panel-header">
-          <div><span>Step 3</span><h2>Mission Readiness</h2></div>
+          <div><span>Confirmation</span><h2>Mission Readiness</h2></div>
           <span className="portal-status-pill">{status.label}</span>
         </div>
 
@@ -214,9 +262,16 @@ export default function MissionPortal({
           <p>Choose a scenario card to populate mission readiness.</p>
         </div>}
 
+        {selectedScenario && <p className="readiness-scenario-description">{selectedScenario.summary}</p>}
+
         <dl className="eoc-rs-readiness-summary">
+          <div><dt>Participant</dt><dd>{participantName.trim() || 'Not provided'}</dd></div>
           <div><dt>Scenario</dt><dd>{selectedScenario?.title || 'Not selected'}</dd></div>
+          <div><dt>Location</dt><dd>{selectedScenario?.location || '—'}</dd></div>
           <div><dt>Role</dt><dd>{selectedRoleRecord?.name || 'Not selected'}</dd></div>
+          {selectedRoleRecord && <div className="readiness-role-focus"><dt>Role Functional Focus</dt><dd>{ROLE_FOCUS[selectedRoleRecord.id]}</dd></div>}
+          <div><dt>Operational Context</dt><dd>{operationalContext}</dd></div>
+          <div><dt>Exercise Focus</dt><dd>{exerciseFocus}</dd></div>
           <div><dt>Operational Periods</dt><dd>{selectedScenario?.periods || '—'}</dd></div>
           <div><dt>Asset Package</dt><dd>{selectedScenario?.assetPackage || '—'}</dd></div>
           <div><dt>Partner Agencies</dt><dd>{selectedScenario?.partners || '—'}</dd></div>

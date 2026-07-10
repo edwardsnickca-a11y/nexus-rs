@@ -1,97 +1,71 @@
-# NEXUS RS — EOC-Style Start Exercise Patch
+# NEXUS RS Start Exercise Fix Pass 2
 
 ## Summary
 
-This patch aligns the NEXUS RS Mission Portal / Start Exercise experience with the proven NEXUS EOC structure while preserving NEXUS RS as the functional source of truth.
-
-The updated page now presents a compact setup flow:
-
-1. Select scenario
-2. Select role
-3. Review mission readiness
-4. Start exercise
-
-## EOC elements adapted
-
-- Compact Start Exercise page hierarchy
-- Searchable scenario catalog
-- Incident-type filter
-- Three-column image-led scenario grid on desktop
-- Selected scenario border and badge treatment
-- Right-side sticky confirmation panel
-- Compact card proportions and information density
-- Professional dark navy panel system
-- Responsive collapse behavior
-
-## RS logic preserved
-
-- Existing RS scenarios and metadata
-- RS role options and authority model
-- Existing exercise controller and STARTEX action
-- Mission-state initialization
-- Operational period lifecycle
-- Anthropic advisor integration
-- Downstream operational workspaces
-- AAR behavior
-- Local incident time conventions
-
-The patch does not introduce EOC roles, doctrine, difficulty logic, or state management.
+This patch simplifies the pre-exercise Mission Portal and aligns it more closely with the NEXUS EOC setup and confirmation pattern.
 
 ## Files changed
 
 - `src/App.jsx`
+- `src/components/Header.jsx`
 - `src/components/MissionPortal.jsx`
 - `src/styles.css`
+- `README_PATCH.md`
 
-## Installation path
+## Installation
+
+Target path:
 
 `C:\Dev\nexus-rs`
 
-## Installation instructions
+Extract the ZIP over the repository root and allow the listed files to replace the existing versions.
 
-1. Extract this ZIP.
-2. Copy the included files into `C:\Dev\nexus-rs`.
-3. Preserve the folder structure.
-4. Replace the existing files when prompted.
-5. Run:
+## EOC interaction patterns adapted
 
-```powershell
-npm install
-npm run build
-```
+- Full-width pre-exercise setup page
+- Scenario selection first
+- Searchable and filterable scenario grid
+- Compact two-column setup form
+- Sticky right-side confirmation panel
+- Immediate confirmation-panel updates
+- One primary Start Exercise action
 
-## Build verification result
+## RS logic preserved
 
-Verified successfully with:
+- Existing scenario IDs and records
+- Existing selected-role state and role authority
+- Existing exercise lifecycle and STARTEX controller
+- Existing mission initialization
+- Existing asset packages and operational periods
+- Existing Anthropic advisor context
+- Existing downstream operational workspaces
+- Existing AAR behavior
 
-```text
-vite v6.4.3
-63 modules transformed
-production build completed successfully
-```
+## Build verification
+
+`npm run build` completed successfully with Vite.
 
 ## Known limitations
 
-- Scenario imagery continues to use the existing RS portal image sources.
-- Custom Scenario remains a selectable baseline card; a dedicated custom-scenario editor is outside this patch.
-- Scenario Brief content remains based on the current RS brief implementation.
-- This patch does not redesign in-exercise workspaces.
+- Participant name, operational context, and exercise focus are currently portal configuration metadata only. They do not alter scenario doctrine or module visibility.
+- The optional real-location control was omitted to avoid introducing incomplete scenario-generation behavior.
+- Scenario brief readiness continues to use the existing application readiness behavior.
 
 ## Manual test checklist
 
-- [ ] Mission Portal loads without errors.
-- [ ] Scenario search filters cards by title, description, location, and incident type.
-- [ ] Incident-type filter works for all configured categories.
-- [ ] Scenario cards display in a three-column desktop grid.
-- [ ] Selected scenario receives a visible border and Selected badge.
-- [ ] Selecting a scenario updates Mission Readiness.
-- [ ] Role cards remain disabled until a scenario is selected.
-- [ ] Selecting a role updates Mission Readiness.
-- [ ] Readiness checklist updates without numeric scoring.
-- [ ] View Scenario Brief uses the selected scenario context.
-- [ ] Start Exercise remains disabled until scenario and role are selected.
-- [ ] Start Exercise invokes the existing RS lifecycle controller.
-- [ ] Resume Exercise and Review AAR behavior remain intact.
-- [ ] Anthropic advisor remains available after entering the exercise.
-- [ ] Existing operational modules continue to load.
-- [ ] Responsive layout collapses cleanly at tablet and mobile widths.
+- Confirm the pre-exercise sidebar is absent.
+- Confirm only the compact product identity appears in the pre-exercise header.
+- Confirm Local Time, Exercise Status, and User / Role are absent from the pre-exercise header.
+- Confirm the four workflow badges are absent.
+- Search scenarios by title, location, and incident type.
+- Filter scenarios by incident type.
+- Confirm role selection remains disabled until a scenario is selected.
+- Enter an optional participant name.
+- Select each RS role and confirm the role functional focus updates.
+- Change operational context and exercise focus.
+- Select multiple scenarios and confirm image, title, description, location, periods, asset package, and partner agencies update.
+- Confirm no difficulty input appears.
+- Confirm Start Exercise remains disabled until scenario and role are selected.
+- Confirm View Scenario Brief uses the existing action.
+- Confirm Start Exercise uses the existing lifecycle controller.
+- Confirm live exercise navigation and workspaces remain unchanged.

@@ -254,3 +254,115 @@
 @media(max-width:1380px){.eoc-rs-start-layout{grid-template-columns:minmax(620px,1fr) 350px}.eoc-rs-role-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:1120px){.eoc-rs-start-layout{grid-template-columns:1fr}.eoc-rs-readiness-panel{position:static}.eoc-rs-scenario-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:760px){.eoc-rs-start-heading{align-items:flex-start;flex-direction:column}.exercise-sequence{justify-content:flex-start}.scenario-tools{grid-template-columns:1fr}.eoc-rs-scenario-grid,.eoc-rs-role-grid{grid-template-columns:1fr}.eoc-rs-config-panel{padding:15px}.eoc-rs-section-title{flex-direction:column}.eoc-rs-section-title p{max-width:none}}
+
+
+/* Start Exercise Fix Pass 2 */
+.portal-app-shell-full{
+  display:block;
+  grid-template-columns:none;
+  min-height:100vh;
+}
+.portal-app-shell-full .main-shell{
+  width:100%;
+}
+.portal-app-shell-full .portal-topbar{
+  min-height:70px;
+  padding:14px 28px;
+}
+.portal-app-shell-full .portal-topbar .topmeta{
+  display:none;
+}
+.portal-app-shell-full .portal-workspace{
+  max-width:1680px;
+  padding:18px 28px 28px;
+}
+.eoc-rs-start-heading.simplified{
+  align-items:center;
+  padding:16px 20px;
+}
+.eoc-rs-start-heading.simplified h1{
+  font-size:31px;
+}
+.eoc-rs-start-page-simplified .eoc-rs-start-layout{
+  grid-template-columns:minmax(760px,1fr) 410px;
+  gap:18px;
+}
+.eoc-rs-start-page-simplified .eoc-rs-start-main{
+  gap:14px;
+}
+.setup-input-panel{
+  padding:18px 20px;
+}
+.eoc-rs-setup-form{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:14px 16px;
+  margin-top:17px;
+}
+.eoc-rs-setup-form label{
+  display:grid;
+  gap:7px;
+}
+.eoc-rs-setup-form label>span{
+  color:#8ea5b7;
+  font-size:10px;
+  font-weight:800;
+  letter-spacing:.1em;
+  text-transform:uppercase;
+}
+.eoc-rs-setup-form input,
+.eoc-rs-setup-form select{
+  width:100%;
+  min-height:42px;
+  border:1px solid #25465d;
+  border-radius:6px;
+  background:#071827;
+  color:#e8f3fa;
+  padding:10px 12px;
+  outline:none;
+}
+.eoc-rs-setup-form input:focus,
+.eoc-rs-setup-form select:focus{
+  border-color:#55d1c8;
+  box-shadow:0 0 0 2px rgba(85,209,200,.12);
+}
+.eoc-rs-setup-form input:disabled,
+.eoc-rs-setup-form select:disabled{
+  opacity:.55;
+  cursor:not-allowed;
+}
+.readiness-scenario-description{
+  margin:12px 0 4px;
+  color:#9cb0bf;
+  font-size:12px;
+  line-height:1.55;
+}
+.eoc-rs-readiness-summary .readiness-role-focus{
+  display:block;
+  padding:11px 0;
+}
+.eoc-rs-readiness-summary .readiness-role-focus dt{
+  margin-bottom:6px;
+}
+.eoc-rs-readiness-summary .readiness-role-focus dd{
+  color:#b9cbd8;
+  font-size:12px;
+  line-height:1.5;
+  text-align:left;
+}
+@media (max-width:1180px){
+  .eoc-rs-start-page-simplified .eoc-rs-start-layout{
+    grid-template-columns:1fr;
+  }
+  .eoc-rs-start-page-simplified .eoc-rs-readiness-panel{
+    position:static;
+  }
+}
+@media (max-width:760px){
+  .portal-app-shell-full .portal-workspace{
+    padding:14px;
+  }
+  .eoc-rs-setup-form{
+    grid-template-columns:1fr;
+  }
+}

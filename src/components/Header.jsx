@@ -9,11 +9,11 @@ export default function Header({ role, missionState, onReset, portalMode = false
       <span className="eyebrow">{portalMode?'NEXUS Remote Sensing':'Scenario'}</span>
       <h2>{portalMode?'Mission Portal':(selected?.name || 'Role not selected')}</h2>
     </div>
-    <div className="topmeta">
+    {!portalMode && <div className="topmeta">
       <div><span>LOCAL TIME</span><strong>{status.localIncidentTime}</strong></div>
       <div><span>EXERCISE STATUS</span><strong className="active-text">{status.label}</strong></div>
       <div><span>USER / ROLE</span><strong>{selected?.shortName || 'Role not selected'}</strong></div>
-      {!portalMode && <button className="ghost" onClick={onReset}>Reset Exercise</button>}
-    </div>
+      <button className="ghost" onClick={onReset}>Reset Exercise</button>
+    </div>}
   </header>
 }

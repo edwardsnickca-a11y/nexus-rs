@@ -199,8 +199,8 @@ export default function App(){
 
  const portalMode=active==='portal' || active==='portal-resources' || active==='portal-help'
 
- return <div className={`app-shell ${portalMode?'portal-app-shell':''}`}>
-   <Sidebar active={active} setActive={setActive} role={currentRole} missionState={missionState} portalMode={portalMode}/>
+ return <div className={`app-shell ${portalMode?'portal-app-shell portal-app-shell-full':''}`}>
+   {!portalMode && <Sidebar active={active} setActive={setActive} role={currentRole} missionState={missionState} portalMode={portalMode}/>}
    <div className="main-shell">
      <Header role={currentRole} missionState={missionState} onReset={resetActiveExercise} portalMode={portalMode}/>
      {!portalMode && <ExerciseStatusBar missionState={missionState} onStart={confirmStartEx} onAdvance={advanceExercise} onTransition={reviewTransition} onEnd={()=>setShowEndEx(true)} onAar={()=>setActive('aar')}/>}
