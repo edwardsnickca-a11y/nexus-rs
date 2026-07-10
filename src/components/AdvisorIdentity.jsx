@@ -9,7 +9,10 @@ export default function AdvisorIdentity({
   message = '',
   className = '',
 }) {
-  const online = mode === 'connected'
+  const connected = mode === 'connected'
+  const presenceTitle = connected
+    ? 'Anthropic advisor connected'
+    : 'Deterministic advisor active; external AI connection is unavailable'
   return <div className={`advisor-identity ${compact ? 'compact' : ''} ${className}`.trim()}>
     <div className="advisor-identity-header">
       <div className="advisor-avatar-wrap">
@@ -19,7 +22,7 @@ export default function AdvisorIdentity({
         <strong>LT COL EDWARDS</strong>
         <span>Senior Remote Sensing Mission Advisor</span>
       </div>
-      <span className={`advisor-presence ${online ? 'online' : 'fallback'}`}>{online ? 'ONLINE' : 'LOCAL FALLBACK'}</span>
+      <span className={`advisor-presence ${connected ? 'online' : 'fallback'}`} title={presenceTitle}>ADVISOR ACTIVE</span>
     </div>
     {(message || timestamp) && <div className="advisor-identity-message">
       {message && <p>{message}</p>}

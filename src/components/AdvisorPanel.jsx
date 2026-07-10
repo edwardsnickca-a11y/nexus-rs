@@ -41,7 +41,7 @@ export default function AdvisorPanel({ role, missionState, operationalSummary, o
       <details className="advisor-history advisor-history-visible">
         <summary>View Advisor History{history.length ? ` (${Math.min(history.length,12)})` : ''}</summary>
         <div>{history.length ? history.slice(-6).map((item)=><article key={item.id}>
-          <small>{item.time} · {item.advisorMode==='connected'?'Connected':'Local fallback'}</small>
+          <small>{item.time} · Advisor response</small>
           <strong>Trainee</strong><p>{item.traineeText}</p>
           <strong>Lt Col Edwards</strong><p>{item.advisorMessage}</p>
         </article>) : <p className="advisor-history-empty">No prior advisor exchanges recorded for this exercise.</p>}</div>

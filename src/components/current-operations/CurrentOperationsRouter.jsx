@@ -39,7 +39,6 @@ function Sidebar({role,active,onNavigate}){
  return <aside className="rx-sidebar">
   <nav>{NAV.map(([id,label])=><button key={id} className={active===id?'active':''} onClick={()=>onNavigate?.(id)}><span>{id==='mission'?'◎':'◌'}</span>{label}</button>)}</nav>
   <button className="rx-collapse">≪ &nbsp; COLLAPSE</button>
-  <div className="rx-role-card"><div className="rx-role-icon">♙</div><span>YOUR ROLE</span><strong>{meta?.name}</strong><p>{roleCopy[role]}</p><button>ROLE GUIDE ↗</button></div>
  </aside>
 }
 
@@ -78,18 +77,132 @@ function DeadlinesCard({role}){
  </Panel>
 }
 
-function RegionalMissionPicture({role,missionState}){
- const missions=missionState.currentOps?.missions||[]
- return <Panel title="REGIONAL MISSION PICTURE – THREE FIRES" className="rx-map-panel">
-  <div className={`rx-map role-${role}`}>
-   <img className="rx-map-image" src="/images/maps/regional-mission-picture.jpg" alt="Regional mission map showing three wildfire incidents and assigned remote-sensing assets"/>
-   <div className="rx-map-grid"/>
-   <div className="rx-legend"><strong>LEGEND</strong><span>🔴 Fire 1 – Pine Ridge</span><span>🟠 Fire 2 – Canyon Creek</span><span>🟡 Fire 3 – Eagle Peak</span><span>✈ Airborne Platform</span><span>▣ UPAD Location</span><span>▱ TFR / Airspace</span></div>
-   <div className="rx-fire f1">🔥<b>F1</b><small>PINE RIDGE</small></div><div className="rx-fire f2">🔥<b>F2</b><small>CANYON CREEK</small></div><div className="rx-fire f3">🔥<b>F3</b><small>EAGLE PEAK</small></div>
-   {missions.slice(0,3).map((m,i)=><div key={m.id} className={`rx-air a${i+1}`}>✈ <b>{m.platform||m.assetId||m.id}</b></div>)}
-   <div className="rx-upad u1">U1</div><div className="rx-upad u2">U2</div><div className="rx-upad u3">U3</div>
-   <div className="rx-map-controls"><button>▱</button><button>＋</button><button>−</button></div>
+function clamp(value,min,max){ return Math.max(min,Math.min(max,value)) }
+function projectLatLng(lat,lng,zoom){
+ const scale=256*(2**zoom)
+ const x=(lng+180)/360*scale
+ const sin=Math.sin(lat*Math.PI/180)
+ const y=(.5-Math.log((1+sin)/(1-sin))/(4*Math.PI))*scale
+ return {x,y}
+}
+function unprojectPoint(x,y,zoom){
+ const scale=256*(2**zoom)
+ const lng=x/scale*360-180
+ const n=Math.PI-2*Math.PI*y/scale
+ const lat=180/Math.PI*Math.atan(.5*(Math.exp(n)-Math.exp(-n)))
+ return {lat,lng}
+}
+
+function OperationalMap({missionState}){
+ const hostRef=useRef(null)
+ const dragRef=useRef(null)
+ const [size,setSize]=useState({width:700,height:310})
+ const [view,setView]=useState({lat:39.55,lng:-121.55,zoom:8})
+
+ useEffect(()=>{
+  if(!hostRef.current) return
+  const update=()=>setSize({width:hostRef.current.clientWidth,height:hostRef.current.clientHeight})
+  update()
+  const observer=new ResizeObserver(update)
+  observer.observe(hostRef.current)
+  return ()=>observer.disconnect()
+ },[])
+
+ const centerWorld=projectLatLng(view.lat,view.lng,view.zoom)
+ const topLeft={x:centerWorld.x-size.width/2,y:centerWorld.y-size.height/2}
+ const tileSize=256
+ const minX=Math.floor(topLeft.x/tileSize)
+ const maxX=Math.floor((topLeft.x+size.width)/tileSize)
+ const minY=Math.floor(topLeft.y/tileSize)
+ const maxY=Math.floor((topLeft.y+size.height)/tileSize)
+ const tiles=[]
+ const tileCount=2**view.zoom
+ for(let x=minX;x<=maxX;x+=1){
+  for(let y=minY;y<=maxY;y+=1){
+   if(y<0||y>=tileCount) continue
+   const wrappedX=((x%tileCount)+tileCount)%tileCount
+   tiles.push({key:`${x}-${y}`,x:(x*tileSize)-topLeft.x,y:(y*tileSize)-topLeft.y,url:`https://tile.openstreetmap.org/${view.zoom}/${wrappedX}/${y}.png`})
+  }
+ }
+
+ const incidents=[
+  {id:'F1',name:'Pine Ridge',lat:40.15,lng:-121.75,tone:'red'},
+  {id:'F2',name:'Canyon Creek',lat:39.55,lng:-121.25,tone:'orange'},
+  {id:'F3',name:'Eagle Peak',lat:38.95,lng:-121.82,tone:'amber'},
+ ]
+ const missionDefaults=[
+  {label:'MQ-9-01',lat:39.95,lng:-122.05},
+  {label:'LUH-72-01',lat:39.35,lng:-121.32},
+  {label:'CAP-01',lat:38.82,lng:-122.18},
+ ]
+ const missions=(missionState.currentOps?.missions||[]).slice(0,3)
+ const markerPosition=(lat,lng)=>{
+  const point=projectLatLng(lat,lng,view.zoom)
+  return {left:point.x-topLeft.x,top:point.y-topLeft.y}
+ }
+
+ const pointerDown=(event)=>{
+  event.currentTarget.setPointerCapture(event.pointerId)
+  dragRef.current={x:event.clientX,y:event.clientY,center:projectLatLng(view.lat,view.lng,view.zoom)}
+ }
+ const pointerMove=(event)=>{
+  if(!dragRef.current) return
+  const dx=event.clientX-dragRef.current.x
+  const dy=event.clientY-dragRef.current.y
+  const next=unprojectPoint(dragRef.current.center.x-dx,dragRef.current.center.y-dy,view.zoom)
+  setView(v=>({...v,lat:clamp(next.lat,-80,80),lng:next.lng}))
+ }
+ const pointerUp=(event)=>{
+  dragRef.current=null
+  try{event.currentTarget.releasePointerCapture(event.pointerId)}catch{}
+ }
+ const zoomBy=(amount)=>{
+  setView(v=>({...v,zoom:clamp(v.zoom+amount,5,13)}))
+ }
+ const reset=()=>setView({lat:39.55,lng:-121.55,zoom:8})
+
+ return <div
+  ref={hostRef}
+  className="rx-operational-map"
+  onPointerDown={pointerDown}
+  onPointerMove={pointerMove}
+  onPointerUp={pointerUp}
+  onPointerCancel={pointerUp}
+  onWheel={event=>{event.preventDefault();zoomBy(event.deltaY<0?1:-1)}}
+ >
+  <div className="rx-map-tiles">{tiles.map(tile=><img key={tile.key} src={tile.url} alt="" draggable="false" style={{left:tile.x,top:tile.y}}/>)}</div>
+  <svg className="rx-map-overlays" viewBox={`0 0 ${size.width} ${size.height}`} preserveAspectRatio="none" aria-hidden="true">
+   {incidents.map((item)=>{
+    const p=markerPosition(item.lat,item.lng)
+    return <circle key={item.id} cx={p.left} cy={p.top} r="43" className={`rx-tfr-ring ${item.tone}`}/>
+   })}
+  </svg>
+  <div className="rx-legend"><strong>LEGEND</strong><span>🔴 Fire 1 – Pine Ridge</span><span>🟠 Fire 2 – Canyon Creek</span><span>🟡 Fire 3 – Eagle Peak</span><span>✈ Airborne Platform</span><span>◯ TFR / Airspace</span></div>
+  {incidents.map(item=>{
+   const p=markerPosition(item.lat,item.lng)
+   return <button key={item.id} type="button" className={`rx-map-fire ${item.tone}`} style={{left:p.left,top:p.top}} title={`${item.id} — ${item.name}`}>
+    <span>🔥</span><b>{item.id}</b><small>{item.name}</small>
+   </button>
+  })}
+  {missionDefaults.map((item,index)=>{
+   const mission=missions[index]
+   const p=markerPosition(item.lat,item.lng)
+   return <button key={item.label} type="button" className="rx-map-aircraft" style={{left:p.left,top:p.top}} title={`${mission?.id||item.label}: ${mission?.objective||'Assigned mission'}`}>
+    ✈ <b>{mission?.platform||mission?.assetId||item.label}</b>
+   </button>
+  })}
+  <div className="rx-map-controls">
+   <button type="button" onPointerDown={e=>e.stopPropagation()} onClick={reset} title="Reset map">⌂</button>
+   <button type="button" onPointerDown={e=>e.stopPropagation()} onClick={()=>zoomBy(1)} title="Zoom in">＋</button>
+   <button type="button" onPointerDown={e=>e.stopPropagation()} onClick={()=>zoomBy(-1)} title="Zoom out">−</button>
   </div>
+  <div className="rx-map-attribution">© OpenStreetMap contributors</div>
+ </div>
+}
+
+function RegionalMissionPicture({role,missionState}){
+ return <Panel title="REGIONAL MISSION PICTURE – THREE FIRES" className="rx-map-panel">
+  <OperationalMap missionState={missionState}/>
  </Panel>
 }
 
@@ -130,10 +243,74 @@ function useStoredSize(key,initial,min,max){
 
 function DragHandle({onDrag,className=''}) {
  const start=useRef(null)
- const move=(event)=>{if(start.current) onDrag(event,start.current)}
- const stop=()=>{start.current=null;window.removeEventListener('pointermove',move);window.removeEventListener('pointerup',stop)}
- const down=(event)=>{event.preventDefault();start.current={x:event.clientX,y:event.clientY};window.addEventListener('pointermove',move);window.addEventListener('pointerup',stop)}
+ const move=(event)=>{
+  if(!start.current) return
+  const delta={dx:event.clientX-start.current.x,dy:event.clientY-start.current.y}
+  start.current={x:event.clientX,y:event.clientY}
+  onDrag(delta)
+ }
+ const stop=()=>{
+  start.current=null
+  window.removeEventListener('pointermove',move)
+  window.removeEventListener('pointerup',stop)
+ }
+ const down=(event)=>{
+  event.preventDefault()
+  start.current={x:event.clientX,y:event.clientY}
+  window.addEventListener('pointermove',move)
+  window.addEventListener('pointerup',stop)
+ }
  return <div className={`rx-drag-handle ${className}`} onPointerDown={down} role="separator" tabIndex="0" aria-label="Resize panels"/>
+}
+
+function useStoredFractions(key,initial){
+ const [values,setValues]=useState(()=>{
+  try{
+   const saved=JSON.parse(localStorage.getItem(key)||'null')
+   return Array.isArray(saved)&&saved.length===initial.length?saved:initial
+  }catch{return initial}
+ })
+ useEffect(()=>localStorage.setItem(key,JSON.stringify(values)),[key,values])
+ return [values,setValues]
+}
+
+function ResizableRow({storageKey,initial,min=12,className='',children}){
+ const host=useRef(null)
+ const [sizes,setSizes]=useStoredFractions(storageKey,initial)
+ const items=React.Children.toArray(children)
+ const resize=(index,delta)=>{
+  const width=host.current?.clientWidth||1
+  const pct=delta.dx/width*100
+  setSizes(current=>{
+   const next=[...current]
+   const combined=next[index]+next[index+1]
+   next[index]=clamp(next[index]+pct,min,combined-min)
+   next[index+1]=combined-next[index]
+   return next
+  })
+ }
+ const columns=sizes.flatMap((size,index)=>index<sizes.length-1?[`minmax(0,${size}fr)`,'5px']:[`minmax(0,${size}fr)`]).join(' ')
+ return <div ref={host} className={`rx-resizable-row ${className}`} style={{gridTemplateColumns:columns}}>
+  {items.map((child,index)=><React.Fragment key={index}>{child}{index<items.length-1&&<DragHandle className="vertical" onDrag={delta=>resize(index,delta)}/>}</React.Fragment>)}
+ </div>
+}
+
+function ResizableStack({storageKey='nexus-rs-coordinator-stack-height',children}){
+ const host=useRef(null)
+ const [sizes,setSizes]=useStoredFractions(storageKey,[52,48])
+ const items=React.Children.toArray(children)
+ const resize=(delta)=>{
+  const height=host.current?.clientHeight||1
+  const pct=delta.dy/height*100
+  setSizes(current=>{
+   const total=current[0]+current[1]
+   const first=clamp(current[0]+pct,30,total-30)
+   return [first,total-first]
+  })
+ }
+ return <div ref={host} className="rx-resizable-stack" style={{gridTemplateRows:`minmax(0,${sizes[0]}fr) 5px minmax(0,${sizes[1]}fr)`}}>
+  {items[0]}<DragHandle className="horizontal" onDrag={resize}/>{items[1]}
+ </div>
 }
 
 function UPADTable({missionState}){
@@ -199,16 +376,27 @@ function UPADOverview({missionState,onUpdateDelivery}){
 
 function CoordinatorView(props){
  const {missionState,role,onNavigate,onReleaseAsset}=props
- const [mapPct,setMapPct]=useStoredSize('nexus-rs-coordinator-map-width',62,45,75)
- const resizeMap=(event,start)=>setMapPct(v=>Math.max(45,Math.min(75,v+(event.clientX-start.x)/10)))
  return <div className="rx-role-layout coordinator">
-  <div className="rx-top-grid"><CurrentPeriodCard role={role} missionState={missionState}/><TomorrowCard role={role} missionState={missionState} onNavigate={onNavigate}/><DeadlinesCard role={role}/></div>
-  <div className="rx-coordinator-middle rx-resizable-middle" style={{'--rx-map-pct':`${mapPct}%`}}>
+  <ResizableRow storageKey="nexus-rs-coordinator-top-panels" initial={[31,32,37]} min={20} className="rx-top-grid rx-top-grid-resizable">
+   <CurrentPeriodCard role={role} missionState={missionState}/>
+   <TomorrowCard role={role} missionState={missionState} onNavigate={onNavigate}/>
+   <DeadlinesCard role={role}/>
+  </ResizableRow>
+
+  <ResizableRow storageKey="nexus-rs-coordinator-middle-panels" initial={[63,37]} min={24} className="rx-coordinator-middle rx-coordinator-middle-resizable">
    <RegionalMissionPicture role={role} missionState={missionState}/>
-   <DragHandle className="vertical" onDrag={resizeMap}/>
-   <div className="rx-stack"><PlatformTable missionState={missionState} role={role} onRelease={onReleaseAsset}/><UPADTable missionState={missionState}/></div>
-  </div>
-  <div className="rx-four-grid rx-coordinator-lower"><MiniSyncMatrix missionState={missionState} onNavigate={onNavigate}/><AirspacePanel/><OversightPanel missionState={missionState}/><DecisionWindows/></div>
+   <ResizableStack>
+    <PlatformTable missionState={missionState} role={role} onRelease={onReleaseAsset}/>
+    <UPADTable missionState={missionState}/>
+   </ResizableStack>
+  </ResizableRow>
+
+  <ResizableRow storageKey="nexus-rs-coordinator-lower-panels" initial={[40,20,19,21]} min={13} className="rx-coordinator-lower rx-coordinator-lower-resizable">
+   <MiniSyncMatrix missionState={missionState} onNavigate={onNavigate}/>
+   <AirspacePanel/>
+   <OversightPanel missionState={missionState}/>
+   <DecisionWindows/>
+  </ResizableRow>
  </div>
 }
 function ManagerView(props){
@@ -245,10 +433,10 @@ export default function CurrentOperationsRouter({
 }){
  const common={role,missionState,onNavigate,onToggleProtection,onReleaseAsset,onUpdateMission,onUpdateRequirement,onValidateRequirement,onSendRequirementForward,onUpdateDelivery}
  const View=role==='remote_sensing_manager'?ManagerView:role==='collection_manager'?CollectionView:role==='upad_lno'?UPADView:CoordinatorView
- const [sidebarWidth,setSidebarWidth]=useStoredSize('nexus-rs-sidebar-width',152,126,250)
- const [advisorWidth,setAdvisorWidth]=useStoredSize('nexus-rs-advisor-width',380,300,560)
- const resizeSidebar=(event,start)=>setSidebarWidth(v=>Math.max(126,Math.min(250,v+(event.clientX-start.x))))
- const resizeAdvisor=(event,start)=>setAdvisorWidth(v=>Math.max(300,Math.min(560,v-(event.clientX-start.x))))
+ const [sidebarWidth,setSidebarWidth]=useStoredSize('nexus-rs-sidebar-width',152,118,250)
+ const [advisorWidth,setAdvisorWidth]=useStoredSize('nexus-rs-advisor-width',330,280,500)
+ const resizeSidebar=(delta)=>setSidebarWidth(v=>Math.max(118,Math.min(250,v+delta.dx)))
+ const resizeAdvisor=(delta)=>setAdvisorWidth(v=>Math.max(280,Math.min(500,v-delta.dx)))
  return <div className="rx-shell rx-shell-resizable" style={{'--rx-sidebar-width':`${sidebarWidth}px`,'--rx-advisor-width':`${advisorWidth}px`}}>
   <LiveHeader role={role} missionState={missionState} onEnd={onEndExercise}/>
   <Sidebar role={role} active={role==='collection_manager'?'requirements':role==='upad_lno'?'upad':'mission'} onNavigate={onNavigate}/>
