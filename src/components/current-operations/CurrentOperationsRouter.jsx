@@ -400,16 +400,13 @@ function CoordinatorView(props){
    </ResizableStack>
   </ResizableRow>
 
+  <ResizableRow storageKey="nexus-rs-coordinator-lower-panels" initial={[40,20,19,21]} min={13} className="rx-coordinator-lower rx-coordinator-lower-resizable">
+   <MiniSyncMatrix missionState={missionState} onNavigate={onNavigate}/>
+   <AirspacePanel/>
+   <OversightPanel missionState={missionState}/>
+   <DecisionWindows/>
+  </ResizableRow>
  </div>
-}
-
-function CoordinatorBottom({missionState,onNavigate}){
- return <ResizableRow storageKey="nexus-rs-coordinator-lower-panels" initial={[40,20,19,21]} min={13} className="rx-coordinator-lower rx-coordinator-lower-resizable">
-  <MiniSyncMatrix missionState={missionState} onNavigate={onNavigate}/>
-  <AirspacePanel/>
-  <OversightPanel missionState={missionState}/>
-  <DecisionWindows/>
- </ResizableRow>
 }
 function ManagerView(props){
  const {missionState,role,onNavigate,onUpdateMission}=props
@@ -447,13 +444,11 @@ export default function CurrentOperationsRouter({
  const View=role==='remote_sensing_manager'?ManagerView:role==='collection_manager'?CollectionView:role==='upad_lno'?UPADView:CoordinatorView
  const [sidebarWidth,setSidebarWidth]=useStoredSize('nexus-rs-sidebar-width',152,118,250)
  const resizeSidebar=(delta)=>setSidebarWidth(v=>Math.max(118,Math.min(250,v+delta.dx)))
- const coordinator=role==='remote_sensing_coordinator'
- return <div className={`rx-shell rx-shell-resizable ${coordinator?'rx-coordinator-shell':''}`} style={{'--rx-sidebar-width':`${sidebarWidth}px`}}>
+ return <div className="rx-shell rx-shell-resizable" style={{'--rx-sidebar-width':`${sidebarWidth}px`}}>
   <LiveHeader role={role} missionState={missionState} onEnd={onEndExercise}/>
   <Sidebar role={role} active={role==='collection_manager'?'requirements':role==='upad_lno'?'upad':'mission'} onNavigate={onNavigate}/>
   <DragHandle className="shell-left" onDrag={resizeSidebar}/>
   <main className="rx-main"><View {...common}/></main>
   <AdvisorColumn {...advisorProps}/>
-  {coordinator&&<div className="rx-coordinator-bottom-shell"><CoordinatorBottom missionState={missionState} onNavigate={onNavigate}/></div>}
  </div>
 }
