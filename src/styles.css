@@ -366,3 +366,213 @@
     grid-template-columns:1fr;
   }
 }
+
+
+/* Start Exercise visual cleanup — EOC-family density and hierarchy */
+.portal-app-shell-full{
+  background:
+    linear-gradient(rgba(49,104,137,.035) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(49,104,137,.035) 1px,transparent 1px),
+    #020b13;
+  background-size:32px 32px;
+}
+.portal-app-shell-full .portal-topbar{
+  min-height:52px;
+  padding:9px 28px;
+  border-bottom:1px solid rgba(87,146,198,.26);
+  background:rgba(3,14,24,.96);
+}
+.portal-app-shell-full .portal-topbar>div:first-child{
+  display:flex;
+  align-items:center;
+  gap:14px;
+}
+.portal-app-shell-full .portal-topbar>div:first-child::after{
+  content:"";
+  width:1px;
+  height:22px;
+  order:1;
+  background:rgba(107,158,194,.28);
+}
+.portal-app-shell-full .portal-topbar .eyebrow{
+  order:0;
+  margin:0;
+  color:#62d8d0;
+  font-size:10px;
+  letter-spacing:.16em;
+}
+.portal-app-shell-full .portal-topbar h2{
+  order:2;
+  margin:0;
+  font-size:15px;
+  font-weight:750;
+  letter-spacing:.02em;
+}
+.portal-app-shell-full .portal-workspace{
+  width:100%;
+  max-width:1540px;
+  margin:0 auto;
+  padding:14px 24px 26px;
+  box-sizing:border-box;
+}
+.eoc-rs-start-page-simplified{
+  gap:12px;
+}
+.eoc-rs-start-heading.simplified{
+  min-height:0;
+  padding:14px 18px;
+  border-color:rgba(87,146,198,.28);
+  background:linear-gradient(180deg,rgba(5,20,34,.96),rgba(4,15,26,.94));
+  box-shadow:0 12px 34px rgba(0,0,0,.2);
+}
+.eoc-rs-start-heading.simplified h1{
+  margin:3px 0 4px;
+  font-size:29px;
+  line-height:1.02;
+}
+.eoc-rs-start-heading.simplified p{
+  max-width:790px;
+  font-size:12px;
+  line-height:1.42;
+}
+.eoc-rs-start-page-simplified .eoc-rs-start-layout{
+  grid-template-columns:minmax(720px,1fr) 386px;
+  gap:14px;
+}
+.eoc-rs-start-page-simplified .eoc-rs-start-main{
+  gap:12px;
+}
+.eoc-rs-config-panel,
+.eoc-rs-readiness-panel{
+  border-color:rgba(87,146,198,.28);
+  background:rgba(4,16,28,.92);
+  box-shadow:0 14px 38px rgba(0,0,0,.18);
+}
+.eoc-rs-config-panel{
+  padding:16px;
+}
+.eoc-rs-section-title,
+.readiness-panel-header{
+  gap:12px;
+}
+.eoc-rs-section-title h2,
+.readiness-panel-header h2{
+  margin-top:3px;
+  font-size:19px;
+}
+.eoc-rs-section-title p{
+  max-width:560px;
+  font-size:11px;
+  line-height:1.42;
+}
+.scenario-tools{
+  grid-template-columns:minmax(0,1fr) 210px;
+  gap:10px;
+  margin:12px 0;
+}
+.scenario-tools label>span{
+  margin-bottom:5px;
+}
+.scenario-tools input,
+.scenario-tools select{
+  height:38px;
+  border-radius:4px;
+}
+.eoc-rs-scenario-grid{
+  gap:10px;
+}
+.eoc-rs-scenario-card{
+  border-color:rgba(87,146,198,.25);
+  box-shadow:0 9px 24px rgba(0,0,0,.14);
+}
+.eoc-rs-scenario-card.selected{
+  border-color:#55b9cc;
+  box-shadow:0 0 0 1px rgba(85,185,204,.18),0 10px 28px rgba(14,83,125,.16);
+}
+.eoc-rs-scenario-image{
+  aspect-ratio:16/7.4;
+}
+.eoc-rs-scenario-body{
+  min-height:145px;
+  padding:10px 11px 11px;
+}
+.eoc-rs-scenario-body h3{
+  margin-bottom:5px;
+  font-size:13px;
+}
+.eoc-rs-scenario-body p{
+  font-size:10.5px;
+  line-height:1.4;
+}
+.scenario-card-metadata{
+  margin-top:9px;
+}
+.setup-input-panel{
+  padding:16px;
+}
+.eoc-rs-setup-form{
+  gap:11px 14px;
+  margin-top:13px;
+}
+.eoc-rs-setup-form label{
+  gap:5px;
+}
+.eoc-rs-setup-form input,
+.eoc-rs-setup-form select{
+  min-height:39px;
+  padding:8px 10px;
+  border-radius:4px;
+}
+.eoc-rs-readiness-panel{
+  top:12px;
+}
+.readiness-panel-header{
+  padding:15px 15px 12px;
+}
+.readiness-scenario-visual{
+  min-height:132px;
+}
+.readiness-scenario-description{
+  margin:9px 14px 3px;
+  font-size:11px;
+  line-height:1.45;
+}
+.eoc-rs-readiness-summary{
+  padding:4px 14px 0;
+}
+.eoc-rs-readiness-summary>div{
+  padding:8px 0;
+}
+.eoc-rs-readiness-summary .readiness-role-focus{
+  padding:9px 0;
+}
+.eoc-rs-readiness-checklist{
+  margin:10px 14px;
+  padding:10px;
+}
+.eoc-rs-readiness-actions{
+  padding:0 14px 14px;
+}
+@media(max-width:1180px){
+  .eoc-rs-start-page-simplified .eoc-rs-start-layout{
+    grid-template-columns:1fr;
+  }
+  .eoc-rs-readiness-panel{
+    position:static;
+  }
+}
+@media(max-width:760px){
+  .portal-app-shell-full .portal-workspace{
+    padding:12px;
+  }
+  .portal-app-shell-full .portal-topbar{
+    padding:9px 14px;
+  }
+  .eoc-rs-scenario-grid{
+    grid-template-columns:1fr;
+  }
+  .scenario-tools,
+  .eoc-rs-setup-form{
+    grid-template-columns:1fr;
+  }
+}

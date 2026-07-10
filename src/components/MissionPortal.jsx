@@ -147,7 +147,7 @@ export default function MissionPortal({
   return <div className="eoc-rs-start-page eoc-rs-start-page-simplified">
     <header className="eoc-rs-start-heading simplified">
       <div>
-        <span>Mission Portal</span>
+        <span>Configure Mission</span>
         <h1>Start Exercise</h1>
         <p>Select a remote-sensing scenario, configure the participant context, and review mission readiness before STARTEX.</p>
       </div>
@@ -158,7 +158,6 @@ export default function MissionPortal({
         <section className="eoc-rs-config-panel">
           <div className="eoc-rs-section-title">
             <div><span>Scenario Selection</span><h2>Select scenario</h2></div>
-            <p>Choose the incident environment that will drive requirements, asset demand, PCPAD workload, and coordination pressure.</p>
           </div>
 
           <div className="scenario-tools">
