@@ -22,6 +22,10 @@ import RoleSelection from './components/RoleSelection.jsx'
 import ExerciseStatusBar from './components/ExerciseStatusBar.jsx'
 import EndExModal from './components/EndExModal.jsx'
 import { evaluateMissionDecision } from './engine/missionAdvisor.js'
+import { buildAdvisorContext } from './engine/advisorPromptBuilder.js'
+import { validateAdvisorResponse, deterministicFallback } from './engine/advisorResponseValidator.js'
+import { requestAdvisorInterpretation } from './services/advisorApi.js'
+import { applyIntegratedAction, deriveOperationalSummary, verifyCustomerReceipt, recordCustomerFeedback as integrateCustomerFeedback } from './engine/integrationEngine.js'
 import { INITIAL_MISSION_STATE } from './data/missionState.js'
 import { INITIAL_MATRIX } from './data/syncMatrix.js'
 import { initializeScenario, selectRole as controllerSelectRole, startExercise, advanceTurn, beginTransition, approveTransition, endExercise, resetExercise, isWorkspaceReadOnly } from './engine/exerciseController.js'
@@ -34,6 +38,9 @@ export default function App(){
  const [showEndEx,setShowEndEx]=useState(false)
  const [missionState,setMissionState]=useState(INITIAL_MISSION_STATE)
  const [syncMatrix,setSyncMatrix]=useState(INITIAL_MATRIX)
+ const [advisorPending,setAdvisorPending]=useState(null)
+ const [advisorBusy,setAdvisorBusy]=useState(false)
+ const [advisorMode,setAdvisorMode]=useState('local')
 
 
  const currentRole=missionState.exercise?.selectedRole || role || 'remote_sensing_coordinator'
@@ -61,8 +68,8 @@ export default function App(){
  const cancelAssetRequest=(requestId)=>setMissionState(prev=>({...prev,assetControl:{...prev.assetControl,requests:prev.assetControl.requests.filter(r=>r.id!==requestId)}}))
 
  const updateDelivery=(deliveryId,changes)=>setMissionState(prev=>({...prev,dissemination:{...prev.dissemination,deliveries:prev.dissemination.deliveries.map(d=>d.id===deliveryId?{...d,...changes,lastUpdate:'CURRENT LOCAL'}:d),history:[...prev.dissemination.history,{id:`delivery-history-${Date.now()}`,time:'CURRENT LOCAL',actor:currentRole,action:`Updated delivery ${deliveryId}: ${Object.keys(changes).join(', ')}`} ]},decisions:[...prev.decisions,{id:`decision-${prev.decisions.length+1}`,type:'delivery_update',detail:`Updated ${deliveryId}`,asOf:'CURRENT LOCAL',role:currentRole}]}))
- const verifyReceipt=(deliveryId)=>setMissionState(prev=>({...prev,dissemination:{...prev.dissemination,deliveries:prev.dissemination.deliveries.map(d=>d.id===deliveryId?{...d,receiptStatus:'verified',deliveryStatus:'delivered',lastUpdate:'CURRENT LOCAL'}:d),history:[...prev.dissemination.history,{id:`delivery-history-${Date.now()}`,time:'CURRENT LOCAL',actor:currentRole,action:`Verified customer receipt for ${deliveryId}.`} ]},decisions:[...prev.decisions,{id:`decision-${prev.decisions.length+1}`,type:'receipt_verified',detail:`Customer receipt verified for ${deliveryId}`,asOf:'CURRENT LOCAL',role:currentRole}]}))
- const recordCustomerFeedback=(deliveryId,text)=>setMissionState(prev=>({...prev,dissemination:{...prev.dissemination,feedback:[...prev.dissemination.feedback,{id:`feedback-${Date.now()}`,deliveryId,time:'CURRENT LOCAL',actor:currentRole,text}],deliveries:prev.dissemination.deliveries.map(d=>d.id===deliveryId?{...d,feedbackStatus:'received',lastUpdate:'CURRENT LOCAL'}:d),history:[...prev.dissemination.history,{id:`delivery-history-${Date.now()}`,time:'CURRENT LOCAL',actor:currentRole,action:`Recorded customer feedback for ${deliveryId}.`} ]},decisions:[...prev.decisions,{id:`decision-${prev.decisions.length+1}`,type:'customer_feedback',detail:`Feedback recorded for ${deliveryId}`,asOf:'CURRENT LOCAL',role:currentRole}]}))
+ const verifyReceipt=(deliveryId)=>setMissionState(prev=>verifyCustomerReceipt(prev,deliveryId))
+ const recordCustomerFeedback=(deliveryId,text)=>setMissionState(prev=>integrateCustomerFeedback(prev,deliveryId,text))
 
 
  const updateRequirement=(reqId,changes)=>setMissionState(prev=>{
@@ -105,13 +112,43 @@ export default function App(){
  const addOversightCase=(payload)=>setMissionState(prev=>({...prev,oversight:{...prev.oversight,cases:[...prev.oversight.cases,{id:`IO-${String(prev.oversight.cases.length+1).padStart(3,'0')}`,requirementId:'UNLINKED',owner:'Collection Manager',severity:'medium',deadline:'TBD Local',status:'open',knownFacts:'',uncertainty:'Requires clarification.',selectedAction:'',resolutionNote:'',...payload}],history:[...prev.oversight.history,{id:`io-history-${Date.now()}`,time:'CURRENT LOCAL',actor:currentRole,action:`Added oversight concern: ${payload.title}.`} ]}}))
 
 
- const submitFreeTextDecision=(exactText)=>setMissionState(prev=>{
-  const evaluated=evaluateMissionDecision({state:prev,role:currentRole,exactText});
-  const turn=(prev.simulation?.turn||0)+1;
-  const inject={...evaluated.inject,id:`inject-${turn}`,createdAt:'CURRENT LOCAL',role:currentRole};
-  const record={id:`decision-${prev.decisions.length+1}`,type:'free_text_decision',exactText,detail:exactText,asOf:'CURRENT LOCAL',role:currentRole,turn,...evaluated.decisionRecord};
-  return {...prev,decisions:[...prev.decisions,record],simulation:{...(prev.simulation||{}),turn,injects:[...(prev.simulation?.injects||[]),inject],advisorHistory:[...(prev.simulation?.advisorHistory||[]),{id:`advisor-${turn}`,time:'CURRENT LOCAL',role: currentRole,text:evaluated.advisorText}],activeDecisionPoint:inject},lastAdvisorUpdate:{time:'CURRENT LOCAL',text:evaluated.advisorText}};
- })
+ const submitFreeTextDecision=async(exactText)=>{
+  if(advisorBusy) return
+  setAdvisorBusy(true)
+  const snapshot=missionState
+  const evaluated=evaluateMissionDecision({state:snapshot,role:currentRole,exactText})
+  let result
+  let mode='local'
+  try{
+   const context=buildAdvisorContext(snapshot,currentRole,exactText)
+   const remote=await requestAdvisorInterpretation({exactText,role:currentRole,context})
+   const validated=validateAdvisorResponse(remote.response,snapshot)
+   if(!validated.ok) throw Object.assign(new Error('Advisor response validation failed'),{code:validated.error})
+   result=validated.value
+   mode='connected'
+  }catch(error){
+   result=deterministicFallback(exactText,snapshot,currentRole,evaluated)
+  }
+  const entry={id:`advisor-${Date.now()}`,time:snapshot.exercise?.localIncidentTime||snapshot.asOf||'CURRENT LOCAL',role:currentRole,traineeText:exactText,advisorMessage:result.advisorMessage,advisorMode:mode,interpretation:result}
+  setAdvisorMode(mode)
+  setMissionState(prev=>({...prev,simulation:{...(prev.simulation||{}),advisorHistory:[...(prev.simulation?.advisorHistory||[]).slice(-11),entry]},lastAdvisorUpdate:{time:entry.time,text:result.advisorMessage,mode}}))
+  if(result.requiresUserConfirmation && result.proposedAction?.type!=='no_state_action') setAdvisorPending({exactText,result,entryId:entry.id})
+  else {
+   setMissionState(prev=>({...prev,decisions:[...(prev.decisions||[]),{id:`decision-${Date.now()}`,type:'advisor_interaction',exactText,detail:exactText,interpretedDecision:result.interpretedIntent,advisorInterpretation:result,advisorMode:mode,userConfirmed:false,asOf:prev.exercise?.localIncidentTime||prev.asOf||'CURRENT LOCAL',role:currentRole,authorityAssessment:result.authorityAssessment?.explanation,withinRoleAuthority:result.authorityAssessment?.status==='within_authority'}]}))
+  }
+  setAdvisorBusy(false)
+ }
+
+ const confirmAdvisorAction=()=>{
+  if(!advisorPending) return
+  const {exactText,result}=advisorPending
+  setMissionState(prev=>{
+   const next=applyIntegratedAction(prev,result.proposedAction)
+   return {...next,decisions:[...(next.decisions||[]),{id:`decision-${Date.now()}`,type:result.decisionType||result.proposedAction.type,exactText,detail:exactText,interpretedDecision:result.interpretedIntent,advisorInterpretation:result,advisorMode,userConfirmed:true,proposedAction:result.proposedAction,asOf:next.exercise?.localIncidentTime||next.asOf||'CURRENT LOCAL',role:currentRole,authorityAssessment:result.authorityAssessment?.explanation,withinRoleAuthority:result.authorityAssessment?.status==='within_authority',affectedRecords:Object.values(result.referencedEntities||{}).flat(),immediateConsequence:'Validated application action applied; deterministic state was re-evaluated.'}]}
+  })
+  setAdvisorPending(null)
+ }
+ const cancelAdvisorAction=()=>setAdvisorPending(null)
 
  const transitionOperationalPeriod=()=>setMissionState(prev=>{
   if(!prev.tomorrowPlan.approved || role!=='remote_sensing_coordinator') return prev;
@@ -153,7 +190,7 @@ export default function App(){
    <div className="main-shell">
      <Header role={currentRole} missionState={missionState} onReset={resetActiveExercise}/>
      <ExerciseStatusBar missionState={missionState} onStart={confirmStartEx} onAdvance={advanceExercise} onTransition={reviewTransition} onEnd={()=>setShowEndEx(true)} onAar={()=>setActive('aar')}/>
-     <main className="workspace"><div>{content}</div><AdvisorPanel role={currentRole} missionState={missionState} onSubmitDecision={submitFreeTextDecision}/></main>
+     <main className="workspace"><div>{content}</div><AdvisorPanel role={currentRole} missionState={missionState} operationalSummary={deriveOperationalSummary(missionState)} onSubmitDecision={submitFreeTextDecision} pending={advisorPending} busy={advisorBusy} mode={advisorMode} onConfirm={confirmAdvisorAction} onCancel={cancelAdvisorAction}/></main>
    </div>
    {showEndEx && <EndExModal missionState={missionState} onCancel={()=>setShowEndEx(false)} onConfirm={confirmEndEx}/>}
  </div>

@@ -1,5 +1,6 @@
 import { AUTHORITY_MODEL, ROLE_DIMENSIONS, ROLE_NAMES } from '../data/aarCriteria.js'
 import { PLATFORM_LIBRARY } from '../data/platformLibrary.js'
+import { buildAarEvidence } from './integrationEngine.js'
 
 const EMPTY = 'Not recorded'
 const ok = (value) => Boolean(value && String(value).trim())
@@ -349,6 +350,7 @@ export function buildAfterActionReview({ missionState, syncMatrix, role }) {
     rolePerformance,
     authorityFindings,
     requirementOutcomes,
+    integrationEvidence: buildAarEvidence(state),
     assetFindings: {
       ...assetFindings,
       syncMatrixStatus: syncMatrix?.status || EMPTY,

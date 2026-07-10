@@ -62,3 +62,23 @@
 .lifecycle-shell{display:grid;gap:18px}.mission-portal-hero{display:flex;justify-content:space-between;gap:24px;align-items:flex-start}.portal-status{min-width:260px;display:grid;gap:8px;padding:16px;background:#071725;border:1px solid #173249;border-radius:12px}.portal-status strong{font-size:18px}.portal-status span,.muted{color:#7f94a7}.portal-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}.compact-list{display:grid;gap:10px}.compact-list>div{display:grid;gap:4px;padding:10px 0;border-top:1px solid #13283a}.compact-list span{color:#8fa5b7;font-size:12px}.portal-actions{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px}.role-grid-wide{grid-template-columns:repeat(4,minmax(0,1fr));margin:0}.role-card small{display:block;margin-top:12px;color:#54d1c8}.role-detail-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px}.role-detail-grid>div{padding:14px;background:#071725;border:1px solid #173249;border-radius:12px}.role-detail-grid h4{margin:0 0 8px}.exercise-status-bar{display:grid;grid-template-columns:repeat(6,minmax(110px,1fr)) auto;gap:10px;align-items:center;padding:10px 18px;border-bottom:1px solid #13283a;background:rgba(4,16,27,.86)}.exercise-status-bar>div:not(.status-actions){padding:9px 10px;background:#071725;border:1px solid #13283a;border-radius:10px}.exercise-status-bar span{display:block;color:#6f879a;font-size:10px;text-transform:uppercase;letter-spacing:.12em}.exercise-status-bar strong{display:block;color:#e7eef6;font-size:12px;margin-top:3px}.status-actions{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap}.ghost.danger{border-color:#6e2d35;color:#ffb2b2}.sidebar nav button.restricted{opacity:.45;cursor:not-allowed}.modal-backdrop{position:fixed;inset:0;z-index:50;display:grid;place-items:center;background:rgba(0,0,0,.62);padding:20px}.endex-modal{width:min(760px,100%);max-height:90vh;overflow:auto}.form-field{display:grid;gap:8px;margin-top:16px}.form-field span{color:#8fa5b7;font-size:12px;text-transform:uppercase;letter-spacing:.12em}.form-field textarea{width:100%;min-height:90px;color:#e9f1f7;background:#06131f;border:1px solid #203d54;border-radius:10px;padding:12px}.modal-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:16px}.status-chip{display:inline-flex;align-items:center;border-radius:999px;padding:6px 9px;font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase}.status-chip.good,.status-chip.teal{color:#77ddd6;background:rgba(31,138,133,.22)}.status-chip.warn{color:#f0c271;background:rgba(161,105,28,.2)}.status-chip.bad{color:#ff9a9a;background:rgba(172,50,50,.2)}.status-chip.quiet{color:#a9bac8;background:rgba(92,112,129,.2)}
 @media(max-width:1200px){.exercise-status-bar{grid-template-columns:repeat(3,1fr)}.status-actions{grid-column:1/-1;justify-content:flex-start}.portal-grid,.role-detail-grid{grid-template-columns:1fr}.mission-portal-hero{display:grid}.role-grid-wide{grid-template-columns:1fr 1fr}}
 @media(max-width:700px){.exercise-status-bar,.role-grid-wide{grid-template-columns:1fr}.portal-status{min-width:0}}
+
+
+/* Patch 10/11: integrated advisor */
+.advisor-mode{font-size:.72rem;font-weight:800;letter-spacing:.04em;text-transform:uppercase;padding:.35rem .55rem;border-radius:999px}
+.advisor-mode.connected{background:rgba(34,197,94,.13);color:#86efac}
+.advisor-mode.fallback{background:rgba(245,158,11,.13);color:#fbbf24}
+.advisor-summary-line{display:flex;flex-wrap:wrap;gap:.45rem;margin-top:.65rem}
+.advisor-summary-line span{font-size:.72rem;padding:.3rem .45rem;border:1px solid var(--line);border-radius:.35rem}
+.advisor-history{margin:.75rem 0;border:1px solid var(--line);border-radius:.5rem;padding:.55rem}
+.advisor-history summary{cursor:pointer;font-weight:700}
+.advisor-history article{padding:.65rem 0;border-top:1px solid var(--line)}
+.advisor-history article:first-child{border-top:0}
+.advisor-history article strong,.advisor-history article small{display:block}
+.advisor-decision-card{margin:.75rem 0;padding:.8rem;border:1px solid rgba(245,158,11,.35);background:rgba(245,158,11,.06);border-radius:.55rem}
+.advisor-decision-card h4{margin:0}
+.advisor-decision-card dl{display:grid;gap:.45rem}
+.advisor-decision-card dl div{display:grid;grid-template-columns:8rem 1fr;gap:.6rem}
+.advisor-decision-card dt{font-size:.72rem;font-weight:800;text-transform:uppercase;color:var(--muted)}
+.advisor-decision-card dd{margin:0}
+.advisor-confirm-actions{display:flex;gap:.5rem;flex-wrap:wrap;margin-top:.75rem}

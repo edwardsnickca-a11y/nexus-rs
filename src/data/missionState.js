@@ -27,9 +27,9 @@ export const INITIAL_MISSION_STATE = {
     status: 'active',
     protectedMissionId: 'mission-alpha',
     missions: [
-      { id: 'mission-alpha', fire: 'Fire Alpha', platform: 'MQ-9-01', assetId: 'asset-mq9-01', window: '0700–1300', objective: 'Evacuation corridor and fire perimeter', status: 'active', protected: true, risk: 'Coverage ends before late evacuation window', coordinatorNotified: true },
-      { id: 'mission-bravo', fire: 'Fire Bravo', platform: 'LUH-72-01', assetId: 'asset-luh72-01', window: '1000–1400', objective: 'Route and structure impacts', status: 'at_risk', protected: false, risk: 'TFR update pending', coordinatorNotified: false },
-      { id: 'mission-charlie', fire: 'Fire Charlie', platform: 'CAP-01', assetId: 'asset-cap-01', window: '1600–1900', objective: 'Damage overview', status: 'planned', protected: false, risk: 'Afternoon gap remains', coordinatorNotified: false },
+      { id: 'mission-alpha', requirementId: 'req-alpha', fire: 'Fire Alpha', platform: 'MQ-9-01', assetId: 'asset-mq9-01', window: '0700–1300', objective: 'Evacuation corridor and fire perimeter', status: 'active', protected: true, risk: 'Coverage ends before late evacuation window', coordinatorNotified: true },
+      { id: 'mission-bravo', requirementId: 'req-bravo', fire: 'Fire Bravo', platform: 'LUH-72-01', assetId: 'asset-luh72-01', window: '1000–1400', objective: 'Route and structure impacts', status: 'at_risk', protected: false, risk: 'TFR update pending', coordinatorNotified: false },
+      { id: 'mission-charlie', requirementId: 'req-charlie', fire: 'Fire Charlie', platform: 'CAP-01', assetId: 'asset-cap-01', window: '1600–1900', objective: 'Damage overview', status: 'planned', protected: false, risk: 'Afternoon gap remains', coordinatorNotified: false },
     ],
     deadlines: [
       { id: 'd1', label: 'Fire Alpha product cutoff', time: '1500 Local', severity: 'high' },
