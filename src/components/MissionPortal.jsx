@@ -10,7 +10,6 @@ const ROLE_FOCUS = {
   upad_lno: 'Manages processing, assessment, product prioritization, dissemination, customer verification, and remaining information gaps.',
 }
 
-const INCIDENT_FILTERS = ['All', 'Wildfire', 'Hurricane', 'Flood', 'Earthquake', 'Planned Event', 'Custom']
 const OPERATIONAL_CONTEXTS = [
   'State-Led Multi-Incident Response',
   'Regional Coordination Mission',
@@ -84,7 +83,6 @@ export default function MissionPortal({
     : null
 
   const [selectedScenarioId, setSelectedScenarioId] = useState(initialScenarioId)
-  const [filter, setFilter] = useState('All')
   const [participantName, setParticipantName] = useState(missionState.exercise?.participantName || '')
   const [operationalContext, setOperationalContext] = useState('State-Led Multi-Incident Response')
   const [exerciseFocus, setExerciseFocus] = useState('Full Mission Cycle')
@@ -92,13 +90,6 @@ export default function MissionPortal({
   const selectedScenario = useMemo(
     () => PORTAL_SCENARIOS.find((scenario) => scenario.id === selectedScenarioId) || null,
     [selectedScenarioId],
-  )
-
-  const filteredScenarios = useMemo(
-    () => PORTAL_SCENARIOS.filter(
-      (scenario) => filter === 'All' || incidentCategory(scenario) === filter,
-    ),
-    [filter],
   )
 
   const active = ['active_op1', 'transition_to_op2', 'active_op2'].includes(status.status)
@@ -146,24 +137,14 @@ export default function MissionPortal({
             <h2>Select Scenario</h2>
           </div>
 
-          <div className="scenario-tools scenario-tools-filter-only">
-            <label>
-              <span>Incident type</span>
-              <select value={filter} onChange={(event) => setFilter(event.target.value)}>
-                {INCIDENT_FILTERS.map((option) => <option key={option} value={option}>{option}</option>)}
-              </select>
-            </label>
-          </div>
-
           <div className="eoc-rs-scenario-grid">
-            {filteredScenarios.map((scenario) => <ScenarioCard
+            {PORTAL_SCENARIOS.map((scenario) => <ScenarioCard
               key={scenario.id}
               scenario={scenario}
               selected={selectedScenarioId === scenario.id}
               onSelect={selectScenario}
             />)}
           </div>
-          {!filteredScenarios.length && <div className="scenario-empty-state">No scenarios match the current incident type filter.</div>}
         </section>
 
         <section className="eoc-rs-config-panel setup-input-panel">

@@ -607,3 +607,6 @@
 .eoc-rs-readiness-panel{padding-top:14px}
 .eoc-rs-readiness-panel>.readiness-scenario-visual,
 .eoc-rs-readiness-panel>.readiness-scenario-placeholder{margin-top:0}
+
+/* Start Exercise incident-filter removal: scenario grid follows the heading directly. */
+.eoc-rs-config-panel .scenario-section-title + .eoc-rs-scenario-grid{margin-top:8px}

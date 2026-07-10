@@ -1,34 +1,36 @@
-# NEXUS RS Start Exercise Spacing Cleanup
+# NEXUS RS Incident Type Filter Removal
 
 ## Summary
-Targeted visual cleanup for the Start Exercise page. Incident-type image badges were removed, the scenario grid was pulled closer to the Select Scenario heading and filter controls, and the separate Confirmation / Mission Readiness / Briefing header block was removed.
+Removes the Incident Type label and dropdown from the pre-exercise Start Exercise page. The scenario grid now follows the Select Scenario heading directly and uses the available content width without a reserved filter column.
 
 ## Files changed
 - `src/components/MissionPortal.jsx`
 - `src/styles.css`
 
 ## Installation
-Extract the patch into `C:\Dev\nexus-rs` and allow the included files to replace the matching project files.
+Extract the ZIP into:
 
-## Visual changes
-- Removed Wildfire, Hurricane, Flood, Earthquake, Planned Event, and Custom labels from scenario images.
-- Preserved the selected-state badge.
-- Reduced spacing beneath Select Scenario and around the incident-type filter.
-- Reduced excess top padding before the scenario grid.
-- Removed the separate readiness header container and Briefing chip.
-- Mission Readiness content now begins directly with the selected-scenario preview.
+`C:\Dev\nexus-rs`
 
-## Logic preserved
-Scenario selection, incident-type filtering, role selection, readiness calculations, STARTEX, exercise-controller behavior, and downstream RS workflows were not changed.
+Allow the included paths to overwrite the matching project files.
+
+## Behavior preserved
+- Scenario cards and metadata
+- Scenario selection and selected-state behavior
+- Mission Readiness updates
+- Role selection
+- Readiness logic
+- STARTEX and exercise-controller behavior
+- Existing RS state and downstream workflows
 
 ## Build verification
 `npm run build` completed successfully with Vite 6.4.3.
 
 ## Manual test checklist
-- Confirm no incident-type labels appear over any scenario image.
-- Confirm the selected badge still appears on the active card.
-- Confirm the first card row is closer to Select Scenario and the filter.
-- Confirm the readiness panel starts directly with scenario content.
-- Select all six scenarios and verify readiness content updates.
-- Confirm role selection and readiness checklist behavior.
-- Confirm Start Exercise still launches through the existing controller.
+- Open the Start Exercise page.
+- Confirm the Incident Type label is absent.
+- Confirm the `All` dropdown is absent.
+- Confirm no empty filter column or reserved gap remains.
+- Confirm all scenario cards remain visible and evenly spaced.
+- Select each scenario and confirm Mission Readiness updates.
+- Confirm role selection and Start Exercise still work.
