@@ -84,7 +84,6 @@ export default function MissionPortal({
     : null
 
   const [selectedScenarioId, setSelectedScenarioId] = useState(initialScenarioId)
-  const [query, setQuery] = useState('')
   const [filter, setFilter] = useState('All')
   const [participantName, setParticipantName] = useState(missionState.exercise?.participantName || '')
   const [operationalContext, setOperationalContext] = useState('State-Led Multi-Incident Response')
@@ -95,17 +94,12 @@ export default function MissionPortal({
     [selectedScenarioId],
   )
 
-  const filteredScenarios = useMemo(() => PORTAL_SCENARIOS.filter((scenario) => {
-    const search = query.trim().toLowerCase()
-    const matchesSearch = !search || [
-      scenario.title,
-      scenario.summary,
-      scenario.location,
-      scenario.type,
-    ].some((value) => value.toLowerCase().includes(search))
-    const matchesFilter = filter === 'All' || incidentCategory(scenario) === filter
-    return matchesSearch && matchesFilter
-  }), [query, filter])
+  const filteredScenarios = useMemo(
+    () => PORTAL_SCENARIOS.filter(
+      (scenario) => filter === 'All' || incidentCategory(scenario) === filter,
+    ),
+    [filter],
+  )
 
   const active = ['active_op1', 'transition_to_op2', 'active_op2'].includes(status.status)
   const ended = status.status === 'ended'
@@ -145,31 +139,14 @@ export default function MissionPortal({
       : { label: 'Start Exercise', action: startSelectedExercise, disabled: !readyForStart }
 
   return <div className="eoc-rs-start-page eoc-rs-start-page-simplified">
-    <header className="eoc-rs-start-heading simplified">
-      <div>
-        <span>Configure Mission</span>
-        <h1>Start Exercise</h1>
-        <p>Select a remote-sensing scenario, configure the participant context, and review mission readiness before STARTEX.</p>
-      </div>
-    </header>
-
     <div className="eoc-rs-start-layout">
       <div className="eoc-rs-start-main">
         <section className="eoc-rs-config-panel">
-          <div className="eoc-rs-section-title">
-            <div><span>Scenario Selection</span><h2>Select scenario</h2></div>
+          <div className="eoc-rs-section-title scenario-section-title">
+            <h2>Select Scenario</h2>
           </div>
 
-          <div className="scenario-tools">
-            <label>
-              <span>Scenario search</span>
-              <input
-                type="search"
-                value={query}
-                onChange={(event) => setQuery(event.target.value)}
-                placeholder="Search scenarios, locations, or incident types..."
-              />
-            </label>
+          <div className="scenario-tools scenario-tools-filter-only">
             <label>
               <span>Incident type</span>
               <select value={filter} onChange={(event) => setFilter(event.target.value)}>
@@ -186,7 +163,7 @@ export default function MissionPortal({
               onSelect={selectScenario}
             />)}
           </div>
-          {!filteredScenarios.length && <div className="scenario-empty-state">No scenarios match the current search and filter.</div>}
+          {!filteredScenarios.length && <div className="scenario-empty-state">No scenarios match the current incident type filter.</div>}
         </section>
 
         <section className="eoc-rs-config-panel setup-input-panel">

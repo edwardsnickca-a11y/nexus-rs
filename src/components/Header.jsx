@@ -7,7 +7,7 @@ export default function Header({ role, missionState, onReset, portalMode = false
   return <header className={`topbar ${portalMode?'portal-topbar':''}`}>
     <div>
       <span className="eyebrow">{portalMode?'NEXUS Remote Sensing':'Scenario'}</span>
-      <h2>{portalMode?'Mission Portal':(selected?.name || 'Role not selected')}</h2>
+      <h2>{portalMode?'Start Exercise':(selected?.name || 'Role not selected')}</h2>
     </div>
     {!portalMode && <div className="topmeta">
       <div><span>LOCAL TIME</span><strong>{status.localIncidentTime}</strong></div>

@@ -576,3 +576,20 @@
     grid-template-columns:1fr;
   }
 }
+
+
+/* Start Exercise targeted simplification */
+.eoc-rs-start-page-simplified{gap:0}
+.eoc-rs-start-page-simplified .eoc-rs-start-layout{margin-top:0}
+.scenario-section-title{display:block}
+.scenario-section-title h2{margin:0;font-size:24px}
+.scenario-tools-filter-only{
+  grid-template-columns:190px;
+  justify-content:end;
+  margin:12px 0 14px;
+}
+.scenario-tools-filter-only label{width:190px}
+@media(max-width:760px){
+  .scenario-tools-filter-only{grid-template-columns:1fr;justify-content:stretch}
+  .scenario-tools-filter-only label{width:100%}
+}

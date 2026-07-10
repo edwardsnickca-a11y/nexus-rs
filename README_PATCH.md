@@ -1,44 +1,40 @@
-# NEXUS RS Start Exercise Visual Cleanup
+# NEXUS RS Start Exercise Targeted Simplification
 
 ## Summary
-Visual-only cleanup of the NEXUS RS Start Exercise / Mission Portal page to align more closely with the tighter NEXUS EOC product-family layout.
+This patch applies a focused Mission Portal cleanup based on the latest review.
 
 ## Files changed
+- `src/components/Header.jsx`
 - `src/components/MissionPortal.jsx`
 - `src/styles.css`
 
+## Changes
+- Renamed the pre-exercise page label from **Mission Portal** to **Start Exercise**.
+- Removed the large introductory **Start Exercise** panel beneath the product header.
+- Removed scenario search.
+- Removed the **Scenario Selection** eyebrow label.
+- Retained a single **Select Scenario** heading.
+- Preserved incident-type filtering, scenario cards, readiness behavior, role selection, STARTEX logic, and all downstream RS workflows.
+
 ## Installation
-Target: `C:\Dev\nexus-rs`
+Copy the patch contents into:
 
-Copy the contents of this patch into the project root and allow the two files above to replace the existing versions.
+`C:\Dev\nexus-rs`
 
-## Visual cleanup completed
-- Compact product/page header treatment
-- Tighter Start Exercise hero panel
-- Removed the extra right-side scenario explanation copy
-- Balanced search and incident-type filter row
-- More consistent scenario-card spacing, image proportions, and selected state
-- Stronger centered container discipline
-- Tighter configuration form spacing
-- Better alignment between setup inputs and Mission Readiness
-- Subtle EOC-family grid background and sharper panel boundaries
-- Responsive single-column behavior retained for narrower screens
-
-## Logic intentionally preserved
-No scenario, role, readiness, STARTEX, lifecycle, authority, advisor, AAR, or downstream workspace behavior was changed.
+Allow the files to replace their existing counterparts.
 
 ## Build verification
-`npm run build` completed successfully with Vite 6.4.3.
+Run:
+
+```powershell
+npm run build
+```
 
 ## Manual test checklist
-- Open Mission Portal and confirm the compact product bar.
-- Confirm Start Exercise hero has reduced vertical height.
-- Confirm scenario explanation block is removed.
-- Search scenarios and verify filtering still works.
-- Change incident-type filter and verify results.
-- Select each scenario and verify Mission Readiness updates.
-- Select each role and verify role functional focus updates.
-- Confirm participant, operational context, and exercise focus controls still work.
-- Confirm Start Exercise remains disabled until required selections are complete.
-- Start an exercise and verify the existing lifecycle flow is unchanged.
-- Check desktop and narrow viewport layouts.
+- Confirm the top product bar says **Start Exercise**.
+- Confirm the large introductory panel is gone.
+- Confirm no scenario search field appears.
+- Confirm the scenario section heading reads **Select Scenario**.
+- Confirm incident-type filtering still works.
+- Confirm scenario selection still updates Mission Readiness.
+- Confirm role selection and STARTEX still work.
