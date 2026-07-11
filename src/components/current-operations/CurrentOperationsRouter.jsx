@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { ROLES } from '../../data/roles.js'
 import AdvisorPanel from '../AdvisorPanel.jsx'
-
+import Icon from '../../common/Icon.jsx'
 const NAV = [
   ['mission','MISSION'],['current','CURRENT OPS'],['tomorrow',"TOMORROW'S PLAN"],['sync','SYNC MATRIX'],['requirements','REQUIREMENTS'],
   ['platforms','PLATFORMS'],['upad','UPAD STATUS'],['airspace','AIRSPACE'],['oversight','INTEL OVERSIGHT'],
