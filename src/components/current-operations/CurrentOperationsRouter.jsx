@@ -462,12 +462,62 @@ function RequirementDevelopment({
  </Panel>
 }
 
-function Taskability({missionState}){
- return <Panel title="TASKABILITY & COLLECTION OPTIONS" className="rx-taskability"><div className="rx-three">
-  <section><h4>PLATFORM SUITABILITY (OP 2)</h4>{(missionState.assetControl?.assets||[]).slice(0,3).map((a,i)=><div key={a.id}><span>✈ &nbsp; {a.type}</span><b>{['Good Fit','Moderate Fit','Limited Fit'][i]}</b><i className={`rx-dot ${['green','amber','red'][i]}`}/></div>)}</section>
-  <section><h4>CONSTRAINTS & CONSIDERATIONS</h4>{[['Airspace','TFR near collection area'],['Intel Oversight','Wide area collection – Privacy concern'],['Weather','Hazy, smoke layers in area'],['Other','Civil air traffic in corridor']].map(x=><div key={x[0]}><span>{x[0]}</span><b>{x[1]}</b></div>)}</section>
-  <section><h4>RECOMMENDATION</h4><p>Use effects-based matching for the OP 2 collection window. Coordinate airspace timing and preserve alternate-source options.</p><Button>MARK READY FOR PLAN</Button></section>
- </div></Panel>
+function Taskability({
+ selectedRequirement,
+ deckItems,
+ sorties,
+ onAssignRequirement,
+}){
+ const requirement=selectedRequirement||{}
+ const requirementId=requirement.id
+ const assignedItem=(deckItems||[]).find(item=>item.id===requirementId)
+
+ const options=(sorties||[]).map((sortie,index)=>{
+  const required=String(requirement.requiredCapability||requirement.requiredEffect||requirement.desiredProduct||'').toLowerCase()
+  const capability=String(sortie.capability||'').toLowerCase()
+  const capabilityMatch=!required||!capability||capability.includes(required.split('/')[0])||required.includes(capability.split('/')[0])
+  const ltiov=Number(String(requirement.when||requirement.ltiov||'').replace(/[^\d]/g,'').slice(0,2))
+  const timeMatch=!ltiov||sortie.end<=ltiov
+  const assignedCount=(deckItems||[]).filter(item=>item.assignedSortieId===sortie.id).length
+  const fit=capabilityMatch&&timeMatch?'GOOD FIT':capabilityMatch||timeMatch?'MODERATE FIT':'LIMITED FIT'
+  const warnings=[
+   !capabilityMatch?'Capability requires review':null,
+   !timeMatch?'Collection may miss LTIOV':null,
+   assignedCount>=4?`${assignedCount} requirements already assigned`:null,
+  ].filter(Boolean)
+
+  return {...sortie,capabilityMatch,timeMatch,assignedCount,fit,warnings,index}
+ })
+
+ return <Panel title="TASKABILITY & COLLECTION OPTIONS" className="rx-taskability rx-taskability-options">
+  <div className="rx-taskability-selected">
+   <div><span>SELECTED REQUIREMENT</span><strong>{String(requirement.id||'NONE').toUpperCase()}</strong></div>
+   <div><span>LOCATION / NAI</span><strong>{requirement.nai||requirement.location||requirement.fire||requirement.incident||'—'}</strong></div>
+   <div><span>LTIOV</span><strong>{requirement.when||requirement.ltiov||'—'}</strong></div>
+   <div><span>REQUIRED CAPABILITY</span><strong>{requirement.requiredCapability||requirement.requiredEffect||requirement.desiredProduct||'—'}</strong></div>
+  </div>
+
+  <div className="rx-taskability-options-list">
+   {options.map(option=><article className={`rx-taskability-option ${assignedItem?.assignedSortieId===option.id?'assigned':''}`} key={option.id}>
+    <header>
+     <div><strong>{option.label}</strong><span>{option.window} · {option.capability}</span></div>
+     <em className={option.fit==='GOOD FIT'?'good':option.fit==='MODERATE FIT'?'med':'high'}>{option.fit}</em>
+    </header>
+    <dl>
+     <div><dt>Capability</dt><dd>{option.capabilityMatch?'Supports requirement':'Review mismatch'}</dd></div>
+     <div><dt>Timing</dt><dd>{option.timeMatch?'Supports LTIOV':'LTIOV at risk'}</dd></div>
+     <div><dt>Deck Load</dt><dd>{option.assignedCount} assigned</dd></div>
+    </dl>
+    {option.warnings.length>0&&<ul>{option.warnings.map(warning=><li key={warning}>{warning}</li>)}</ul>}
+    <button
+     disabled={!requirementId}
+     onClick={()=>onAssignRequirement?.(requirement,option.id)}
+    >
+     {assignedItem?.assignedSortieId===option.id?'ASSIGNED TO THIS SORTIE':'ASSIGN TO SORTIE'}
+    </button>
+   </article>)}
+  </div>
+ </Panel>
 }
 
 function UPADOverview({missionState,onUpdateDelivery}){
@@ -776,6 +826,9 @@ function CollectionView(props){
  },[missionState.currentOps?.missions])
 
  const [selectedRequirementId,setSelectedRequirementId]=useState(requirements[0]?.id)
+ const selectedRequirement=requirements.find(requirement=>requirement.id===selectedRequirementId)||requirements[0]||{}
+ const [requirementsHeight,setRequirementsHeight]=useStoredSize('nexus-rs-cm-requirements-height-v1',430,320,760)
+ const [middleHeight,setMiddleHeight]=useStoredSize('nexus-rs-cm-taskability-deck-height-v1',300,220,680)
  const [deckItems,setDeckItems]=useState(()=>{
   try{
    const saved=JSON.parse(localStorage.getItem('nexus-rs-collection-deck-draft')||'null')
@@ -831,6 +884,32 @@ function CollectionView(props){
   })
  }
 
+ const assignRequirementToSortie=(requirement,sortieId)=>{
+  const sortie=plannedSorties.find(candidate=>candidate.id===sortieId)
+  setDeckItems(current=>{
+   const existing=current.find(item=>item.id===requirement.id)
+   const base=existing?{...existing,...requirement}:{...requirement,status:'ready'}
+   const updated={
+    ...base,
+    assignedSortieId:sortieId,
+    assignedSortieLabel:sortie?.label||'',
+    assignedSortieAsset:sortie?.asset||'',
+    assignedSortieStart:sortie?.start,
+    assignedSortieEnd:sortie?.end,
+    assignedSortieCapability:sortie?.capability||'',
+   }
+   const without=current.filter(item=>item.id!==requirement.id)
+   const next=[...without,updated]
+   const assigned=next.filter(item=>item.assignedSortieId===sortieId)
+   return next.map(item=>{
+    if(item.assignedSortieId!==sortieId) return item
+    const index=assigned.findIndex(candidate=>candidate.id===item.id)
+    return {...item,deckSequence:index+1}
+   })
+  })
+  onSendRequirementForward?.(requirement.id)
+ }
+
  const moveDeckItem=(sortieId,draggedId,targetId)=>{
   setDeckItems(current=>{
    const sortieItems=current.filter(item=>item.assignedSortieId===sortieId).sort((a,b)=>(a.deckSequence||999)-(b.deckSequence||999))
@@ -866,7 +945,30 @@ function CollectionView(props){
    .rx-cm-customer-form,.rx-cm-refined-form{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
    .rx-cm-requirement-stages .rx-form-grid input,.rx-cm-requirement-stages .rx-form-grid select{height:32px}
    .rx-cm-requirement-stages .rx-form-grid textarea{min-height:64px}
-   .rx-middle-work-row{min-height:270px}
+   .rx-middle-work-row{min-height:220px}
+   .rx-cm-height-handle{height:7px;cursor:row-resize;border-top:1px solid #17435a;border-bottom:1px solid #17435a;background:rgba(12,43,58,.55)}
+   .rx-cm-height-handle:hover{background:rgba(35,104,126,.6)}
+   .rx-taskability-options{height:100%;display:flex;flex-direction:column}
+   .rx-taskability-selected{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));border-bottom:1px solid rgba(127,232,244,.14)}
+   .rx-taskability-selected>div{padding:9px 10px;border-right:1px solid rgba(127,232,244,.12)}
+   .rx-taskability-selected>div:last-child{border-right:0}
+   .rx-taskability-selected span{display:block;color:#819ba9;font-size:9px}
+   .rx-taskability-selected strong{display:block;margin-top:3px;color:#e5f0f4;font-size:11px}
+   .rx-taskability-options-list{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;padding:9px;overflow:auto}
+   .rx-taskability-option{display:flex;flex-direction:column;min-width:0;padding:9px;border:1px solid #21485c;background:rgba(5,22,35,.72)}
+   .rx-taskability-option.assigned{border-color:#36d4cb;box-shadow:inset 0 0 0 1px rgba(54,212,203,.25)}
+   .rx-taskability-option header{display:flex;justify-content:space-between;gap:8px}
+   .rx-taskability-option header strong,.rx-taskability-option header span{display:block}
+   .rx-taskability-option header strong{color:#e6f1f5;font-size:11px}
+   .rx-taskability-option header span{margin-top:3px;color:#8ea4b0;font-size:9px}
+   .rx-taskability-option header em{align-self:flex-start;font-style:normal;font-size:8px;padding:3px 5px;border-radius:3px}
+   .rx-taskability-option dl{display:grid;grid-template-columns:repeat(3,1fr);margin:9px 0 0}
+   .rx-taskability-option dl div{padding:6px;border:1px solid rgba(127,232,244,.1)}
+   .rx-taskability-option dt{color:#7893a1;font-size:8px}
+   .rx-taskability-option dd{margin:3px 0 0;color:#d5e3e9;font-size:9px}
+   .rx-taskability-option ul{margin:8px 0;padding-left:16px;color:#ffc15a;font-size:9px}
+   .rx-taskability-option button{margin-top:auto;height:31px;border:1px solid #2ebdca;background:#0b3443;color:#7fe8f4;cursor:pointer}
+   .rx-taskability-option button:disabled{opacity:.35;cursor:not-allowed}
    .rx-middle-work-row>.rx-panel{height:100%;display:flex;flex-direction:column}
    .rx-middle-work-row .rx-outline-button{margin-top:auto}
    .rx-active-deck{height:100%;display:flex;flex-direction:column}
@@ -923,7 +1025,7 @@ function CollectionView(props){
    @media(max-width:1200px){.rx-cm-requirement-stages{grid-template-columns:1fr!important}.rx-collection-map-row{grid-template-columns:1fr!important}}
   `}</style>
 
-  <div className="rx-collection-requirements-row">
+  <div className="rx-collection-requirements-row" style={{height:requirementsHeight}}>
    <RequirementDevelopment
     missionState={missionState}
     onUpdateRequirement={onUpdateRequirement}
@@ -933,9 +1035,15 @@ function CollectionView(props){
     onSelectRequirement={setSelectedRequirementId}
    />
   </div>
+  <DragHandle className="horizontal rx-cm-height-handle" onDrag={delta=>setRequirementsHeight(value=>clamp(value+delta.dy,320,760))}/>
 
-  <ResizableRow storageKey="nexus-rs-collection-middle-work-v3" initial={[46,54]} min={28} className="rx-middle-work-row">
-   <Taskability missionState={missionState}/>
+  <ResizableRow storageKey="nexus-rs-collection-middle-work-v4" initial={[50,50]} min={28} className="rx-middle-work-row" style={{height:middleHeight}}>
+   <Taskability
+    selectedRequirement={selectedRequirement}
+    deckItems={deckItems}
+    sorties={plannedSorties}
+    onAssignRequirement={assignRequirementToSortie}
+   />
    <ActiveCollectionDeck
     items={deckItems}
     sorties={plannedSorties}
@@ -944,6 +1052,7 @@ function CollectionView(props){
     onOpenOutput={()=>setShowDeckOutput(true)}
    />
   </ResizableRow>
+  <DragHandle className="horizontal rx-cm-height-handle" onDrag={delta=>setMiddleHeight(value=>clamp(value+delta.dy,220,680))}/>
 
   <ResizableRow storageKey="nexus-rs-collection-sync-previews-v2" initial={[50,50]} min={28} className="rx-collection-sync-row-layout">
    <CollectionSyncPreview title="SYNC MATRIX — TODAY'S PLAN" subtitle="Approved / executing collection picture" items={todaySyncItems} onOpen={()=>onNavigate?.('sync')}/>
