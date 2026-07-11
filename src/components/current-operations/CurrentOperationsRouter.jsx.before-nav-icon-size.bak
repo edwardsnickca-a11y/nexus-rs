@@ -3,27 +3,19 @@ import { ROLES } from '../../data/roles.js'
 import AdvisorPanel from '../AdvisorPanel.jsx'
 import Icon from '../../common/Icon.jsx'
 const NAV = [
-  ['mission', 'MISSION', 'mission'],
-  ['current', 'CURRENT OPS', 'current-ops'],
-  ['tomorrow', "TOMORROW'S PLAN", 'tomorrows-plan'],
-  ['sync', 'SYNC MATRIX', 'sync-matrix'],
-  ['requirements', 'REQUIREMENTS', 'requirements'],
-  ['platforms', 'PLATFORMS', 'platforms'],
-  ['upad', 'UPAD STATUS', 'upad-status'],
-  ['airspace', 'AIRSPACE', 'airspace'],
-  ['oversight', 'INTEL OVERSIGHT', 'intel-oversight'],
-  ['updates', 'DEADLINES', 'deadlines'],
-  ['log', 'DECISION LOG', 'decision-log'],
+  ['mission','MISSION'],['current','CURRENT OPS'],['tomorrow',"TOMORROW'S PLAN"],['sync','SYNC MATRIX'],['requirements','REQUIREMENTS'],
+  ['platforms','PLATFORMS'],['upad','UPAD STATUS'],['airspace','AIRSPACE'],['oversight','INTEL OVERSIGHT'],
+  ['updates','DEADLINES'],['log','DECISION LOG'],
 ]
 
 const roleCopy = {
-  remote_sensing_coordinator:'Set regional priorities, allocate approved assets, protect missions, coordinate unmet needs, and approve tomorrowâ€™s plan.',
+  remote_sensing_coordinator:'Set regional priorities, allocate approved assets, protect missions, coordinate unmet needs, and approve tomorrow’s plan.',
   remote_sensing_manager:'Manage approved mission execution, sortie timing, operational retasking, and gain-loss assessment.',
-  collection_manager:'Develop customer requirements, define EEIs, ensure taskability, and prepare approved requirements for tomorrowâ€™s plan.',
+  collection_manager:'Develop customer requirements, define EEIs, ensure taskability, and prepare approved requirements for tomorrow’s plan.',
   upad_lno:'Represent your UPAD, provide realistic status and production updates, coordinate needs and issues, and advise on capability and limitations.',
 }
 
-const fmt = (v,f='â€”') => v || f
+const fmt = (v,f='—') => v || f
 const tone = (value='') => String(value).toLowerCase().replaceAll(' ','-').replaceAll('_','-')
 const Panel = ({title,accent='cyan',children,className=''}) => <section className={`rx-panel ${accent} ${className}`}><div className="rx-panel-title">{title}</div>{children}</section>
 const Button = ({children,onClick,disabled=false}) => <button className="rx-outline-button" onClick={onClick} disabled={disabled}>{children}</button>
@@ -33,12 +25,12 @@ function LiveHeader({role,missionState,onEnd}){
  const participant=missionState.exercise?.participantName?.trim()
  const identity=participant || meta?.name || 'Role not selected'
  return <header className="rx-header">
-  <div className="rx-brand"><img src="/images/brand/nexus-rs-header-logo.png" alt="NEXUS RS â€” Remote Sensing Simulation Platform" className="rx-brand-image"/></div>
+  <div className="rx-brand"><img src="/images/brand/nexus-rs-header-logo.png" alt="NEXUS RS — Remote Sensing Simulation Platform" className="rx-brand-image"/></div>
   <div className="rx-head-block"><span>ROLE</span><strong>{identity}</strong>{participant&&<small>{meta?.name}</small>}</div>
   <div className="rx-head-block"><span>SCENARIO</span><strong>{missionState.exercise?.scenarioName||missionState.scenario?.name||'Western Region Multi-Fire'}</strong></div>
   <div className="rx-head-block"><span>OPERATIONAL PERIOD</span><div className="rx-op-toggle"><b>OP {missionState.exercise?.activeOperationalPeriod||missionState.operationalPeriod||1}</b><span>OP 2</span></div></div>
   <div className="rx-head-block"><span>LOCAL INCIDENT TIME</span><strong>{missionState.exercise?.localIncidentTime||missionState.asOf||'1732L'}</strong><small>Period remains active</small></div>
-  <div className="rx-header-actions"><button>â˜°<small>MENU</small></button>{onEnd&&<button className="rx-end" onClick={onEnd}>END EXERCISE</button>}</div>
+  <div className="rx-header-actions"><button>☰<small>MENU</small></button>{onEnd&&<button className="rx-end" onClick={onEnd}>END EXERCISE</button>}</div>
  </header>
 }
 
@@ -46,20 +38,20 @@ function Sidebar({role,active,onNavigate}){
  const meta=ROLES.find(r=>r.id===role)
  return <aside className="rx-sidebar">
   <nav>
-  {NAV.map(([id, label, icon]) => (
+  {NAV.map(([id, label]) => (
     <button
       key={id}
       className={active === id ? 'active' : ''}
       onClick={() => onNavigate?.(id)}
     >
       <span>
-        <Icon name={icon} size={24} />
+        {id === 'mission' ? <Icon name="mission" size={20} /> : '◌'}
       </span>
       {label}
     </button>
   ))}
 </nav>
-  <button className="rx-collapse">â‰ª &nbsp; COLLAPSE</button>
+  <button className="rx-collapse">≪ &nbsp; COLLAPSE</button>
  </aside>
 }
 
@@ -71,7 +63,7 @@ function CurrentPeriodCard({role,missionState}){
   upad_lno:'Execute assigned production and report status',
  }[role]
  return <Panel title="CURRENT OPERATIONAL PERIOD (OP 1)" className="rx-top-card">
-  <dl className="rx-key-list"><div><dt>â—· &nbsp; Time</dt><dd>{missionState.exercise?.localIncidentTime||'1732L'}</dd></div><div><dt>â–£ &nbsp; End Time</dt><dd>1800L</dd></div><div><dt>â—Ž &nbsp; Focus</dt><dd>{focus}</dd></div></dl>
+  <dl className="rx-key-list"><div><dt>◷ &nbsp; Time</dt><dd>{missionState.exercise?.localIncidentTime||'1732L'}</dd></div><div><dt>▣ &nbsp; End Time</dt><dd>1800L</dd></div><div><dt>◎ &nbsp; Focus</dt><dd>{focus}</dd></div></dl>
   <Button>VIEW CURRENT OP DETAILS</Button>
  </Panel>
 }
@@ -79,8 +71,8 @@ function CurrentPeriodCard({role,missionState}){
 function TomorrowCard({role,missionState,onNavigate}){
  const gaps=(missionState.tomorrowPlan?.blockers||[]).slice(0,3)
  return <Panel title="TOMORROW'S PLAN (OP 2)" accent="amber" className="rx-top-card">
-  <dl className="rx-key-list"><div><dt>â—· &nbsp; Planning Window Closes</dt><dd>2130L</dd></div><div><dt>â–£ &nbsp; OP 2 Begins</dt><dd>2200L</dd></div></dl>
-  <div className="rx-gap-list"><strong>{role==='upad_lno'?'UPAD Commitments':'Top Planning Gaps'}</strong>{role==='upad_lno'?<b>6 / 11</b>:<ul>{(gaps.length?gaps:['Fire 1 â€“ IMINT coverage gap late OP 2','Fire 2 â€“ Change detection not scheduled']).map(x=><li key={x}>{x}</li>)}</ul>}</div>
+  <dl className="rx-key-list"><div><dt>◷ &nbsp; Planning Window Closes</dt><dd>2130L</dd></div><div><dt>▣ &nbsp; OP 2 Begins</dt><dd>2200L</dd></div></dl>
+  <div className="rx-gap-list"><strong>{role==='upad_lno'?'UPAD Commitments':'Top Planning Gaps'}</strong>{role==='upad_lno'?<b>6 / 11</b>:<ul>{(gaps.length?gaps:['Fire 1 – IMINT coverage gap late OP 2','Fire 2 – Change detection not scheduled']).map(x=><li key={x}>{x}</li>)}</ul>}</div>
   <Button onClick={()=>onNavigate?.('tomorrow')}>VIEW / BUILD TOMORROW'S PLAN</Button>
  </Panel>
 }
@@ -89,10 +81,10 @@ function DeadlinesCard({role}){
  const title=role==='collection_manager'?'REQUIREMENT DEADLINES & WINDOWS':'MISSION DEADLINES & WINDOWS'
  return <Panel title={title} accent="red" className="rx-top-card">
   <div className="rx-deadlines">{[
-   ['â–³','Fire 1 IMINT Product','OP 1','01:12:32'],
-   ['â–£','Fire 2 Change Detection','OP 1','00:47:32'],
-   ['â–£','Fire 3 Damage Assessment','OP 1','01:32:32'],
-   ['â—·',role==='collection_manager'?'New Requests Cutoff (OP 2)':'Tomorrow Plan Submit','OP 1','01:57:32'],
+   ['△','Fire 1 IMINT Product','OP 1','01:12:32'],
+   ['▣','Fire 2 Change Detection','OP 1','00:47:32'],
+   ['▣','Fire 3 Damage Assessment','OP 1','01:32:32'],
+   ['◷',role==='collection_manager'?'New Requests Cutoff (OP 2)':'Tomorrow Plan Submit','OP 1','01:57:32'],
   ].map(x=><div key={x[1]}><span>{x[0]}</span><strong>{x[1]}</strong><em>{x[2]}</em><b>{x[3]}</b></div>)}</div>
   <Button>VIEW ALL DEADLINES</Button>
  </Panel>
@@ -215,34 +207,34 @@ function OperationalMap({missionState}){
     return <circle key={item.id} cx={p.left} cy={p.top} r="43" className={`rx-tfr-ring ${item.tone}`}/>
    })}
   </svg>
-  <div className="rx-legend"><strong>LEGEND</strong><span>ðŸ”´ Fire 1 â€“ Pine Ridge</span><span>ðŸŸ  Fire 2 â€“ Canyon Creek</span><span>ðŸŸ¡ Fire 3 â€“ Eagle Peak</span><span>âœˆ Airborne Platform</span><span>â—¯ TFR / Airspace</span></div>
+  <div className="rx-legend"><strong>LEGEND</strong><span>🔴 Fire 1 – Pine Ridge</span><span>🟠 Fire 2 – Canyon Creek</span><span>🟡 Fire 3 – Eagle Peak</span><span>✈ Airborne Platform</span><span>◯ TFR / Airspace</span></div>
   {incidents.map(item=>{
    const p=markerPosition(item.lat,item.lng)
-   return <button key={item.id} type="button" className={`rx-map-fire ${item.tone}`} style={{left:p.left,top:p.top}} title={`${item.id} â€” ${item.name}`}>
-    <span>ðŸ”¥</span><b>{item.id}</b><small>{item.name}</small>
+   return <button key={item.id} type="button" className={`rx-map-fire ${item.tone}`} style={{left:p.left,top:p.top}} title={`${item.id} — ${item.name}`}>
+    <span>🔥</span><b>{item.id}</b><small>{item.name}</small>
    </button>
   })}
   {missionDefaults.map((item,index)=>{
    const mission=missions[index]
    const p=markerPosition(item.lat,item.lng)
    return <button key={item.label} type="button" className="rx-map-aircraft" style={{left:p.left,top:p.top}} title={`${mission?.id||item.label}: ${mission?.objective||'Assigned mission'}`}>
-    âœˆ <b>{mission?.platform||mission?.assetId||item.label}</b>
+    ✈ <b>{mission?.platform||mission?.assetId||item.label}</b>
    </button>
   })}
   <div className="rx-map-controls">
-   <button type="button" onPointerDown={e=>e.stopPropagation()} onClick={()=>zoomBy(1)} title="Zoom in">ï¼‹</button>
-   <button type="button" onPointerDown={e=>e.stopPropagation()} onClick={()=>zoomBy(-1)} title="Zoom out">âˆ’</button>
+   <button type="button" onPointerDown={e=>e.stopPropagation()} onClick={()=>zoomBy(1)} title="Zoom in">＋</button>
+   <button type="button" onPointerDown={e=>e.stopPropagation()} onClick={()=>zoomBy(-1)} title="Zoom out">−</button>
   </div>
   <div className="rx-map-scale" aria-label={`Map scale: ${formatScale(scaleNauticalMiles)} nautical miles`} style={{width:scaleWidth}}>
    <div className="rx-map-scale-labels"><span>0</span><span>{formatScale(halfScale)}</span><span>{formatScale(scaleNauticalMiles)} NM</span></div>
    <div className="rx-map-scale-line"><i/><i/><i/></div>
   </div>
-  <div className="rx-map-attribution">Â© OpenStreetMap contributors</div>
+  <div className="rx-map-attribution">© OpenStreetMap contributors</div>
  </div>
 }
 
 function RegionalMissionPicture({role,missionState}){
- return <Panel title="REGIONAL MISSION PICTURE â€“ THREE FIRES" className="rx-map-panel">
+ return <Panel title="REGIONAL MISSION PICTURE – THREE FIRES" className="rx-map-panel">
   <OperationalMap missionState={missionState}/>
  </Panel>
 }
@@ -251,7 +243,7 @@ function PlatformTable({missionState,onRelease,onUpdateMission,role}){
  const assets=missionState.assetControl?.assets||[]
  return <Panel title="PLATFORM ASSIGNMENTS & AVAILABILITY" className="rx-platform-panel">
   <table className="rx-table"><thead><tr><th>Platform</th><th>Status / Mission</th><th>Available</th><th>Next Available</th></tr></thead><tbody>
-   {assets.slice(0,6).map(a=><tr key={a.id}><td>âœˆ &nbsp; {a.identifier}</td><td><i className={`rx-dot ${tone(a.status)}`}/>{a.status} â€“ {a.assignment}</td><td>{a.status==='reserve'?'Now':'â€”'}</td><td>{a.status==='assigned'?'OP 2':'â€”'}</td>{role==='remote_sensing_manager'&&<td><select className="rx-inline-select" value={(missionState.currentOps?.missions||[]).find(m=>m.id===a.missionId)?.status||'planned'} onChange={e=>a.missionId&&onUpdateMission?.(a.missionId,{status:e.target.value})}><option value="planned">Planned</option><option value="launched">Launched</option><option value="on_station">On station</option><option value="collecting">Collecting</option><option value="returning">Returning</option><option value="landed">Landed</option><option value="delayed">Delayed</option><option value="unable">Unable</option></select></td>}</tr>)}
+   {assets.slice(0,6).map(a=><tr key={a.id}><td>✈ &nbsp; {a.identifier}</td><td><i className={`rx-dot ${tone(a.status)}`}/>{a.status} – {a.assignment}</td><td>{a.status==='reserve'?'Now':'—'}</td><td>{a.status==='assigned'?'OP 2':'—'}</td>{role==='remote_sensing_manager'&&<td><select className="rx-inline-select" value={(missionState.currentOps?.missions||[]).find(m=>m.id===a.missionId)?.status||'planned'} onChange={e=>a.missionId&&onUpdateMission?.(a.missionId,{status:e.target.value})}><option value="planned">Planned</option><option value="launched">Launched</option><option value="on_station">On station</option><option value="collecting">Collecting</option><option value="returning">Returning</option><option value="landed">Landed</option><option value="delayed">Delayed</option><option value="unable">Unable</option></select></td>}</tr>)}
   </tbody></table>
   <Button onClick={role==='remote_sensing_coordinator'&&assets[0]?()=>onRelease?.(assets[0].id):undefined}>VIEW PLATFORM DETAILS</Button>
  </Panel>
@@ -268,9 +260,9 @@ function RequirementsSummary({missionState,onNavigate}){
 
 function MiniSyncMatrix({missionState,onNavigate}){
  const missions=missionState.currentOps?.missions||[]
- return <Panel title="SYNC MATRIX â€” CURRENT & NEAR-TERM" className="rx-mini-sync">
+ return <Panel title="SYNC MATRIX — CURRENT & NEAR-TERM" className="rx-mini-sync">
   <table className="rx-table"><thead><tr><th>MISSION</th><th>ASSET</th><th>REQUIREMENT</th><th>WINDOW</th><th>STATUS</th><th>PROT</th><th>PRODUCT</th></tr></thead><tbody>
-   {missions.slice(0,5).map((m,i)=><tr key={m.id}><td><strong>{m.id}</strong></td><td>{m.platform||m.assetId||'â€”'}</td><td>{m.requirementId||m.requirement||'â€”'}</td><td>{m.window||m.startTime||'â€”'}</td><td><em className={tone(m.status||'planned')}>{String(m.status||'planned').replaceAll('_',' ')}</em></td><td>{m.protected?'â—†':'â€”'}</td><td>{m.productStatus||['Pending','Planned','At Risk','Queued','â€”'][i]}</td></tr>)}
+   {missions.slice(0,5).map((m,i)=><tr key={m.id}><td><strong>{m.id}</strong></td><td>{m.platform||m.assetId||'—'}</td><td>{m.requirementId||m.requirement||'—'}</td><td>{m.window||m.startTime||'—'}</td><td><em className={tone(m.status||'planned')}>{String(m.status||'planned').replaceAll('_',' ')}</em></td><td>{m.protected?'◆':'—'}</td><td>{m.productStatus||['Pending','Planned','At Risk','Queued','—'][i]}</td></tr>)}
   </tbody></table>
   <Button onClick={()=>onNavigate?.('sync')}>OPEN FULL SYNC MATRIX</Button>
  </Panel>
@@ -364,7 +356,7 @@ function UPADTable({missionState}){
 }
 
 function AirspacePanel(){
- return <Panel title="AIRSPACE / TFR CONSTRAINTS" className="rx-small-list"><ul>{['TFR â€“ Fire 1 (VIP Visit)','TFR â€“ Fire 2 (Aerial Operations)','TFR â€“ Fire 3 (Aviation Hazard)','MOA â€“ R-2505','Severed Airspace â€“ North'].map((x,i)=><li key={x}>{x}<span><i className={`rx-dot ${i===4?'amber':'red'}`}/>{i===4?'Advisory':'Active'}</span></li>)}</ul><Button>VIEW AIRSPACE DETAIL</Button></Panel>
+ return <Panel title="AIRSPACE / TFR CONSTRAINTS" className="rx-small-list"><ul>{['TFR – Fire 1 (VIP Visit)','TFR – Fire 2 (Aerial Operations)','TFR – Fire 3 (Aviation Hazard)','MOA – R-2505','Severed Airspace – North'].map((x,i)=><li key={x}>{x}<span><i className={`rx-dot ${i===4?'amber':'red'}`}/>{i===4?'Advisory':'Active'}</span></li>)}</ul><Button>VIEW AIRSPACE DETAIL</Button></Panel>
 }
 
 function OversightPanel({missionState}){
@@ -393,15 +385,15 @@ function RequirementDevelopment({missionState,onUpdateRequirement,onValidateRequ
   <div className="rx-req-dev-grid">
    <section><h4>CUSTOMER REQUEST (RAW)</h4><dl><div><dt>Request ID</dt><dd>{selected.id}</dd></div><div><dt>Customer</dt><dd>{selected.customer}</dd></div><div><dt>Priority</dt><dd><em className="high">HIGH</em></dd></div></dl><p className="rx-raw-request">{selected.what||selected.title||'Customer request requires clarification.'}</p><dl><div><dt>Associated Fire</dt><dd>{selected.fire}</dd></div><div><dt>Desired By</dt><dd>{selected.when||'1800L'}</dd></div></dl></section>
    <section><h4>REFINED REQUIREMENT (DRAFT)</h4><div className="rx-form-grid"><label>Decision to Support<input value={draft.decisionToSupport||''} onChange={e=>update('decisionToSupport',e.target.value)}/></label><label>Location / NAI<input value={draft.nai||''} onChange={e=>update('nai',e.target.value)}/></label><label className="wide">Information Need / Description<textarea value={draft.what||''} onChange={e=>update('what',e.target.value)}/></label><label>Time Sensitive<input value={draft.when||''} onChange={e=>update('when',e.target.value)}/></label><label>Desired Product / Effect<input value={draft.requiredEffect||''} onChange={e=>update('requiredEffect',e.target.value)}/></label><label className="wide">Essential Elements of Information (EEIs)<textarea value={(draft.eeis||[]).join('\n')} onChange={e=>update('eeis',e.target.value.split('\n').filter(Boolean))}/></label><label>Collection Window<select><option>OP 2</option></select></label><label>Alternate Sources<input value={draft.alternateSource||''} onChange={e=>update('alternateSource',e.target.value)}/></label></div><div className="rx-form-actions"><span>Feasibility Status <b>PENDING REVIEW</b></span><button onClick={()=>{onUpdateRequirement?.(selected.id,draft);onValidateRequirement?.(selected.id)}}>MARK READY FOR PLAN</button></div></section>
-   <section><h4>TOMORROW PLAN â€“ REQUIREMENT QUEUE</h4>{reqs.slice(0,4).map(r=><button className={`rx-queue-item ${r.id===selected.id?'selected':''}`} key={r.id}><strong>{r.id.toUpperCase()} &nbsp; {r.fire}</strong><span>{r.title}</span><em>{r.status}</em></button>)}<Button onClick={()=>onSendRequirementForward?.(selected.id)}>VIEW ALL REQUIREMENTS</Button></section>
+   <section><h4>TOMORROW PLAN – REQUIREMENT QUEUE</h4>{reqs.slice(0,4).map(r=><button className={`rx-queue-item ${r.id===selected.id?'selected':''}`} key={r.id}><strong>{r.id.toUpperCase()} &nbsp; {r.fire}</strong><span>{r.title}</span><em>{r.status}</em></button>)}<Button onClick={()=>onSendRequirementForward?.(selected.id)}>VIEW ALL REQUIREMENTS</Button></section>
   </div>
  </Panel>
 }
 
 function Taskability({missionState}){
  return <Panel title="TASKABILITY & COLLECTION OPTIONS" className="rx-taskability"><div className="rx-three">
-  <section><h4>PLATFORM SUITABILITY (OP 2)</h4>{(missionState.assetControl?.assets||[]).slice(0,3).map((a,i)=><div key={a.id}><span>âœˆ &nbsp; {a.type}</span><b>{['Good Fit','Moderate Fit','Limited Fit'][i]}</b><i className={`rx-dot ${['green','amber','red'][i]}`}/></div>)}</section>
-  <section><h4>CONSTRAINTS & CONSIDERATIONS</h4>{[['Airspace','TFR near collection area'],['Intel Oversight','Wide area collection â€“ Privacy concern'],['Weather','Hazy, smoke layers in area'],['Other','Civil air traffic in corridor']].map(x=><div key={x[0]}><span>{x[0]}</span><b>{x[1]}</b></div>)}</section>
+  <section><h4>PLATFORM SUITABILITY (OP 2)</h4>{(missionState.assetControl?.assets||[]).slice(0,3).map((a,i)=><div key={a.id}><span>✈ &nbsp; {a.type}</span><b>{['Good Fit','Moderate Fit','Limited Fit'][i]}</b><i className={`rx-dot ${['green','amber','red'][i]}`}/></div>)}</section>
+  <section><h4>CONSTRAINTS & CONSIDERATIONS</h4>{[['Airspace','TFR near collection area'],['Intel Oversight','Wide area collection – Privacy concern'],['Weather','Hazy, smoke layers in area'],['Other','Civil air traffic in corridor']].map(x=><div key={x[0]}><span>{x[0]}</span><b>{x[1]}</b></div>)}</section>
   <section><h4>RECOMMENDATION</h4><p>Use effects-based matching for the OP 2 collection window. Coordinate airspace timing and preserve alternate-source options.</p><Button>MARK READY FOR PLAN</Button></section>
  </div></Panel>
 }
@@ -487,4 +479,3 @@ export default function CurrentOperationsRouter({
   <AdvisorColumn {...advisorProps}/>
  </div>
 }
-
