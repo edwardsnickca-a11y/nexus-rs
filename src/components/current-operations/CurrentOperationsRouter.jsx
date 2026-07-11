@@ -157,9 +157,9 @@ function OperationalMap({missionState}){
  }
 
  const incidents=[
-  {id:'F1',name:'Pine Ridge',lat:40.15,lng:-121.75,tone:'red'},
-  {id:'F2',name:'Canyon Creek',lat:39.55,lng:-121.25,tone:'orange'},
-  {id:'F3',name:'Eagle Peak',lat:38.95,lng:-121.82,tone:'amber'},
+  {id:'pine-ridge',name:'Pine Ridge',lat:40.15,lng:-121.75,tone:'red'},
+  {id:'bear-creek',name:'Bear Creek',lat:39.55,lng:-121.25,tone:'orange'},
+  {id:'eagle-peak',name:'Eagle Peak',lat:38.95,lng:-121.82,tone:'amber'},
  ]
  const missionDefaults=[
   {label:'MQ-9-01',lat:39.95,lng:-122.05},
@@ -215,11 +215,11 @@ function OperationalMap({missionState}){
     return <circle key={item.id} cx={p.left} cy={p.top} r="43" className={`rx-tfr-ring ${item.tone}`}/>
    })}
   </svg>
-  <div className="rx-legend"><strong>LEGEND</strong><span>🔴 Fire 1 – Pine Ridge</span><span>🟠 Fire 2 – Canyon Creek</span><span>🟡 Fire 3 – Eagle Peak</span><span>✈ Airborne Platform</span><span>◯ TFR / Airspace</span></div>
+  <div className="rx-legend"><strong>LEGEND</strong><span>🔴 Pine Ridge</span><span>🟠 Bear Creek</span><span>🟡 Eagle Peak</span><span>✈ Airborne Platform</span><span>◯ TFR / Airspace</span></div>
   {incidents.map(item=>{
    const p=markerPosition(item.lat,item.lng)
-   return <button key={item.id} type="button" className={`rx-map-fire ${item.tone}`} style={{left:p.left,top:p.top}} title={`${item.id} — ${item.name}`}>
-    <span>🔥</span><b>{item.id}</b><small>{item.name}</small>
+   return <button key={item.id} type="button" className={`rx-map-fire ${item.tone}`} style={{left:p.left,top:p.top}} title={item.name}>
+    <span>🔥</span><b>{item.name}</b>
    </button>
   })}
   {missionDefaults.map((item,index)=>{
@@ -467,27 +467,32 @@ function Taskability({
  deckItems,
  sorties,
  onAssignRequirement,
+ onViewAllSorties,
 }){
  const requirement=selectedRequirement||{}
  const requirementId=requirement.id
  const assignedItem=(deckItems||[]).find(item=>item.id===requirementId)
 
- const options=(sorties||[]).map((sortie,index)=>{
+ const options=(sorties||[]).map(sortie=>{
   const required=String(requirement.requiredCapability||requirement.requiredEffect||requirement.desiredProduct||'').toLowerCase()
   const capability=String(sortie.capability||'').toLowerCase()
   const capabilityMatch=!required||!capability||capability.includes(required.split('/')[0])||required.includes(capability.split('/')[0])
   const ltiov=Number(String(requirement.when||requirement.ltiov||'').replace(/[^\d]/g,'').slice(0,2))
   const timeMatch=!ltiov||sortie.end<=ltiov
   const assignedCount=(deckItems||[]).filter(item=>item.assignedSortieId===sortie.id).length
-  const fit=capabilityMatch&&timeMatch?'GOOD FIT':capabilityMatch||timeMatch?'MODERATE FIT':'LIMITED FIT'
+  const incidentMatch=String(sortie.primaryIncident||'').toLowerCase()===String(requirement.fire||requirement.incident||requirement.location||'').toLowerCase()
+  const fitScore=(capabilityMatch?4:0)+(timeMatch?3:0)+(incidentMatch?2:0)-Math.min(assignedCount,4)
+  const fit=fitScore>=7?'GOOD FIT':fitScore>=3?'MODERATE FIT':'LIMITED FIT'
   const warnings=[
    !capabilityMatch?'Capability requires review':null,
    !timeMatch?'Collection may miss LTIOV':null,
+   !incidentMatch?'Cross-incident route opportunity':null,
    assignedCount>=4?`${assignedCount} requirements already assigned`:null,
   ].filter(Boolean)
+  return {...sortie,capabilityMatch,timeMatch,assignedCount,incidentMatch,fit,fitScore,warnings}
+ }).sort((a,b)=>b.fitScore-a.fitScore)
 
-  return {...sortie,capabilityMatch,timeMatch,assignedCount,fit,warnings,index}
- })
+ const topOptions=options.slice(0,3)
 
  return <Panel title="TASKABILITY & COLLECTION OPTIONS" className="rx-taskability rx-taskability-options">
   <div className="rx-taskability-selected">
@@ -497,10 +502,15 @@ function Taskability({
    <div><span>REQUIRED CAPABILITY</span><strong>{requirement.requiredCapability||requirement.requiredEffect||requirement.desiredProduct||'—'}</strong></div>
   </div>
 
+  <div className="rx-taskability-options-title">
+   <strong>BEST COLLECTION OPTIONS</strong>
+   <button onClick={onViewAllSorties}>VIEW ALL {options.length} SORTIES</button>
+  </div>
+
   <div className="rx-taskability-options-list">
-   {options.map(option=><article className={`rx-taskability-option ${assignedItem?.assignedSortieId===option.id?'assigned':''}`} key={option.id}>
+   {topOptions.map(option=><article className={`rx-taskability-option ${assignedItem?.assignedSortieId===option.id?'assigned':''}`} key={option.id}>
     <header>
-     <div><strong>{option.label}</strong><span>{option.window} · {option.capability}</span></div>
+     <div><strong>{option.label}</strong><span>{option.primaryIncident} · {option.window} · {option.capability}</span></div>
      <em className={option.fit==='GOOD FIT'?'good':option.fit==='MODERATE FIT'?'med':'high'}>{option.fit}</em>
     </header>
     <dl>
@@ -509,10 +519,7 @@ function Taskability({
      <div><dt>Deck Load</dt><dd>{option.assignedCount} assigned</dd></div>
     </dl>
     {option.warnings.length>0&&<ul>{option.warnings.map(warning=><li key={warning}>{warning}</li>)}</ul>}
-    <button
-     disabled={!requirementId}
-     onClick={()=>onAssignRequirement?.(requirement,option.id)}
-    >
+    <button disabled={!requirementId} onClick={()=>onAssignRequirement?.(requirement,option.id)}>
      {assignedItem?.assignedSortieId===option.id?'ASSIGNED TO THIS SORTIE':'ASSIGN TO SORTIE'}
     </button>
    </article>)}
@@ -644,18 +651,22 @@ function CollectionDeckOutput({items,onClose}){
    <div className="rx-deck-table-wrap">
     <table className="rx-deck-full-table">
      <thead><tr>
-      <th>SORTIE</th><th>SEQ</th><th>ID</th><th>PRI</th><th>STATE</th><th>LOCATION</th><th>LOCATION DESCRIPTION</th>
-      <th>CENTER POINT</th><th>RADIUS</th><th>PIR</th><th>EEI / WHAT ARE YOU LOOKING FOR</th>
+      <th>TASK ID</th><th>PRI</th><th>STATE / INCIDENT</th><th>LOCATION</th><th>LOCATION DESCRIPTION</th>
+      <th>CUSTOMER</th><th>CUSTOMER NEED</th><th>DECISION TO SUPPORT</th><th>EEIs</th>
+      <th>LTIOV</th><th>ACQ START</th><th>ACQ END</th><th>ASSIGNED SORTIE</th><th>COLLECTION SEQUENCE</th>
+      <th>CENTER POINT</th><th>RADIUS</th><th>PIR</th>
       <th>REQUIRED CAPABILITY</th><th>RESOLUTION</th><th>PERIODICITY</th><th>JUSTIFICATION</th>
-      <th>PRE-EVENT</th><th>LTIOV</th><th>ACQ START</th><th>ACQ END</th>
-      <th>REPORTING INSTRUCTIONS</th><th>SPECIAL INSTRUCTIONS</th><th>STATUS</th>
+      <th>PRE-EVENT</th><th>REPORTING INSTRUCTIONS</th><th>SPECIAL INSTRUCTIONS</th><th>STATUS</th>
      </tr></thead>
      <tbody>{rows.map(row=><tr key={row.id}>
-      <td>{items[rows.indexOf(row)]?.assignedSortieLabel||'UNASSIGNED'}</td><td>{items[rows.indexOf(row)]?.deckSequence||'—'}</td><td>{row.id}</td><td><em className={tone(row.priority)}>{row.priority}</em></td><td>{row.state}</td>
-      <td>{row.location}</td><td>{row.description}</td><td>{row.centerPoint}</td><td>{row.radius}</td>
-      <td>{row.pir}</td><td>{row.eei}</td><td>{row.capability}</td><td>{row.resolution}</td>
-      <td>{row.periodicity}</td><td>{row.justification}</td><td>{row.preEvent}</td><td>{row.ltiov}</td>
-      <td>{row.acquisitionStart}</td><td>{row.acquisitionEnd}</td><td>{row.reporting}</td>
+      <td>{row.id}</td><td><em className={tone(row.priority)}>{row.priority}</em></td><td>{items[rows.indexOf(row)]?.fire||items[rows.indexOf(row)]?.incident||row.state}</td>
+      <td>{row.location}</td><td>{row.description}</td><td>{items[rows.indexOf(row)]?.customer||'—'}</td>
+      <td>{items[rows.indexOf(row)]?.customerNeed||items[rows.indexOf(row)]?.what||row.description}</td>
+      <td>{items[rows.indexOf(row)]?.decisionToSupport||row.justification}</td><td>{row.eei}</td>
+      <td>{row.ltiov}</td><td>{row.acquisitionStart}</td><td>{row.acquisitionEnd}</td>
+      <td>{items[rows.indexOf(row)]?.assignedSortieLabel||'UNASSIGNED'}</td><td>{items[rows.indexOf(row)]?.deckSequence||'—'}</td>
+      <td>{row.centerPoint}</td><td>{row.radius}</td><td>{row.pir}</td><td>{row.capability}</td><td>{row.resolution}</td>
+      <td>{row.periodicity}</td><td>{row.justification}</td><td>{row.preEvent}</td><td>{row.reporting}</td>
       <td>{row.special}</td><td>{row.status}</td>
      </tr>)}</tbody>
     </table>
@@ -664,6 +675,34 @@ function CollectionDeckOutput({items,onClose}){
     <span>{rows.length} COLLECTION REQUIREMENTS · {rows.filter(r=>r.status.includes('READY')).length} READY</span>
     <button onClick={()=>window.print()}>PRINT / SAVE DECK</button>
    </footer>
+  </div>
+ </div>
+}
+
+function AllSortiesModal({
+ requirement,
+ deckItems,
+ sorties,
+ onAssign,
+ onClose,
+}){
+ return <div className="rx-sortie-picker-modal" role="dialog" aria-modal="true" aria-label="All available sorties">
+  <div className="rx-sortie-picker-card">
+   <header>
+    <div><span>ALL COLLECTION OPTIONS</span><h2>{String(requirement?.id||'SELECTED REQUIREMENT').toUpperCase()}</h2><p>Compare all planned sorties before assigning the collection requirement.</p></div>
+    <button onClick={onClose}>CLOSE</button>
+   </header>
+   <div className="rx-sortie-picker-table">
+    <div className="head"><span>SORTIE</span><span>PRIMARY INCIDENT</span><span>AIRCRAFT</span><span>WINDOW</span><span>CAPABILITY</span><span>DECK LOAD</span><span>ACTION</span></div>
+    {sorties.map(sortie=>{
+      const count=deckItems.filter(item=>item.assignedSortieId===sortie.id).length
+      const assigned=deckItems.find(item=>item.id===requirement?.id)?.assignedSortieId===sortie.id
+      return <div className="row" key={sortie.id}>
+       <strong>{sortie.label}</strong><span>{sortie.primaryIncident}</span><span>{sortie.asset}</span><span>{sortie.window}</span><span>{sortie.capability}</span><span>{count} requirements</span>
+       <button onClick={()=>{onAssign?.(requirement,sortie.id);onClose?.()}}>{assigned?'ASSIGNED':'ASSIGN'}</button>
+      </div>
+    })}
+   </div>
   </div>
  </div>
 }
@@ -684,13 +723,13 @@ function ActiveCollectionDeck({
    <span><b>{rows.length-assignedCount}</b> UNASSIGNED</span>
   </div>
   <div className="rx-deck-assignment-table">
-   <div className="head"><span>PRI</span><span>ID</span><span>LOCATION / NAI</span><span>LTIOV</span><span>ASSIGNED SORTIE</span><span>ACTION</span></div>
-   {items.slice(0,8).map((item,index)=>{
+   <div className="head"><span>TASK ID</span><span>PRI</span><span>INCIDENT / LOCATION</span><span>LTIOV</span><span>ASSIGNED SORTIE</span><span>ACTION</span></div>
+   {items.slice(0,10).map((item,index)=>{
     const row=buildDeckRow(item,index)
     return <div className="row" key={row.id}>
-     <span><em className={tone(row.priority)}>{row.priority}</em></span>
      <strong>{row.id}</strong>
-     <span>{row.location}</span>
+     <span><em className={tone(row.priority)}>{row.priority}</em></span>
+     <span>{item.fire||item.incident||row.location} · {row.location}</span>
      <span>{row.ltiov}</span>
      <select value={item.assignedSortieId||''} onChange={event=>onAssignSortie?.(item.id,event.target.value)}>
       <option value="">UNASSIGNED</option>
@@ -716,42 +755,38 @@ function SortieDeckEditor({
   if(target<0||target>=ordered.length) return
   onMove?.(sortie.id,ordered[index].id,ordered[target].id)
  }
- const conflicts=ordered.flatMap((item,index)=>{
-  const flags=[]
-  const ltiov=Number(String(item.when||item.ltiov||'').replace(/[^\d]/g,'').slice(0,2))
-  const estimatedHour=(sortie.start||10)+index
-  if(ltiov&&estimatedHour>ltiov) flags.push('LTIOV AT RISK')
-  if(item.requiredCapability&&sortie.capability&&!String(sortie.capability).toLowerCase().includes(String(item.requiredCapability).toLowerCase().split('/')[0])) flags.push('CHECK CAPABILITY')
-  return flags.map(flag=>`${item.id}: ${flag}`)
- })
 
  return <div className="rx-sortie-deck-modal" role="dialog" aria-modal="true" aria-label={`${sortie.label} collection deck`}>
   <div className="rx-sortie-deck-card">
    <header>
-    <div><span>SORTIE COLLECTION DECK</span><h2>{sortie.label}</h2><p>{sortie.window} · Order requirements in the sequence the aircraft should collect them.</p></div>
+    <div><span>SORTIE COLLECTION DECK</span><h2>{sortie.label}</h2><p>{sortie.primaryIncident} · {sortie.window} · Order Task IDs in the sequence the aircraft should collect them.</p></div>
     <button onClick={onClose}>CLOSE</button>
    </header>
+
    <div className="rx-sortie-deck-route">
     {ordered.map((item,index)=><div key={item.id}><b>{index+1}</b><span>{item.nai||item.location||item.fire||item.incident||item.id}</span></div>)}
    </div>
-   <div className="rx-sortie-deck-table">
-    <div className="head"><span>SEQ</span><span>PRI</span><span>REQUIREMENT</span><span>LOCATION / NAI</span><span>LTIOV</span><span>COLLECTION NEED</span><span>ORDER</span></div>
+
+   <div className="rx-sortie-deck-table rx-upad-deck-table">
+    <div className="head"><span>TASK ID</span><span>SEQ</span><span>PRI</span><span>INCIDENT / LOCATION</span><span>CUSTOMER NEED</span><span>EEIs</span><span>LTIOV</span><span>ORDER</span></div>
     {ordered.map((item,index)=><div className="row" key={item.id} draggable
       onDragStart={event=>event.dataTransfer.setData('text/plain',item.id)}
       onDragOver={event=>event.preventDefault()}
       onDrop={event=>{event.preventDefault();const dragged=event.dataTransfer.getData('text/plain');if(dragged&&dragged!==item.id) onMove?.(sortie.id,dragged,item.id)}}
     >
+     <b>{String(item.id||'').toUpperCase()}</b>
      <strong>{index+1}</strong>
      <em className={tone(item.priority)}>{String(item.priority||'2').toUpperCase()}</em>
-     <b>{String(item.id||'').toUpperCase()}</b>
-     <span>{item.nai||item.location||item.fire||item.incident||'—'}</span>
+     <span>{item.fire||item.incident||'—'} · {item.nai||item.location||'—'}</span>
+     <span>{item.customerNeed||item.what||item.title||'Collection requirement'}</span>
+     <span>{(item.eeis||[]).join('; ')||'EEIs require refinement'}</span>
      <span>{item.when||item.ltiov||'—'}</span>
-     <span>{item.what||item.title||'Collection requirement'}</span>
      <span className="actions"><button disabled={index===0} onClick={()=>move(index,-1)}>MOVE UP</button><button disabled={index===ordered.length-1} onClick={()=>move(index,1)}>MOVE DOWN</button></span>
     </div>)}
    </div>
+
    <footer>
-    <div>{conflicts.length?<><strong>PLAN CHECKS</strong>{conflicts.slice(0,4).map(flag=><span key={flag}>{flag}</span>)}</>:<span>No immediate LTIOV or capability conflicts detected.</span>}</div>
+    <div><strong>UPAD NOTE</strong><span>This deck preserves the customer need and EEIs so UPAD personnel know what to look for in the imagery.</span></div>
     <button onClick={onClose}>SAVE DECK ORDER</button>
    </footer>
   </div>
@@ -808,20 +843,34 @@ function CollectionView(props){
  const requirements=missionState.requirements?.items||[]
  const todaySyncItems=missionState.currentOps?.missions||[]
  const plannedSorties=useMemo(()=>{
+  const incidentNames=['Pine Ridge','Bear Creek','Eagle Peak']
+  const incidentCodes={'Pine Ridge':'PR','Bear Creek':'BC','Eagle Peak':'EP'}
+  const aircraftCodes={'MQ-9':'MQ9','LUH-72':'L72','CAP':'CAP','DoD Partner Asset':'DOD','Satellite Source':'SAT'}
   const source=missionState.currentOps?.missions||[]
-  const mapped=source.slice(0,6).map((mission,index)=>({
-   id:mission.id||`sortie-${index+1}`,
-   label:`${mission.platform||mission.assetId||mission.asset||['MQ-9','LUH-72','CAP'][index%3]} / SORTIE ${String(index+1).padStart(2,'0')}`,
-   asset:mission.platform||mission.assetId||mission.asset||['MQ-9','LUH-72','CAP'][index%3],
-   start:Number(String(mission.start||mission.plannedStart||[9,11,13,15][index%4]).replace(/[^\d]/g,'').slice(0,2))||[9,11,13,15][index%4],
-   end:Number(String(mission.end||mission.plannedEnd||[12,14,16,18][index%4]).replace(/[^\d]/g,'').slice(0,2))||[12,14,16,18][index%4],
-   capability:mission.capability||mission.product||'EO/IR',
-   window:`${mission.start||mission.plannedStart||'0900L'}–${mission.end||mission.plannedEnd||'1200L'}`,
-  }))
+  const mapped=source.slice(0,12).map((mission,index)=>{
+   const primaryIncident=mission.fire||mission.incident||mission.area||incidentNames[index%incidentNames.length]
+   const asset=mission.platform||mission.assetId||mission.asset||['MQ-9','LUH-72','CAP'][index%3]
+   const incidentCode=incidentCodes[primaryIncident]||String(primaryIncident).split(/\s+/).map(word=>word[0]).join('').slice(0,3).toUpperCase()
+   const aircraftCode=aircraftCodes[asset]||String(asset).replace(/[^A-Za-z0-9]/g,'').slice(0,4).toUpperCase()
+   const sequence=String(index+1).padStart(2,'0')
+   return {
+    id:mission.id||`${incidentCode}-${aircraftCode}-${sequence}`,
+    label:`${incidentCode}-${aircraftCode}-${sequence}`,
+    primaryIncident,
+    asset,
+    start:Number(String(mission.start||mission.plannedStart||[9,11,13,15][index%4]).replace(/[^\d]/g,'').slice(0,2))||[9,11,13,15][index%4],
+    end:Number(String(mission.end||mission.plannedEnd||[12,14,16,18][index%4]).replace(/[^\d]/g,'').slice(0,2))||[12,14,16,18][index%4],
+    capability:mission.capability||mission.product||'EO/IR',
+    window:`${mission.start||mission.plannedStart||'0900L'}–${mission.end||mission.plannedEnd||'1200L'}`,
+   }
+  })
   return mapped.length?mapped:[
-   {id:'mq9-sortie-01',label:'MQ-9 / SORTIE 01',asset:'MQ-9',start:9,end:14,capability:'EO/IR',window:'0900L–1400L'},
-   {id:'luh72-sortie-02',label:'LUH-72 / SORTIE 02',asset:'LUH-72',start:11,end:16,capability:'EO / Still Imagery',window:'1100L–1600L'},
-   {id:'cap-sortie-03',label:'CAP / SORTIE 03',asset:'CAP',start:13,end:18,capability:'Wide Area EO',window:'1300L–1800L'},
+   {id:'PR-MQ9-01',label:'PR-MQ9-01',primaryIncident:'Pine Ridge',asset:'MQ-9',start:9,end:14,capability:'EO/IR',window:'0900L–1400L'},
+   {id:'BC-L72-01',label:'BC-L72-01',primaryIncident:'Bear Creek',asset:'LUH-72',start:11,end:16,capability:'EO / Still Imagery',window:'1100L–1600L'},
+   {id:'EP-CAP-01',label:'EP-CAP-01',primaryIncident:'Eagle Peak',asset:'CAP',start:13,end:18,capability:'Wide Area EO',window:'1300L–1800L'},
+   {id:'PR-MQ9-02',label:'PR-MQ9-02',primaryIncident:'Pine Ridge',asset:'MQ-9',start:15,end:20,capability:'EO/IR',window:'1500L–2000L'},
+   {id:'BC-CAP-02',label:'BC-CAP-02',primaryIncident:'Bear Creek',asset:'CAP',start:8,end:12,capability:'Wide Area EO',window:'0800L–1200L'},
+   {id:'EP-L72-02',label:'EP-L72-02',primaryIncident:'Eagle Peak',asset:'LUH-72',start:10,end:14,capability:'EO / Still Imagery',window:'1000L–1400L'},
   ]
  },[missionState.currentOps?.missions])
 
@@ -847,6 +896,7 @@ function CollectionView(props){
   }))
  })
  const [showDeckOutput,setShowDeckOutput]=useState(false)
+ const [showAllSorties,setShowAllSorties]=useState(false)
  const [openSortieId,setOpenSortieId]=useState('')
 
  useEffect(()=>{
@@ -954,6 +1004,9 @@ function CollectionView(props){
    .rx-taskability-selected>div:last-child{border-right:0}
    .rx-taskability-selected span{display:block;color:#819ba9;font-size:9px}
    .rx-taskability-selected strong{display:block;margin-top:3px;color:#e5f0f4;font-size:11px}
+   .rx-taskability-options-title{display:flex;justify-content:space-between;align-items:center;padding:8px 10px 0}
+   .rx-taskability-options-title strong{color:#dce9ee;font-size:10px}
+   .rx-taskability-options-title button{height:28px;border:1px solid #2ebdca;background:#0b3443;color:#7fe8f4;padding:0 10px;cursor:pointer}
    .rx-taskability-options-list{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;padding:9px;overflow:auto}
    .rx-taskability-option{display:flex;flex-direction:column;min-width:0;padding:9px;border:1px solid #21485c;background:rgba(5,22,35,.72)}
    .rx-taskability-option.assigned{border-color:#36d4cb;box-shadow:inset 0 0 0 1px rgba(54,212,203,.25)}
@@ -975,7 +1028,7 @@ function CollectionView(props){
    .rx-active-deck>.rx-outline-button{margin-top:auto}
    .rx-active-deck-meta{display:flex;gap:18px;padding:9px 11px;border-bottom:1px solid rgba(127,232,244,.15);color:#9eb2bf}
    .rx-active-deck-meta b{color:#7fe8f4;font-size:16px;margin-right:4px}
-   .rx-deck-assignment-table .head,.rx-deck-assignment-table .row{display:grid;grid-template-columns:48px 68px 1fr 66px minmax(155px,1.35fr) 84px;gap:8px;align-items:center}
+   .rx-deck-assignment-table .head,.rx-deck-assignment-table .row{display:grid;grid-template-columns:78px 48px 1.35fr 66px minmax(145px,1.2fr) 84px;gap:8px;align-items:center}
    .rx-deck-assignment-table .head{padding:8px 9px;color:#8ba3af;font-size:9px;border-bottom:1px solid rgba(127,232,244,.18)}
    .rx-deck-assignment-table .row{padding:8px 9px;border-bottom:1px solid rgba(127,232,244,.12)}
    .rx-deck-assignment-table select{height:30px;background:#071827;color:#e7f2f6;border:1px solid #28536a}
@@ -1014,7 +1067,7 @@ function CollectionView(props){
    .rx-sortie-deck-route div:not(:last-child):after{content:'→';color:#4fcfdb;margin-left:8px}
    .rx-sortie-deck-route b{display:grid;place-items:center;width:24px;height:24px;border-radius:50%;background:#0c6571;color:white}
    .rx-sortie-deck-table{overflow:auto;flex:1}
-   .rx-sortie-deck-table .head,.rx-sortie-deck-table .row{display:grid;grid-template-columns:42px 48px 82px 1fr 72px 2fr 180px;gap:8px;align-items:center;padding:9px 12px;border-bottom:1px solid #1d3b4c}
+   .rx-sortie-deck-table .head,.rx-sortie-deck-table .row{display:grid;grid-template-columns:90px 42px 48px 1.1fr 1.6fr 2fr 72px 180px;gap:8px;align-items:center;padding:9px 12px;border-bottom:1px solid #1d3b4c}
    .rx-sortie-deck-table .head{position:sticky;top:0;background:#102838;color:#7fe8f4;font-size:9px;z-index:2}
    .rx-sortie-deck-table .row{cursor:grab}
    .rx-sortie-deck-table .actions{display:flex;gap:5px}
@@ -1022,6 +1075,17 @@ function CollectionView(props){
    .rx-sortie-deck-card>footer{display:flex;justify-content:space-between;gap:20px;align-items:center;padding:12px 16px;border-top:1px solid #21485b}
    .rx-sortie-deck-card>footer>div{display:flex;gap:10px;flex-wrap:wrap;color:#9cb0bb}
    .rx-sortie-deck-card>footer>div strong,.rx-sortie-deck-card>footer>div span:not(:only-child){color:#ffc454}
+
+   .rx-sortie-picker-modal{position:fixed;inset:0;z-index:10000;background:rgba(0,8,15,.9);display:flex;align-items:center;justify-content:center;padding:24px}
+   .rx-sortie-picker-card{width:min(95vw,1450px);height:min(88vh,860px);background:#071827;border:1px solid #2a7189;display:flex;flex-direction:column;box-shadow:0 25px 80px #000}
+   .rx-sortie-picker-card>header{display:flex;justify-content:space-between;align-items:flex-start;padding:16px 18px;border-bottom:1px solid #21485b}
+   .rx-sortie-picker-card header span{color:#63e1ee;font-size:10px;letter-spacing:.12em}
+   .rx-sortie-picker-card h2{margin:3px 0;color:#f2f7fa;font-size:22px}
+   .rx-sortie-picker-card p{margin:0;color:#91a9b6}
+   .rx-sortie-picker-card button{border:1px solid #3fbfd2;background:#0a2736;color:#8deaf3;padding:8px 12px;cursor:pointer}
+   .rx-sortie-picker-table{overflow:auto;flex:1}
+   .rx-sortie-picker-table .head,.rx-sortie-picker-table .row{display:grid;grid-template-columns:130px 150px 110px 120px 1fr 120px 95px;gap:8px;align-items:center;padding:10px 12px;border-bottom:1px solid #1d3b4c}
+   .rx-sortie-picker-table .head{position:sticky;top:0;background:#102838;color:#7fe8f4;font-size:9px}
    @media(max-width:1200px){.rx-cm-requirement-stages{grid-template-columns:1fr!important}.rx-collection-map-row{grid-template-columns:1fr!important}}
   `}</style>
 
@@ -1043,6 +1107,7 @@ function CollectionView(props){
     deckItems={deckItems}
     sorties={plannedSorties}
     onAssignRequirement={assignRequirementToSortie}
+    onViewAllSorties={()=>setShowAllSorties(true)}
    />
    <ActiveCollectionDeck
     items={deckItems}
@@ -1068,6 +1133,7 @@ function CollectionView(props){
   </ResizableRow>
 
   {showDeckOutput&&<CollectionDeckOutput items={deckItems} onClose={()=>setShowDeckOutput(false)}/>}
+  {showAllSorties&&<AllSortiesModal requirement={selectedRequirement} deckItems={deckItems} sorties={plannedSorties} onAssign={assignRequirementToSortie} onClose={()=>setShowAllSorties(false)}/>}
   {openSortie&&<SortieDeckEditor sortie={openSortie} items={openSortieItems} onClose={()=>setOpenSortieId('')} onMove={moveDeckItem}/>}
  </div>
 }
