@@ -398,7 +398,7 @@ function RequirementDevelopment({
 
  useEffect(()=>setDraft(selected),[selected?.id])
 
- const update=(field,value)=>setDraft(d=>({...d,[field]:value}))
+ const update=(field,value)=>setDraft(current=>({...current,[field]:value}))
  const addToDeck=()=>{
   onUpdateRequirement?.(selected.id,draft)
   onValidateRequirement?.(selected.id)
@@ -406,54 +406,62 @@ function RequirementDevelopment({
  }
 
  return <Panel title="REQUIREMENTS DEVELOPMENT WORKSPACE" className="rx-requirement-workspace">
-  <div className="rx-req-dev-grid rx-req-dev-grid-deck">
-   <section>
-    <h4>CUSTOMER REQUEST (RAW)</h4>
-    <dl>
-     <div><dt>Request ID</dt><dd>{selected.id||'—'}</dd></div>
-     <div><dt>Customer</dt><dd>{selected.customer||'—'}</dd></div>
-     <div><dt>Priority</dt><dd><em className={tone(selected.priority||'high')}>{String(selected.priority||'HIGH').toUpperCase()}</em></dd></div>
-    </dl>
-    <p className="rx-raw-request">{selected.what||selected.title||'Customer request requires clarification.'}</p>
-    <dl>
-     <div><dt>Associated Incident</dt><dd>{selected.fire||selected.incident||'—'}</dd></div>
-     <div><dt>Desired By / LTIOV</dt><dd>{selected.when||selected.ltiov||'1800L'}</dd></div>
-    </dl>
+  <ResizableRow storageKey="nexus-rs-cm-requirement-stages-v1" initial={[24,33,43]} min={18} className="rx-cm-requirement-stages">
+   <section className="rx-cm-stage incoming">
+    <h4>1. INCOMING REQUEST</h4>
+    <p className="rx-cm-stage-help">Original request exactly as received.</p>
+    <div className="rx-cm-incoming-list">
+     {reqs.slice(0,7).map(requirement=><button
+      className={`rx-queue-item ${requirement.id===selected.id?'selected':''}`}
+      key={requirement.id}
+      onClick={()=>onSelectRequirement?.(requirement.id)}
+     >
+      <strong>{String(requirement.id||'').toUpperCase()} · {requirement.fire||requirement.incident||'Incident'}</strong>
+      <span>{requirement.title||requirement.what||'Incoming customer request'}</span>
+      <em>{String(requirement.status||'incoming').replaceAll('_',' ')}</em>
+     </button>)}
+    </div>
    </section>
 
-   <section>
-    <h4>REFINED COLLECTION REQUIREMENT (DRAFT)</h4>
-    <div className="rx-form-grid">
-     <label>Decision to Support<input value={draft.decisionToSupport||''} onChange={e=>update('decisionToSupport',e.target.value)}/></label>
-     <label>Location / NAI<input value={draft.nai||draft.location||''} onChange={e=>update('nai',e.target.value)}/></label>
-     <label className="wide">Information Need / Description<textarea value={draft.what||''} onChange={e=>update('what',e.target.value)}/></label>
-     <label>LTIOV<input value={draft.when||draft.ltiov||''} onChange={e=>update('when',e.target.value)}/></label>
-     <label>Required Capability<input value={draft.requiredCapability||draft.requiredEffect||''} onChange={e=>update('requiredCapability',e.target.value)}/></label>
-     <label className="wide">Essential Elements of Information (EEIs)<textarea value={(draft.eeis||[]).join('\n')} onChange={e=>update('eeis',e.target.value.split('\n').filter(Boolean))}/></label>
-     <label>Acquisition Window<select value={draft.collectionWindow||'OP 2'} onChange={e=>update('collectionWindow',e.target.value)}><option>OP 1</option><option>OP 2</option></select></label>
-     <label>Alternate Sources<input value={draft.alternateSource||''} onChange={e=>update('alternateSource',e.target.value)}/></label>
+   <section className="rx-cm-stage customer">
+    <h4>2. CUSTOMER REQUIREMENT</h4>
+    <p className="rx-cm-stage-help">Clarify the decision, customer need, location, timing, and desired effect.</p>
+    <div className="rx-form-grid rx-cm-customer-form">
+     <label>Request ID<input value={selected.id||''} disabled/></label>
+     <label>Customer<input value={draft.customer||''} onChange={event=>update('customer',event.target.value)}/></label>
+     <label className="wide">Decision to Support<textarea value={draft.decisionToSupport||''} onChange={event=>update('decisionToSupport',event.target.value)}/></label>
+     <label className="wide">Customer Information Need<textarea value={draft.customerNeed||draft.what||''} onChange={event=>update('customerNeed',event.target.value)}/></label>
+     <label>Location / Area<input value={draft.location||draft.fire||draft.incident||''} onChange={event=>update('location',event.target.value)}/></label>
+     <label>Desired By / LTIOV<input value={draft.when||draft.ltiov||''} onChange={event=>update('when',event.target.value)}/></label>
+     <label>Desired Product / Effect<input value={draft.desiredProduct||draft.requiredEffect||''} onChange={event=>update('desiredProduct',event.target.value)}/></label>
+     <label>Priority<select value={String(draft.priority||'2')} onChange={event=>update('priority',event.target.value)}>
+      <option value="1">Priority 1</option><option value="2">Priority 2</option><option value="3">Priority 3</option>
+     </select></label>
+    </div>
+   </section>
+
+   <section className="rx-cm-stage refined">
+    <h4>3. REFINED COLLECTION REQUIREMENT</h4>
+    <p className="rx-cm-stage-help">Create the taskable collection requirement that can be assigned to a sortie deck.</p>
+    <div className="rx-form-grid rx-cm-refined-form">
+     <label>Location / NAI<input value={draft.nai||draft.location||''} onChange={event=>update('nai',event.target.value)}/></label>
+     <label>Required Capability<input value={draft.requiredCapability||draft.requiredEffect||''} onChange={event=>update('requiredCapability',event.target.value)}/></label>
+     <label className="wide">Refined Information Need / Description<textarea value={draft.what||''} onChange={event=>update('what',event.target.value)}/></label>
+     <label className="wide">Essential Elements of Information (EEIs)<textarea value={(draft.eeis||[]).join('\n')} onChange={event=>update('eeis',event.target.value.split('\n').filter(Boolean))}/></label>
+     <label>Acquisition Window<select value={draft.collectionWindow||'OP 2'} onChange={event=>update('collectionWindow',event.target.value)}><option>OP 1</option><option>OP 2</option></select></label>
+     <label>Alternate Sources<input value={draft.alternateSource||''} onChange={event=>update('alternateSource',event.target.value)}/></label>
+     <label>Reporting Instructions<input value={draft.reporting||''} onChange={event=>update('reporting',event.target.value)}/></label>
+     <label>Special Instructions<input value={draft.specialInstructions||''} onChange={event=>update('specialInstructions',event.target.value)}/></label>
     </div>
     <div className="rx-form-actions">
-     <span>Feasibility Status <b>{draft.status==='ready'?'READY':'PENDING REVIEW'}</b></span>
+     <span>Feasibility <b>{draft.status==='ready'?'READY':'PENDING REVIEW'}</b></span>
      <button onClick={addToDeck}>ADD TO COLLECTION DECK</button>
     </div>
    </section>
-
-   <section>
-    <h4>INCOMING REQUIREMENT QUEUE</h4>
-    {reqs.slice(0,5).map(r=><button
-      className={`rx-queue-item ${r.id===selected.id?'selected':''}`}
-      key={r.id}
-      onClick={()=>onSelectRequirement?.(r.id)}
-     >
-      <strong>{String(r.id||'').toUpperCase()} &nbsp; {r.fire||r.incident||''}</strong>
-      <span>{r.title||r.what}</span>
-      <em>{r.status||'draft'}</em>
-     </button>)}
-   </section>
-  </div>
+  </ResizableRow>
  </Panel>
 }
+
 function Taskability({missionState}){
  return <Panel title="TASKABILITY & COLLECTION OPTIONS" className="rx-taskability"><div className="rx-three">
   <section><h4>PLATFORM SUITABILITY (OP 2)</h4>{(missionState.assetControl?.assets||[]).slice(0,3).map((a,i)=><div key={a.id}><span>✈ &nbsp; {a.type}</span><b>{['Good Fit','Moderate Fit','Limited Fit'][i]}</b><i className={`rx-dot ${['green','amber','red'][i]}`}/></div>)}</section>
@@ -586,14 +594,14 @@ function CollectionDeckOutput({items,onClose}){
    <div className="rx-deck-table-wrap">
     <table className="rx-deck-full-table">
      <thead><tr>
-      <th>ID</th><th>PRI</th><th>STATE</th><th>LOCATION</th><th>LOCATION DESCRIPTION</th>
+      <th>SORTIE</th><th>SEQ</th><th>ID</th><th>PRI</th><th>STATE</th><th>LOCATION</th><th>LOCATION DESCRIPTION</th>
       <th>CENTER POINT</th><th>RADIUS</th><th>PIR</th><th>EEI / WHAT ARE YOU LOOKING FOR</th>
       <th>REQUIRED CAPABILITY</th><th>RESOLUTION</th><th>PERIODICITY</th><th>JUSTIFICATION</th>
       <th>PRE-EVENT</th><th>LTIOV</th><th>ACQ START</th><th>ACQ END</th>
       <th>REPORTING INSTRUCTIONS</th><th>SPECIAL INSTRUCTIONS</th><th>STATUS</th>
      </tr></thead>
      <tbody>{rows.map(row=><tr key={row.id}>
-      <td>{row.id}</td><td><em className={tone(row.priority)}>{row.priority}</em></td><td>{row.state}</td>
+      <td>{items[rows.indexOf(row)]?.assignedSortieLabel||'UNASSIGNED'}</td><td>{items[rows.indexOf(row)]?.deckSequence||'—'}</td><td>{row.id}</td><td><em className={tone(row.priority)}>{row.priority}</em></td><td>{row.state}</td>
       <td>{row.location}</td><td>{row.description}</td><td>{row.centerPoint}</td><td>{row.radius}</td>
       <td>{row.pir}</td><td>{row.eei}</td><td>{row.capability}</td><td>{row.resolution}</td>
       <td>{row.periodicity}</td><td>{row.justification}</td><td>{row.preEvent}</td><td>{row.ltiov}</td>
@@ -610,38 +618,112 @@ function CollectionDeckOutput({items,onClose}){
  </div>
 }
 
-function ActiveCollectionDeck({items,onOpen}){
+function ActiveCollectionDeck({
+ items,
+ sorties,
+ onAssignSortie,
+ onOpenDeck,
+ onOpenOutput,
+}){
  const rows=items.map(buildDeckRow)
- return <Panel title="ACTIVE COLLECTION DECK — OP 2 / SORTIE 01" className="rx-active-deck">
+ const assignedCount=items.filter(item=>item.assignedSortieId).length
+ return <Panel title="ACTIVE COLLECTION DECK / SORTIE ASSIGNMENT" className="rx-active-deck">
   <div className="rx-active-deck-meta">
    <span><b>{rows.length}</b> REQUIREMENTS</span>
-   <span><b>{rows.filter(r=>r.status.includes('READY')).length}</b> READY</span>
-   <span><b>{rows.filter(r=>!r.status.includes('READY')).length}</b> REVIEW</span>
+   <span><b>{assignedCount}</b> ASSIGNED</span>
+   <span><b>{rows.length-assignedCount}</b> UNASSIGNED</span>
   </div>
-  <div className="rx-deck-preview-table">
-   <div className="head"><span>PRI</span><span>ID</span><span>LOCATION</span><span>EEI / COLLECTION NEED</span><span>LTIOV</span><span>STATUS</span></div>
-   {rows.slice(0,6).map(row=><div className="row" key={row.id}>
-    <span><em className={tone(row.priority)}>{row.priority}</em></span>
-    <strong>{row.id}</strong><span>{row.location}</span><span>{row.eei}</span><span>{row.ltiov}</span><span>{row.status}</span>
-   </div>)}
+  <div className="rx-deck-assignment-table">
+   <div className="head"><span>PRI</span><span>ID</span><span>LOCATION / NAI</span><span>LTIOV</span><span>ASSIGNED SORTIE</span><span>ACTION</span></div>
+   {items.slice(0,8).map((item,index)=>{
+    const row=buildDeckRow(item,index)
+    return <div className="row" key={row.id}>
+     <span><em className={tone(row.priority)}>{row.priority}</em></span>
+     <strong>{row.id}</strong>
+     <span>{row.location}</span>
+     <span>{row.ltiov}</span>
+     <select value={item.assignedSortieId||''} onChange={event=>onAssignSortie?.(item.id,event.target.value)}>
+      <option value="">UNASSIGNED</option>
+      {sorties.map(sortie=><option value={sortie.id} key={sortie.id}>{sortie.label}</option>)}
+     </select>
+     <button disabled={!item.assignedSortieId} onClick={()=>onOpenDeck?.(item.assignedSortieId)}>OPEN DECK</button>
+    </div>
+   })}
   </div>
-  <Button onClick={onOpen}>OPEN FULL COLLECTION DECK</Button>
+  <Button onClick={onOpenOutput}>OPEN FULL COLLECTION DECK OUTPUT</Button>
  </Panel>
 }
 
-function CollectionSyncPreview({title,subtitle,items,draft=false,onOpen}){
- const rows=(items||[]).slice(0,5).map((item,index)=>{
-  const start=Number(String(item.start||item.acquisitionStart||item.collectionStart||[9,11,13,15,17][index]).replace(/[^\d]/g,'').slice(0,2))||[9,11,13,15,17][index]
-  const rawEnd=Number(String(item.end||item.acquisitionEnd||item.collectionEnd||start+2).replace(/[^\d]/g,'').slice(0,2))||start+2
-  const end=rawEnd<=start?Math.min(23,start+2):rawEnd
+function SortieDeckEditor({
+ sortie,
+ items,
+ onClose,
+ onMove,
+}){
+ const ordered=[...items].sort((a,b)=>(a.deckSequence||999)-(b.deckSequence||999))
+ const move=(index,direction)=>{
+  const target=index+direction
+  if(target<0||target>=ordered.length) return
+  onMove?.(sortie.id,ordered[index].id,ordered[target].id)
+ }
+ const conflicts=ordered.flatMap((item,index)=>{
+  const flags=[]
+  const ltiov=Number(String(item.when||item.ltiov||'').replace(/[^\d]/g,'').slice(0,2))
+  const estimatedHour=(sortie.start||10)+index
+  if(ltiov&&estimatedHour>ltiov) flags.push('LTIOV AT RISK')
+  if(item.requiredCapability&&sortie.capability&&!String(sortie.capability).toLowerCase().includes(String(item.requiredCapability).toLowerCase().split('/')[0])) flags.push('CHECK CAPABILITY')
+  return flags.map(flag=>`${item.id}: ${flag}`)
+ })
+
+ return <div className="rx-sortie-deck-modal" role="dialog" aria-modal="true" aria-label={`${sortie.label} collection deck`}>
+  <div className="rx-sortie-deck-card">
+   <header>
+    <div><span>SORTIE COLLECTION DECK</span><h2>{sortie.label}</h2><p>{sortie.window} · Order requirements in the sequence the aircraft should collect them.</p></div>
+    <button onClick={onClose}>CLOSE</button>
+   </header>
+   <div className="rx-sortie-deck-route">
+    {ordered.map((item,index)=><div key={item.id}><b>{index+1}</b><span>{item.nai||item.location||item.fire||item.incident||item.id}</span></div>)}
+   </div>
+   <div className="rx-sortie-deck-table">
+    <div className="head"><span>SEQ</span><span>PRI</span><span>REQUIREMENT</span><span>LOCATION / NAI</span><span>LTIOV</span><span>COLLECTION NEED</span><span>ORDER</span></div>
+    {ordered.map((item,index)=><div className="row" key={item.id} draggable
+      onDragStart={event=>event.dataTransfer.setData('text/plain',item.id)}
+      onDragOver={event=>event.preventDefault()}
+      onDrop={event=>{event.preventDefault();const dragged=event.dataTransfer.getData('text/plain');if(dragged&&dragged!==item.id) onMove?.(sortie.id,dragged,item.id)}}
+    >
+     <strong>{index+1}</strong>
+     <em className={tone(item.priority)}>{String(item.priority||'2').toUpperCase()}</em>
+     <b>{String(item.id||'').toUpperCase()}</b>
+     <span>{item.nai||item.location||item.fire||item.incident||'—'}</span>
+     <span>{item.when||item.ltiov||'—'}</span>
+     <span>{item.what||item.title||'Collection requirement'}</span>
+     <span className="actions"><button disabled={index===0} onClick={()=>move(index,-1)}>MOVE UP</button><button disabled={index===ordered.length-1} onClick={()=>move(index,1)}>MOVE DOWN</button></span>
+    </div>)}
+   </div>
+   <footer>
+    <div>{conflicts.length?<><strong>PLAN CHECKS</strong>{conflicts.slice(0,4).map(flag=><span key={flag}>{flag}</span>)}</>:<span>No immediate LTIOV or capability conflicts detected.</span>}</div>
+    <button onClick={onClose}>SAVE DECK ORDER</button>
+   </footer>
+  </div>
+ </div>
+}
+
+function CollectionSyncPreview({title,subtitle,items,draft=false,onOpen,sorties=[]}){
+ const sortieById=Object.fromEntries(sorties.map(sortie=>[sortie.id,sortie]))
+ const rows=(items||[]).slice(0,8).map((item,index)=>{
+  const assigned=sortieById[item.assignedSortieId]
+  const sequence=Math.max(1,Number(item.deckSequence)||index+1)
+  const baseStart=Number(assigned?.start||String(item.start||item.acquisitionStart||[9,11,13,15,17][index]).replace(/[^\d]/g,'').slice(0,2))||[9,11,13,15,17][index]
+  const start=Math.min(23,baseStart+Math.max(0,sequence-1))
+  const end=Math.min(24,start+1)
   return {
    id:item.id||`REQ-${index+1}`,
-   asset:item.asset||item.platform||item.requiredPlatform||['MQ-9','LUH-72','CAP','DoD Partner Asset','Satellite Source'][index%5],
+   asset:assigned?.asset||item.asset||item.platform||item.requiredPlatform||'UNASSIGNED',
    requirement:item.requirement||item.id||`REQ-${index+1}`,
    area:item.fire||item.incident||item.location||item.nai||`Collection Area ${index+1}`,
    start,
    end,
-   status:String(item.missionStatus||item.status||(draft?'DRAFT':'PLANNED')).replaceAll('_',' ').toUpperCase(),
+   status:assigned?`SEQ ${sequence}`:'UNASSIGNED',
   }
  })
  const minHour=Math.min(6,...rows.map(row=>row.start))
@@ -675,15 +757,44 @@ function CollectionView(props){
  const {missionState,role,onNavigate,onUpdateRequirement,onValidateRequirement,onSendRequirementForward}=props
  const requirements=missionState.requirements?.items||[]
  const todaySyncItems=missionState.currentOps?.missions||[]
+ const plannedSorties=useMemo(()=>{
+  const source=missionState.currentOps?.missions||[]
+  const mapped=source.slice(0,6).map((mission,index)=>({
+   id:mission.id||`sortie-${index+1}`,
+   label:`${mission.platform||mission.assetId||mission.asset||['MQ-9','LUH-72','CAP'][index%3]} / SORTIE ${String(index+1).padStart(2,'0')}`,
+   asset:mission.platform||mission.assetId||mission.asset||['MQ-9','LUH-72','CAP'][index%3],
+   start:Number(String(mission.start||mission.plannedStart||[9,11,13,15][index%4]).replace(/[^\d]/g,'').slice(0,2))||[9,11,13,15][index%4],
+   end:Number(String(mission.end||mission.plannedEnd||[12,14,16,18][index%4]).replace(/[^\d]/g,'').slice(0,2))||[12,14,16,18][index%4],
+   capability:mission.capability||mission.product||'EO/IR',
+   window:`${mission.start||mission.plannedStart||'0900L'}–${mission.end||mission.plannedEnd||'1200L'}`,
+  }))
+  return mapped.length?mapped:[
+   {id:'mq9-sortie-01',label:'MQ-9 / SORTIE 01',asset:'MQ-9',start:9,end:14,capability:'EO/IR',window:'0900L–1400L'},
+   {id:'luh72-sortie-02',label:'LUH-72 / SORTIE 02',asset:'LUH-72',start:11,end:16,capability:'EO / Still Imagery',window:'1100L–1600L'},
+   {id:'cap-sortie-03',label:'CAP / SORTIE 03',asset:'CAP',start:13,end:18,capability:'Wide Area EO',window:'1300L–1800L'},
+  ]
+ },[missionState.currentOps?.missions])
+
  const [selectedRequirementId,setSelectedRequirementId]=useState(requirements[0]?.id)
  const [deckItems,setDeckItems]=useState(()=>{
   try{
    const saved=JSON.parse(localStorage.getItem('nexus-rs-collection-deck-draft')||'null')
    if(Array.isArray(saved)&&saved.length) return saved
   }catch{}
-  return requirements.slice(0,3).map((r,index)=>({...r,status:index===1?'draft':'ready'}))
+  return requirements.slice(0,3).map((requirement,index)=>({
+   ...requirement,
+   status:index===1?'draft':'ready',
+   assignedSortieId:index<2?plannedSorties[index]?.id:'',
+   assignedSortieLabel:index<2?plannedSorties[index]?.label:'',
+   assignedSortieAsset:index<2?plannedSorties[index]?.asset:'',
+   assignedSortieStart:index<2?plannedSorties[index]?.start:undefined,
+   assignedSortieEnd:index<2?plannedSorties[index]?.end:undefined,
+   assignedSortieCapability:index<2?plannedSorties[index]?.capability:'',
+   deckSequence:index+1,
+  }))
  })
- const [showDeck,setShowDeck]=useState(false)
+ const [showDeckOutput,setShowDeckOutput]=useState(false)
+ const [openSortieId,setOpenSortieId]=useState('')
 
  useEffect(()=>{
   localStorage.setItem('nexus-rs-collection-deck-draft',JSON.stringify(deckItems))
@@ -692,89 +803,124 @@ function CollectionView(props){
  const addToDeck=(requirement)=>{
   setDeckItems(current=>{
    const exists=current.some(item=>item.id===requirement.id)
-   return exists?current.map(item=>item.id===requirement.id?{...item,...requirement}:item):[...current,requirement]
+   return exists
+    ?current.map(item=>item.id===requirement.id?{...item,...requirement}:item)
+    :[...current,{...requirement,assignedSortieId:'',deckSequence:1}]
   })
   onSendRequirementForward?.(requirement.id)
  }
 
+ const assignSortie=(requirementId,sortieId)=>{
+  const sortie=plannedSorties.find(candidate=>candidate.id===sortieId)
+  setDeckItems(current=>{
+   const next=current.map(item=>item.id===requirementId?{
+    ...item,
+    assignedSortieId:sortieId,
+    assignedSortieLabel:sortie?.label||'',
+    assignedSortieAsset:sortie?.asset||'',
+    assignedSortieStart:sortie?.start,
+    assignedSortieEnd:sortie?.end,
+    assignedSortieCapability:sortie?.capability||'',
+   }:item)
+   const assigned=next.filter(item=>item.assignedSortieId===sortieId)
+   return next.map(item=>{
+    if(item.assignedSortieId!==sortieId) return item
+    const existingIndex=assigned.findIndex(candidate=>candidate.id===item.id)
+    return {...item,deckSequence:existingIndex+1}
+   })
+  })
+ }
+
+ const moveDeckItem=(sortieId,draggedId,targetId)=>{
+  setDeckItems(current=>{
+   const sortieItems=current.filter(item=>item.assignedSortieId===sortieId).sort((a,b)=>(a.deckSequence||999)-(b.deckSequence||999))
+   const from=sortieItems.findIndex(item=>item.id===draggedId)
+   const to=sortieItems.findIndex(item=>item.id===targetId)
+   if(from<0||to<0) return current
+   const reordered=[...sortieItems]
+   const [moved]=reordered.splice(from,1)
+   reordered.splice(to,0,moved)
+   const sequenceById=Object.fromEntries(reordered.map((item,index)=>[item.id,index+1]))
+   return current.map(item=>item.assignedSortieId===sortieId?{...item,deckSequence:sequenceById[item.id]}:item)
+  })
+ }
+
+ const openSortie=plannedSorties.find(sortie=>sortie.id===openSortieId)
+ const openSortieItems=deckItems.filter(item=>item.assignedSortieId===openSortieId)
+
  return <div className="rx-role-layout collection rx-collection-ppt-layout">
   <style>{`
-   .rx-collection-ppt-layout{display:grid;grid-template-rows:auto auto minmax(315px,1fr);gap:10px;min-height:calc(100vh - 96px)}
-   .rx-collection-requirements-row{min-height:310px}
+   .rx-collection-ppt-layout{display:grid;gap:10px;min-height:calc(100vh - 96px);font-size:12px}
+   .rx-collection-ppt-layout .rx-panel-title,.rx-collection-ppt-layout h4{font-size:12px}
+   .rx-collection-ppt-layout p,.rx-collection-ppt-layout li,.rx-collection-ppt-layout td,.rx-collection-ppt-layout dd{font-size:11px}
+   .rx-collection-ppt-layout label,.rx-collection-ppt-layout dt{font-size:10px}
+   .rx-collection-ppt-layout input,.rx-collection-ppt-layout select,.rx-collection-ppt-layout textarea,.rx-collection-ppt-layout button{font-size:11px}
+   .rx-collection-requirements-row{min-height:430px}
    .rx-collection-requirements-row>.rx-panel{height:100%}
    .rx-collection-ppt-layout .rx-requirement-workspace{height:100%;display:flex;flex-direction:column}
-   .rx-collection-ppt-layout .rx-requirement-workspace>.rx-req-dev-grid-deck{flex:1}
-   .rx-collection-ppt-layout .rx-req-dev-grid-deck{grid-template-columns:24% minmax(0,50%) 26%;gap:10px}
-   .rx-collection-ppt-layout .rx-requirement-workspace section{min-height:0}
-   .rx-collection-ppt-layout .rx-form-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
-   .rx-collection-ppt-layout .rx-form-grid label{font-size:8px}
-   .rx-collection-ppt-layout .rx-form-grid input,
-   .rx-collection-ppt-layout .rx-form-grid select{height:27px}
-   .rx-collection-ppt-layout .rx-form-grid textarea{min-height:48px}
-   .rx-collection-ppt-layout .rx-form-actions{margin-top:7px}
-   .rx-collection-ppt-layout .rx-middle-work-row{min-height:185px}
-   .rx-collection-ppt-layout .rx-middle-work-row>.rx-panel{height:100%;display:flex;flex-direction:column}
-   .rx-collection-ppt-layout .rx-middle-work-row .rx-outline-button{margin-top:auto}
-   .rx-collection-sync-row-layout{min-height:230px}
+   .rx-cm-requirement-stages{flex:1;min-height:380px}
+   .rx-cm-requirement-stages>.rx-cm-stage{min-width:0;padding:11px;overflow:auto;background:rgba(4,18,29,.28)}
+   .rx-cm-stage h4{margin:0 0 3px;color:#5ce2ec}
+   .rx-cm-stage-help{margin:0 0 10px;color:#8da5b2}
+   .rx-cm-incoming-list{display:flex;flex-direction:column;gap:6px}
+   .rx-cm-customer-form,.rx-cm-refined-form{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+   .rx-cm-requirement-stages .rx-form-grid input,.rx-cm-requirement-stages .rx-form-grid select{height:32px}
+   .rx-cm-requirement-stages .rx-form-grid textarea{min-height:64px}
+   .rx-middle-work-row{min-height:270px}
+   .rx-middle-work-row>.rx-panel{height:100%;display:flex;flex-direction:column}
+   .rx-middle-work-row .rx-outline-button{margin-top:auto}
+   .rx-active-deck{height:100%;display:flex;flex-direction:column}
+   .rx-active-deck>.rx-outline-button{margin-top:auto}
+   .rx-active-deck-meta{display:flex;gap:18px;padding:9px 11px;border-bottom:1px solid rgba(127,232,244,.15);color:#9eb2bf}
+   .rx-active-deck-meta b{color:#7fe8f4;font-size:16px;margin-right:4px}
+   .rx-deck-assignment-table .head,.rx-deck-assignment-table .row{display:grid;grid-template-columns:48px 68px 1fr 66px minmax(155px,1.35fr) 84px;gap:8px;align-items:center}
+   .rx-deck-assignment-table .head{padding:8px 9px;color:#8ba3af;font-size:9px;border-bottom:1px solid rgba(127,232,244,.18)}
+   .rx-deck-assignment-table .row{padding:8px 9px;border-bottom:1px solid rgba(127,232,244,.12)}
+   .rx-deck-assignment-table select{height:30px;background:#071827;color:#e7f2f6;border:1px solid #28536a}
+   .rx-deck-assignment-table button{height:29px;border:1px solid #2ebdca;background:#0b3443;color:#7fe8f4;cursor:pointer}
+   .rx-deck-assignment-table button:disabled{opacity:.35;cursor:not-allowed}
+   .rx-collection-sync-row-layout{min-height:260px}
    .rx-collection-sync-row-layout>.rx-panel{height:100%;display:flex;flex-direction:column}
    .rx-collection-sync-preview>.rx-outline-button{margin-top:auto}
-   .rx-collection-sync-subtitle{padding:7px 10px;border-bottom:1px solid rgba(127,232,244,.15);color:#8ea6b3;font-size:9px}
-   .rx-collection-sync-hours{display:grid;grid-template-columns:repeat(3,1fr);padding:5px 9px 5px 105px;border-bottom:1px solid rgba(127,232,244,.12);color:#6f8d9d;font-size:8px}
-   .rx-collection-sync-hours span:nth-child(2){text-align:center}
-   .rx-collection-sync-hours span:last-child{text-align:right}
-   .rx-collection-sync-body{padding:4px 8px}
-   .rx-collection-sync-row{display:grid;grid-template-columns:88px minmax(0,1fr) 72px;gap:8px;align-items:center;min-height:31px;border-bottom:1px solid rgba(127,232,244,.1)}
-   .rx-collection-sync-row>strong{font-size:9px;color:#d8e7ec;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-   .rx-collection-sync-row>em{font-style:normal;font-size:7px;text-align:right;color:#8fa6b2}
-   .rx-collection-sync-track{position:relative;height:19px;background:repeating-linear-gradient(90deg,rgba(30,75,94,.35) 0,rgba(30,75,94,.35) 1px,transparent 1px,transparent 12.5%);border:1px solid rgba(35,81,99,.55)}
-   .rx-collection-sync-block{position:absolute;top:2px;height:13px;min-width:42px;border:1px solid #28bbc6;background:#0a6871;border-radius:2px;overflow:hidden;padding:0 4px;color:#edffff}
+   .rx-collection-sync-subtitle{padding:8px 10px;border-bottom:1px solid rgba(127,232,244,.15);color:#8ea6b3}
+   .rx-collection-sync-hours{display:grid;grid-template-columns:repeat(3,1fr);padding:6px 9px 6px 115px;border-bottom:1px solid rgba(127,232,244,.12);color:#7895a4}
+   .rx-collection-sync-hours span:nth-child(2){text-align:center}.rx-collection-sync-hours span:last-child{text-align:right}
+   .rx-collection-sync-body{padding:5px 8px}
+   .rx-collection-sync-row{display:grid;grid-template-columns:98px minmax(0,1fr) 76px;gap:8px;align-items:center;min-height:35px;border-bottom:1px solid rgba(127,232,244,.1)}
+   .rx-collection-sync-row>strong{font-size:10px;color:#d8e7ec;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+   .rx-collection-sync-row>em{font-style:normal;font-size:9px;text-align:right;color:#8fa6b2}
+   .rx-collection-sync-track{position:relative;height:22px;background:repeating-linear-gradient(90deg,rgba(30,75,94,.35) 0,rgba(30,75,94,.35) 1px,transparent 1px,transparent 12.5%);border:1px solid rgba(35,81,99,.55)}
+   .rx-collection-sync-block{position:absolute;top:2px;height:16px;min-width:48px;border:1px solid #28bbc6;background:#0a6871;border-radius:2px;overflow:hidden;padding:1px 4px;color:#edffff}
    .rx-collection-sync-block.draft{border-style:dashed;border-color:#62a9ef;background:#1c4f7d}
-   .rx-collection-sync-block b{display:block;font-size:6.5px;line-height:7px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-   .rx-collection-sync-block small{display:block;font-size:5.5px;line-height:6px;color:#c0d3dc;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-   .rx-collection-sync-empty{padding:24px 10px;color:#7f97a4;font-size:9px;text-align:center}
-   .rx-collection-ppt-layout .rx-active-deck{height:100%;display:flex;flex-direction:column}
-   .rx-collection-ppt-layout .rx-active-deck>.rx-outline-button{margin-top:auto}
-   .rx-active-deck-meta{display:flex;gap:18px;padding:7px 10px;border-bottom:1px solid rgba(127,232,244,.15);color:#9eb2bf;font-size:10px}
-   .rx-active-deck-meta b{color:#7fe8f4;font-size:15px;margin-right:4px}
-   .rx-deck-preview-table{min-width:0}
-   .rx-deck-preview-table .head,.rx-deck-preview-table .row{display:grid;grid-template-columns:48px 72px 1fr 2fr 62px 75px;gap:8px;align-items:center}
-   .rx-deck-preview-table .head{padding:7px 9px;color:#7f96a5;font-size:8px;border-bottom:1px solid rgba(127,232,244,.18)}
-   .rx-deck-preview-table .row{padding:8px 9px;border-bottom:1px solid rgba(127,232,244,.12);font-size:10px}
-   .rx-deck-preview-table .row>span:nth-child(4){white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-   .rx-collection-map-row{min-height:330px}
+   .rx-collection-sync-block b{display:block;font-size:7px;line-height:7px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+   .rx-collection-sync-block small{display:block;font-size:6px;line-height:7px;color:#c0d3dc;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+   .rx-collection-map-row{min-height:360px}
    .rx-collection-map-row>.rx-panel{height:100%}
-   .rx-collection-support-stack{display:grid;grid-template-rows:minmax(120px,.8fr) minmax(130px,1fr);gap:10px;min-height:0}
+   .rx-collection-support-stack{display:grid;grid-template-rows:minmax(135px,.8fr) 5px minmax(145px,1fr);min-height:0}
    .rx-collection-support-stack>.rx-panel{min-height:0;display:flex;flex-direction:column}
    .rx-collection-support-stack .rx-outline-button{margin-top:auto}
-   .rx-deck-modal{position:fixed;inset:0;z-index:9999;background:rgba(0,8,15,.9);display:flex;align-items:center;justify-content:center;padding:24px}
-   .rx-deck-modal-card{width:min(96vw,1800px);height:min(92vh,1000px);background:#071827;border:1px solid #2a7189;display:flex;flex-direction:column;box-shadow:0 25px 80px #000}
-   .rx-deck-modal-card>header{display:flex;justify-content:space-between;align-items:flex-start;padding:16px 18px;border-bottom:1px solid #21485b}
-   .rx-deck-modal-card header span{color:#63e1ee;font-size:10px;letter-spacing:.12em}
-   .rx-deck-modal-card h2{margin:3px 0;color:#f2f7fa;font-size:22px}
-   .rx-deck-modal-card p{margin:0;color:#91a9b6;font-size:11px}
-   .rx-deck-modal-card button{border:1px solid #3fbfd2;background:#0a2736;color:#8deaf3;padding:9px 15px;font-weight:700;cursor:pointer}
-   .rx-deck-summary{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:#21485b;border-bottom:1px solid #21485b}
-   .rx-deck-summary>div{background:#0a1d2b;padding:10px 12px}
-   .rx-deck-summary span{display:block;color:#76909f;font-size:8px}
-   .rx-deck-summary strong{color:#e7f1f5;font-size:11px}
-   .rx-deck-table-wrap{overflow:auto;flex:1}
-   .rx-deck-full-table{border-collapse:collapse;min-width:2400px;width:100%;font-size:9px}
-   .rx-deck-full-table th{position:sticky;top:0;background:#102838;color:#7fe8f4;text-align:left;padding:8px;border:1px solid #284a5d;z-index:2}
-   .rx-deck-full-table td{vertical-align:top;padding:8px;border:1px solid #1d3b4c;color:#c3d1d9;max-width:220px}
-   .rx-deck-full-table tbody tr:nth-child(even){background:rgba(19,51,68,.3)}
-   .rx-deck-modal-card>footer{display:flex;justify-content:space-between;align-items:center;padding:12px 16px;border-top:1px solid #21485b;color:#9cb0bb;font-size:10px}
-   @media(max-width:1200px){
-    .rx-collection-ppt-layout .rx-req-dev-grid-deck{grid-template-columns:1fr}
-    .rx-collection-ppt-layout{grid-template-rows:auto auto auto}
-    .rx-collection-map-row{grid-template-columns:1fr!important}
-   }
-   @media print{
-    body *{visibility:hidden!important}
-    .rx-deck-modal,.rx-deck-modal *{visibility:visible!important}
-    .rx-deck-modal{position:absolute;inset:0;padding:0;background:white}
-    .rx-deck-modal-card{width:100%;height:auto;box-shadow:none}
-    .rx-deck-modal-card>header button,.rx-deck-modal-card>footer button{display:none}
-   }
+   .rx-support-divider{cursor:row-resize;border-top:1px solid #17435a;border-bottom:1px solid #17435a}
+   .rx-sortie-deck-modal,.rx-deck-modal{position:fixed;inset:0;z-index:9999;background:rgba(0,8,15,.9);display:flex;align-items:center;justify-content:center;padding:24px}
+   .rx-sortie-deck-card,.rx-deck-modal-card{width:min(96vw,1700px);height:min(92vh,940px);background:#071827;border:1px solid #2a7189;display:flex;flex-direction:column;box-shadow:0 25px 80px #000}
+   .rx-sortie-deck-card>header,.rx-deck-modal-card>header{display:flex;justify-content:space-between;align-items:flex-start;padding:16px 18px;border-bottom:1px solid #21485b}
+   .rx-sortie-deck-card header span{color:#63e1ee;font-size:10px;letter-spacing:.12em}
+   .rx-sortie-deck-card h2{margin:3px 0;color:#f2f7fa;font-size:22px}
+   .rx-sortie-deck-card p{margin:0;color:#91a9b6}
+   .rx-sortie-deck-card button{border:1px solid #3fbfd2;background:#0a2736;color:#8deaf3;padding:8px 12px;cursor:pointer}
+   .rx-sortie-deck-route{display:flex;gap:8px;align-items:center;padding:13px 16px;overflow:auto;border-bottom:1px solid #21485b}
+   .rx-sortie-deck-route div{display:flex;align-items:center;gap:6px;min-width:max-content}
+   .rx-sortie-deck-route div:not(:last-child):after{content:'→';color:#4fcfdb;margin-left:8px}
+   .rx-sortie-deck-route b{display:grid;place-items:center;width:24px;height:24px;border-radius:50%;background:#0c6571;color:white}
+   .rx-sortie-deck-table{overflow:auto;flex:1}
+   .rx-sortie-deck-table .head,.rx-sortie-deck-table .row{display:grid;grid-template-columns:42px 48px 82px 1fr 72px 2fr 180px;gap:8px;align-items:center;padding:9px 12px;border-bottom:1px solid #1d3b4c}
+   .rx-sortie-deck-table .head{position:sticky;top:0;background:#102838;color:#7fe8f4;font-size:9px;z-index:2}
+   .rx-sortie-deck-table .row{cursor:grab}
+   .rx-sortie-deck-table .actions{display:flex;gap:5px}
+   .rx-sortie-deck-table .actions button{padding:5px 7px;font-size:9px}
+   .rx-sortie-deck-card>footer{display:flex;justify-content:space-between;gap:20px;align-items:center;padding:12px 16px;border-top:1px solid #21485b}
+   .rx-sortie-deck-card>footer>div{display:flex;gap:10px;flex-wrap:wrap;color:#9cb0bb}
+   .rx-sortie-deck-card>footer>div strong,.rx-sortie-deck-card>footer>div span:not(:only-child){color:#ffc454}
+   @media(max-width:1200px){.rx-cm-requirement-stages{grid-template-columns:1fr!important}.rx-collection-map-row{grid-template-columns:1fr!important}}
   `}</style>
 
   <div className="rx-collection-requirements-row">
@@ -788,38 +934,35 @@ function CollectionView(props){
    />
   </div>
 
-  <ResizableRow storageKey="nexus-rs-collection-middle-work-v2" initial={[56,44]} min={28} className="rx-middle-work-row">
+  <ResizableRow storageKey="nexus-rs-collection-middle-work-v3" initial={[46,54]} min={28} className="rx-middle-work-row">
    <Taskability missionState={missionState}/>
-   <ActiveCollectionDeck items={deckItems} onOpen={()=>setShowDeck(true)}/>
-  </ResizableRow>
-
-  <ResizableRow storageKey="nexus-rs-collection-sync-previews-v1" initial={[50,50]} min={28} className="rx-collection-sync-row-layout">
-   <CollectionSyncPreview
-    title="SYNC MATRIX — TODAY'S PLAN"
-    subtitle="Approved / executing collection picture"
-    items={todaySyncItems}
-    onOpen={()=>onNavigate?.('sync')}
-   />
-   <CollectionSyncPreview
-    title="SYNC MATRIX — TOMORROW'S PLAN (DRAFT)"
-    subtitle="Updates as requirements are added to the collection deck"
+   <ActiveCollectionDeck
     items={deckItems}
-    draft
-    onOpen={()=>onNavigate?.('sync')}
+    sorties={plannedSorties}
+    onAssignSortie={assignSortie}
+    onOpenDeck={setOpenSortieId}
+    onOpenOutput={()=>setShowDeckOutput(true)}
    />
   </ResizableRow>
 
-  <ResizableRow storageKey="nexus-rs-collection-map-support-v2" initial={[58,42]} min={30} className="rx-collection-map-row">
+  <ResizableRow storageKey="nexus-rs-collection-sync-previews-v2" initial={[50,50]} min={28} className="rx-collection-sync-row-layout">
+   <CollectionSyncPreview title="SYNC MATRIX — TODAY'S PLAN" subtitle="Approved / executing collection picture" items={todaySyncItems} onOpen={()=>onNavigate?.('sync')}/>
+   <CollectionSyncPreview title="SYNC MATRIX — TOMORROW'S PLAN (DRAFT)" subtitle="Updates from sortie assignment and deck sequence" items={deckItems} sorties={plannedSorties} draft onOpen={()=>onNavigate?.('sync')}/>
+  </ResizableRow>
+
+  <ResizableRow storageKey="nexus-rs-collection-map-support-v3" initial={[58,42]} min={30} className="rx-collection-map-row">
    <RegionalMissionPicture role={role} missionState={missionState}/>
-   <div className="rx-collection-support-stack">
+   <ResizableStack storageKey="nexus-rs-collection-support-stack-v1">
     <DeadlinesCard role={role}/>
     <AirspacePanel/>
-   </div>
+   </ResizableStack>
   </ResizableRow>
 
-  {showDeck&&<CollectionDeckOutput items={deckItems} onClose={()=>setShowDeck(false)}/>}
+  {showDeckOutput&&<CollectionDeckOutput items={deckItems} onClose={()=>setShowDeckOutput(false)}/>}
+  {openSortie&&<SortieDeckEditor sortie={openSortie} items={openSortieItems} onClose={()=>setOpenSortieId('')} onMove={moveDeckItem}/>}
  </div>
 }
+
 function UPADView(props){
  const {missionState,role,onNavigate,onUpdateDelivery}=props
  return <div className="rx-role-layout upad">

@@ -44,17 +44,29 @@ function normalizePriority(value){
 }
 
 function deckToDraftSorties(items=[]){
+  const defaultSorties={
+    'mq9-sortie-01':{asset:'MQ-9',start:9,end:14,label:'MQ-9 / SORTIE 01'},
+    'luh72-sortie-02':{asset:'LUH-72',start:11,end:16,label:'LUH-72 / SORTIE 02'},
+    'cap-sortie-03':{asset:'CAP',start:13,end:18,label:'CAP / SORTIE 03'},
+  }
   return items.map((item,index)=>{
-    const start=safeHour(item.acquisitionStart||item.collectionStart||item.start, [13,14,16,10][index%4])
-    let end=safeHour(item.acquisitionEnd||item.collectionEnd||item.end, start+2)
-    if(end<=start) end=Math.min(23,start+2)
-    const asset=item.asset||item.platform||item.requiredPlatform||DEFAULT_DRAFT_ASSETS[index%DEFAULT_DRAFT_ASSETS.length]
+    const assigned=defaultSorties[item.assignedSortieId]||{
+      asset:item.assignedSortieAsset,
+      start:item.assignedSortieStart,
+      end:item.assignedSortieEnd,
+      label:item.assignedSortieLabel,
+    }
+    const sequence=Math.max(1,Number(item.deckSequence)||index+1)
+    const baseStart=Number(assigned.start||safeHour(item.acquisitionStart||item.collectionStart||item.start,[9,11,13,15][index%4]))
+    const start=Math.min(23,baseStart+sequence-1)
+    const end=Math.min(24,start+1)
+    const asset=assigned.asset||item.asset||item.platform||item.requiredPlatform||'UNASSIGNED'
     const requirement=String(item.id||`REQ-${index+1}`).toUpperCase()
-    const fire=item.fire||item.incident||item.location||`Collection Area ${index+1}`
+    const fire=item.fire||item.incident||item.location||item.nai||`Collection Area ${index+1}`
     const objective=item.what||item.title||item.decisionToSupport||'Collection requirement'
     return {
       id:`draft-${requirement}`,
-      identifier:`${asset} / SORTIE ${String(index+1).padStart(2,'0')}`,
+      identifier:assigned.label||`${asset} / UNASSIGNED`,
       asset,
       fire,
       requirement,
@@ -63,7 +75,7 @@ function deckToDraftSorties(items=[]){
       end,
       upad:item.upad||'Unassigned',
       productStatus:item.productStatus||'NOT STARTED',
-      missionStatus:String(item.status||'DRAFT').replaceAll('_',' ').toUpperCase(),
+      missionStatus:item.assignedSortieId?`SEQUENCE ${sequence}`:'UNASSIGNED',
       protected:Boolean(item.protected),
       priority:normalizePriority(item.priority),
       ltiov:item.when||item.ltiov||'—',
