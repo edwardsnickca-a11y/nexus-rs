@@ -384,20 +384,76 @@ function AdvisorColumn(props){
  </aside>
 }
 
-function RequirementDevelopment({missionState,onUpdateRequirement,onValidateRequirement,onSendRequirementForward}){
+function RequirementDevelopment({
+ missionState,
+ onUpdateRequirement,
+ onValidateRequirement,
+ onAddToDeck,
+ selectedRequirementId,
+ onSelectRequirement,
+}){
  const reqs=missionState.requirements?.items||[]
- const selected=reqs.find(r=>r.status==='needs_clarification')||reqs[0]||{}
+ const selected=reqs.find(r=>r.id===selectedRequirementId)||reqs.find(r=>r.status==='needs_clarification')||reqs[0]||{}
  const [draft,setDraft]=useState(selected)
+
+ useEffect(()=>setDraft(selected),[selected?.id])
+
  const update=(field,value)=>setDraft(d=>({...d,[field]:value}))
+ const addToDeck=()=>{
+  onUpdateRequirement?.(selected.id,draft)
+  onValidateRequirement?.(selected.id)
+  onAddToDeck?.({...selected,...draft,status:'ready'})
+ }
+
  return <Panel title="REQUIREMENTS DEVELOPMENT WORKSPACE" className="rx-requirement-workspace">
-  <div className="rx-req-dev-grid">
-   <section><h4>CUSTOMER REQUEST (RAW)</h4><dl><div><dt>Request ID</dt><dd>{selected.id}</dd></div><div><dt>Customer</dt><dd>{selected.customer}</dd></div><div><dt>Priority</dt><dd><em className="high">HIGH</em></dd></div></dl><p className="rx-raw-request">{selected.what||selected.title||'Customer request requires clarification.'}</p><dl><div><dt>Associated Fire</dt><dd>{selected.fire}</dd></div><div><dt>Desired By</dt><dd>{selected.when||'1800L'}</dd></div></dl></section>
-   <section><h4>REFINED REQUIREMENT (DRAFT)</h4><div className="rx-form-grid"><label>Decision to Support<input value={draft.decisionToSupport||''} onChange={e=>update('decisionToSupport',e.target.value)}/></label><label>Location / NAI<input value={draft.nai||''} onChange={e=>update('nai',e.target.value)}/></label><label className="wide">Information Need / Description<textarea value={draft.what||''} onChange={e=>update('what',e.target.value)}/></label><label>Time Sensitive<input value={draft.when||''} onChange={e=>update('when',e.target.value)}/></label><label>Desired Product / Effect<input value={draft.requiredEffect||''} onChange={e=>update('requiredEffect',e.target.value)}/></label><label className="wide">Essential Elements of Information (EEIs)<textarea value={(draft.eeis||[]).join('\n')} onChange={e=>update('eeis',e.target.value.split('\n').filter(Boolean))}/></label><label>Collection Window<select><option>OP 2</option></select></label><label>Alternate Sources<input value={draft.alternateSource||''} onChange={e=>update('alternateSource',e.target.value)}/></label></div><div className="rx-form-actions"><span>Feasibility Status <b>PENDING REVIEW</b></span><button onClick={()=>{onUpdateRequirement?.(selected.id,draft);onValidateRequirement?.(selected.id)}}>MARK READY FOR PLAN</button></div></section>
-   <section><h4>TOMORROW PLAN – REQUIREMENT QUEUE</h4>{reqs.slice(0,4).map(r=><button className={`rx-queue-item ${r.id===selected.id?'selected':''}`} key={r.id}><strong>{r.id.toUpperCase()} &nbsp; {r.fire}</strong><span>{r.title}</span><em>{r.status}</em></button>)}<Button onClick={()=>onSendRequirementForward?.(selected.id)}>VIEW ALL REQUIREMENTS</Button></section>
+  <div className="rx-req-dev-grid rx-req-dev-grid-deck">
+   <section>
+    <h4>CUSTOMER REQUEST (RAW)</h4>
+    <dl>
+     <div><dt>Request ID</dt><dd>{selected.id||'—'}</dd></div>
+     <div><dt>Customer</dt><dd>{selected.customer||'—'}</dd></div>
+     <div><dt>Priority</dt><dd><em className={tone(selected.priority||'high')}>{(selected.priority||'HIGH').toUpperCase()}</em></dd></div>
+    </dl>
+    <p className="rx-raw-request">{selected.what||selected.title||'Customer request requires clarification.'}</p>
+    <dl>
+     <div><dt>Associated Incident</dt><dd>{selected.fire||selected.incident||'—'}</dd></div>
+     <div><dt>Desired By / LTIOV</dt><dd>{selected.when||selected.ltiov||'1800L'}</dd></div>
+    </dl>
+   </section>
+
+   <section>
+    <h4>REFINED COLLECTION REQUIREMENT (DRAFT)</h4>
+    <div className="rx-form-grid">
+     <label>Decision to Support<input value={draft.decisionToSupport||''} onChange={e=>update('decisionToSupport',e.target.value)}/></label>
+     <label>Location / NAI<input value={draft.nai||draft.location||''} onChange={e=>update('nai',e.target.value)}/></label>
+     <label className="wide">Information Need / Description<textarea value={draft.what||''} onChange={e=>update('what',e.target.value)}/></label>
+     <label>LTIOV<input value={draft.when||draft.ltiov||''} onChange={e=>update('when',e.target.value)}/></label>
+     <label>Required Capability<input value={draft.requiredCapability||draft.requiredEffect||''} onChange={e=>update('requiredCapability',e.target.value)}/></label>
+     <label className="wide">Essential Elements of Information (EEIs)<textarea value={(draft.eeis||[]).join('\n')} onChange={e=>update('eeis',e.target.value.split('\n').filter(Boolean))}/></label>
+     <label>Acquisition Window<select value={draft.collectionWindow||'OP 2'} onChange={e=>update('collectionWindow',e.target.value)}><option>OP 1</option><option>OP 2</option></select></label>
+     <label>Alternate Sources<input value={draft.alternateSource||''} onChange={e=>update('alternateSource',e.target.value)}/></label>
+    </div>
+    <div className="rx-form-actions">
+     <span>Feasibility Status <b>{draft.status==='ready'?'READY':'PENDING REVIEW'}</b></span>
+     <button onClick={addToDeck}>ADD TO COLLECTION DECK</button>
+    </div>
+   </section>
+
+   <section>
+    <h4>INCOMING REQUIREMENT QUEUE</h4>
+    {reqs.slice(0,5).map(r=><button
+      className={`rx-queue-item ${r.id===selected.id?'selected':''}`}
+      key={r.id}
+      onClick={()=>onSelectRequirement?.(r.id)}
+     >
+      <strong>{String(r.id||'').toUpperCase()} &nbsp; {r.fire||r.incident||''}</strong>
+      <span>{r.title||r.what}</span>
+      <em>{r.status||'draft'}</em>
+     </button>)}
+   </section>
   </div>
  </Panel>
 }
-
 function Taskability({missionState}){
  return <Panel title="TASKABILITY & COLLECTION OPTIONS" className="rx-taskability"><div className="rx-three">
   <section><h4>PLATFORM SUITABILITY (OP 2)</h4>{(missionState.assetControl?.assets||[]).slice(0,3).map((a,i)=><div key={a.id}><span>✈ &nbsp; {a.type}</span><b>{['Good Fit','Moderate Fit','Limited Fit'][i]}</b><i className={`rx-dot ${['green','amber','red'][i]}`}/></div>)}</section>
@@ -482,13 +538,178 @@ function ManagerView(props){
   </ResizableRow>
  </div>
 }
+function buildDeckRow(requirement,index){
+ const fire=requirement.fire||requirement.incident||`Collection Area ${index+1}`
+ const eeis=requirement.eeis||[]
+ return {
+  id:String(requirement.id||`REQ-${index+1}`).toUpperCase(),
+  priority:String(requirement.priority||(['HIGH','HIGH','MED'][index]||'MED')).toUpperCase(),
+  state:requirement.state||'CA',
+  location:requirement.nai||requirement.location||fire,
+  description:requirement.locationDescription||requirement.what||requirement.title||'Collection requirement',
+  centerPoint:requirement.centerPoint||['39.74,-121.62','39.52,-121.31','39.17,-121.78'][index%3],
+  radius:requirement.radius||'2 NM',
+  pir:requirement.pir||`PIR-${String(index+1).padStart(2,'0')}`,
+  eei:eeis.length?eeis.join('; '):(requirement.what||requirement.title||'Assess incident effects'),
+  capability:requirement.requiredCapability||requirement.requiredEffect||['EO/IR','EO / Still Imagery','Wide Area EO'][index%3],
+  resolution:requirement.resolution||['≤ 1 m','≤ 0.5 m','≤ 1 m'][index%3],
+  periodicity:requirement.periodicity||'One pass',
+  justification:requirement.justification||requirement.decisionToSupport||'Supports incident decision-making',
+  preEvent:requirement.preEvent||'If available',
+  ltiov:requirement.when||requirement.ltiov||['1500L','1630L','1800L'][index%3],
+  acquisitionStart:requirement.acquisitionStart||['1300L','1430L','1600L'][index%3],
+  acquisitionEnd:requirement.acquisitionEnd||['1430L','1600L','1730L'][index%3],
+  reporting:requirement.reporting||'Report collection complete and imagery availability',
+  special:requirement.specialInstructions||'Coordinate with Airspace Manager; avoid unnecessary collection',
+  status:String(requirement.status||'READY').replaceAll('_',' ').toUpperCase(),
+ }
+}
+
+function CollectionDeckOutput({items,onClose}){
+ const rows=items.map(buildDeckRow)
+ return <div className="rx-deck-modal" role="dialog" aria-modal="true" aria-label="Collection Deck">
+  <div className="rx-deck-modal-card">
+   <header>
+    <div>
+     <span>COLLECTION DECK OUTPUT</span>
+     <h2>OP 2 — SORTIE 01</h2>
+     <p>California Wildfire Complex · Remote Sensing Collection Plan</p>
+    </div>
+    <button onClick={onClose}>CLOSE</button>
+   </header>
+   <div className="rx-deck-summary">
+    <div><span>UNIT TRACKING NUMBER</span><strong>CA-RS-OP2-001</strong></div>
+    <div><span>EVENT / OPERATION</span><strong>California Wildfire Complex</strong></div>
+    <div><span>DISSEMINATION</span><strong>Mission partners / approved customers</strong></div>
+    <div><span>PRODUCT CLASSIFICATION</span><strong>UNCLASSIFIED</strong></div>
+   </div>
+   <div className="rx-deck-table-wrap">
+    <table className="rx-deck-full-table">
+     <thead><tr>
+      <th>ID</th><th>PRI</th><th>STATE</th><th>LOCATION</th><th>LOCATION DESCRIPTION</th>
+      <th>CENTER POINT</th><th>RADIUS</th><th>PIR</th><th>EEI / WHAT ARE YOU LOOKING FOR</th>
+      <th>REQUIRED CAPABILITY</th><th>RESOLUTION</th><th>PERIODICITY</th><th>JUSTIFICATION</th>
+      <th>PRE-EVENT</th><th>LTIOV</th><th>ACQ START</th><th>ACQ END</th>
+      <th>REPORTING INSTRUCTIONS</th><th>SPECIAL INSTRUCTIONS</th><th>STATUS</th>
+     </tr></thead>
+     <tbody>{rows.map(row=><tr key={row.id}>
+      <td>{row.id}</td><td><em className={tone(row.priority)}>{row.priority}</em></td><td>{row.state}</td>
+      <td>{row.location}</td><td>{row.description}</td><td>{row.centerPoint}</td><td>{row.radius}</td>
+      <td>{row.pir}</td><td>{row.eei}</td><td>{row.capability}</td><td>{row.resolution}</td>
+      <td>{row.periodicity}</td><td>{row.justification}</td><td>{row.preEvent}</td><td>{row.ltiov}</td>
+      <td>{row.acquisitionStart}</td><td>{row.acquisitionEnd}</td><td>{row.reporting}</td>
+      <td>{row.special}</td><td>{row.status}</td>
+     </tr>)}</tbody>
+    </table>
+   </div>
+   <footer>
+    <span>{rows.length} COLLECTION REQUIREMENTS · {rows.filter(r=>r.status.includes('READY')).length} READY</span>
+    <button onClick={()=>window.print()}>PRINT / SAVE DECK</button>
+   </footer>
+  </div>
+ </div>
+}
+
+function ActiveCollectionDeck({items,onOpen}){
+ const rows=items.map(buildDeckRow)
+ return <Panel title="ACTIVE COLLECTION DECK — OP 2 / SORTIE 01" className="rx-active-deck">
+  <div className="rx-active-deck-meta">
+   <span><b>{rows.length}</b> REQUIREMENTS</span>
+   <span><b>{rows.filter(r=>r.status.includes('READY')).length}</b> READY</span>
+   <span><b>{rows.filter(r=>!r.status.includes('READY')).length}</b> REVIEW</span>
+  </div>
+  <div className="rx-deck-preview-table">
+   <div className="head"><span>PRI</span><span>ID</span><span>LOCATION</span><span>EEI / COLLECTION NEED</span><span>LTIOV</span><span>STATUS</span></div>
+   {rows.slice(0,6).map(row=><div className="row" key={row.id}>
+    <span><em className={tone(row.priority)}>{row.priority}</em></span>
+    <strong>{row.id}</strong><span>{row.location}</span><span>{row.eei}</span><span>{row.ltiov}</span><span>{row.status}</span>
+   </div>)}
+  </div>
+  <Button onClick={onOpen}>OPEN FULL COLLECTION DECK</Button>
+ </Panel>
+}
+
 function CollectionView(props){
  const {missionState,role,onNavigate,onUpdateRequirement,onValidateRequirement,onSendRequirementForward}=props
- return <div className="rx-role-layout collection">
-  <div className="rx-top-grid"><CurrentPeriodCard role={role} missionState={missionState}/><TomorrowCard role={role} missionState={missionState} onNavigate={onNavigate}/><DeadlinesCard role={role}/></div>
-  <RequirementDevelopment missionState={missionState} onUpdateRequirement={onUpdateRequirement} onValidateRequirement={onValidateRequirement} onSendRequirementForward={onSendRequirementForward}/>
+ const requirements=missionState.requirements?.items||[]
+ const [selectedRequirementId,setSelectedRequirementId]=useState(requirements[0]?.id)
+ const [deckItems,setDeckItems]=useState(()=>requirements.slice(0,3).map((r,index)=>({...r,status:index===1?'draft':'ready'})))
+ const [showDeck,setShowDeck]=useState(false)
+
+ const addToDeck=(requirement)=>{
+  setDeckItems(current=>{
+   const exists=current.some(item=>item.id===requirement.id)
+   return exists?current.map(item=>item.id===requirement.id?{...item,...requirement}:item):[...current,requirement]
+  })
+  onSendRequirementForward?.(requirement.id)
+ }
+
+ return <div className="rx-role-layout collection rx-collection-deck-layout">
+  <style>{`
+   .rx-collection-top{align-items:stretch}
+   .rx-collection-top>.rx-panel{display:flex;flex-direction:column;min-height:0}
+   .rx-collection-top>.rx-panel>.rx-outline-button{margin-top:auto}
+   .rx-req-dev-grid-deck{grid-template-columns:25% minmax(0,48%) minmax(220px,27%)}
+   .rx-active-deck{display:flex;flex-direction:column}
+   .rx-active-deck>.rx-outline-button{margin-top:auto}
+   .rx-active-deck-meta{display:flex;gap:18px;padding:7px 10px;border-bottom:1px solid rgba(127,232,244,.15);color:#9eb2bf;font-size:10px}
+   .rx-active-deck-meta b{color:#7fe8f4;font-size:15px;margin-right:4px}
+   .rx-deck-preview-table{min-width:0}
+   .rx-deck-preview-table .head,.rx-deck-preview-table .row{display:grid;grid-template-columns:52px 78px 1fr 2fr 70px 78px;gap:8px;align-items:center}
+   .rx-deck-preview-table .head{padding:7px 9px;color:#7f96a5;font-size:8px;border-bottom:1px solid rgba(127,232,244,.18)}
+   .rx-deck-preview-table .row{padding:8px 9px;border-bottom:1px solid rgba(127,232,244,.12);font-size:10px}
+   .rx-deck-preview-table .row>span:nth-child(4){white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+   .rx-deck-modal{position:fixed;inset:0;z-index:9999;background:rgba(0,8,15,.9);display:flex;align-items:center;justify-content:center;padding:24px}
+   .rx-deck-modal-card{width:min(96vw,1800px);height:min(92vh,1000px);background:#071827;border:1px solid #2a7189;display:flex;flex-direction:column;box-shadow:0 25px 80px #000}
+   .rx-deck-modal-card>header{display:flex;justify-content:space-between;align-items:flex-start;padding:16px 18px;border-bottom:1px solid #21485b}
+   .rx-deck-modal-card header span{color:#63e1ee;font-size:10px;letter-spacing:.12em}
+   .rx-deck-modal-card h2{margin:3px 0;color:#f2f7fa;font-size:22px}
+   .rx-deck-modal-card p{margin:0;color:#91a9b6;font-size:11px}
+   .rx-deck-modal-card button{border:1px solid #3fbfd2;background:#0a2736;color:#8deaf3;padding:9px 15px;font-weight:700;cursor:pointer}
+   .rx-deck-summary{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:#21485b;border-bottom:1px solid #21485b}
+   .rx-deck-summary>div{background:#0a1d2b;padding:10px 12px}
+   .rx-deck-summary span{display:block;color:#76909f;font-size:8px}
+   .rx-deck-summary strong{color:#e7f1f5;font-size:11px}
+   .rx-deck-table-wrap{overflow:auto;flex:1}
+   .rx-deck-full-table{border-collapse:collapse;min-width:2400px;width:100%;font-size:9px}
+   .rx-deck-full-table th{position:sticky;top:0;background:#102838;color:#7fe8f4;text-align:left;padding:8px;border:1px solid #284a5d;z-index:2}
+   .rx-deck-full-table td{vertical-align:top;padding:8px;border:1px solid #1d3b4c;color:#c3d1d9;max-width:220px}
+   .rx-deck-full-table tbody tr:nth-child(even){background:rgba(19,51,68,.3)}
+   .rx-deck-modal-card>footer{display:flex;justify-content:space-between;align-items:center;padding:12px 16px;border-top:1px solid #21485b;color:#9cb0bb;font-size:10px}
+   @media print{
+    body *{visibility:hidden!important}
+    .rx-deck-modal,.rx-deck-modal *{visibility:visible!important}
+    .rx-deck-modal{position:absolute;inset:0;padding:0;background:white}
+    .rx-deck-modal-card{width:100%;height:auto;box-shadow:none}
+    .rx-deck-modal-card>header button,.rx-deck-modal-card>footer button{display:none}
+   }
+  `}</style>
+
+  <ResizableRow storageKey="nexus-rs-collection-top-panels-v1" initial={[25,28,24,23]} min={15} className="rx-top-grid rx-collection-top">
+   <CurrentPeriodCard role={role} missionState={missionState}/>
+   <TomorrowCard role={role} missionState={missionState} onNavigate={onNavigate}/>
+   <DeadlinesCard role={role}/>
+   <ActiveCollectionDeck items={deckItems} onOpen={()=>setShowDeck(true)}/>
+  </ResizableRow>
+
+  <RequirementDevelopment
+   missionState={missionState}
+   onUpdateRequirement={onUpdateRequirement}
+   onValidateRequirement={onValidateRequirement}
+   onAddToDeck={addToDeck}
+   selectedRequirementId={selectedRequirementId}
+   onSelectRequirement={setSelectedRequirementId}
+  />
+
   <Taskability missionState={missionState}/>
-  <div className="rx-three-grid bottom"><RegionalMissionPicture role={role} missionState={missionState}/><AirspacePanel/><UPADTable missionState={missionState}/></div>
+
+  <ResizableRow storageKey="nexus-rs-collection-bottom-panels-v1" initial={[45,27,28]} min={18} className="rx-three-grid bottom">
+   <RegionalMissionPicture role={role} missionState={missionState}/>
+   <AirspacePanel/>
+   <UPADTable missionState={missionState}/>
+  </ResizableRow>
+
+  {showDeck&&<CollectionDeckOutput items={deckItems} onClose={()=>setShowDeck(false)}/>}
  </div>
 }
 function UPADView(props){
