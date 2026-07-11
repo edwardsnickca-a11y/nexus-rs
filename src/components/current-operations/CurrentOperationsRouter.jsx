@@ -163,7 +163,7 @@ function OperationalMap({missionState}){
  ]
  const missionDefaults=[
   {label:'MQ-9-01',lat:39.95,lng:-122.05},
-  {label:'LUH-72-01',lat:39.35,lng:-121.32},
+  {label:'UH-72-01',lat:39.35,lng:-121.32},
   {label:'CAP-01',lat:38.82,lng:-122.18},
  ]
  const missions=(missionState.currentOps?.missions||[]).slice(0,3)
@@ -468,10 +468,25 @@ function Taskability({
  sorties,
  onAssignRequirement,
  onViewAllSorties,
+ currentTime='1732L',
 }){
  const requirement=selectedRequirement||{}
  const requirementId=requirement.id
+ const incident=String(requirement.fire||requirement.incident||requirement.location||'').trim()
+ const incidentCode=incident==='Pine Ridge'?'PR':incident==='Bear Creek'?'BC':incident==='Eagle Peak'?'EP':'TK'
+ const numericId=String(requirement.id||'').match(/\d+/)?.[0]||String((deckItems||[]).findIndex(item=>item.id===requirement.id)+1||1).padStart(3,'0')
+ const taskId=`${incidentCode}-${String(numericId).padStart(3,'0')}`
+ const taskTitle=String(requirement.title||requirement.what||requirement.customerNeed||'Collection Requirement').replace(/^REQ[-\s\w]*[:–—-]\s*/i,'').slice(0,54)
  const assignedItem=(deckItems||[]).find(item=>item.id===requirementId)
+ const currentMinutes=(()=>{
+  const digits=String(currentTime).replace(/[^\d]/g,'').padStart(4,'0').slice(0,4)
+  return Number(digits.slice(0,2))*60+Number(digits.slice(2))
+ })()
+ const ltiovMinutes=(()=>{
+  const digits=String(requirement.when||requirement.ltiov||'').replace(/[^\d]/g,'').padStart(4,'0').slice(0,4)
+  return digits==='0000'?null:Number(digits.slice(0,2))*60+Number(digits.slice(2))
+ })()
+ const remaining=ltiovMinutes==null?null:ltiovMinutes-currentMinutes
 
  const options=(sorties||[]).map(sortie=>{
   const required=String(requirement.requiredCapability||requirement.requiredEffect||requirement.desiredProduct||'').toLowerCase()
@@ -480,14 +495,17 @@ function Taskability({
   const ltiov=Number(String(requirement.when||requirement.ltiov||'').replace(/[^\d]/g,'').slice(0,2))
   const timeMatch=!ltiov||sortie.end<=ltiov
   const assignedCount=(deckItems||[]).filter(item=>item.assignedSortieId===sortie.id).length
-  const incidentMatch=String(sortie.primaryIncident||'').toLowerCase()===String(requirement.fire||requirement.incident||requirement.location||'').toLowerCase()
+  const incidentMatch=String(sortie.primaryIncident||'').toLowerCase()===incident.toLowerCase()
+  const airspaceWarning=incidentMatch&&['Pine Ridge','Bear Creek','Eagle Peak'].includes(incident)?`TFR ACTIVE — ${incident.toUpperCase()}`:null
   const fitScore=(capabilityMatch?4:0)+(timeMatch?3:0)+(incidentMatch?2:0)-Math.min(assignedCount,4)
   const fit=fitScore>=7?'GOOD FIT':fitScore>=3?'MODERATE FIT':'LIMITED FIT'
   const warnings=[
    !capabilityMatch?'Capability requires review':null,
-   !timeMatch?'Collection may miss LTIOV':null,
+   !timeMatch?'LTIOV AT RISK':null,
+   remaining!==null&&remaining<=90?`LTIOV ${remaining<=0?'EXPIRED':`${Math.floor(Math.max(0,remaining)/60)}:${String(Math.max(0,remaining)%60).padStart(2,'0')} REMAINING`}`:null,
+   airspaceWarning,
    !incidentMatch?'Cross-incident route opportunity':null,
-   assignedCount>=4?`${assignedCount} requirements already assigned`:null,
+   assignedCount>=4?`${assignedCount} TASKS ALREADY ON DECK`:null,
   ].filter(Boolean)
   return {...sortie,capabilityMatch,timeMatch,assignedCount,incidentMatch,fit,fitScore,warnings}
  }).sort((a,b)=>b.fitScore-a.fitScore)
@@ -496,32 +514,18 @@ function Taskability({
 
  return <Panel title="TASKABILITY & COLLECTION OPTIONS" className="rx-taskability rx-taskability-options">
   <div className="rx-taskability-selected">
-   <div><span>SELECTED REQUIREMENT</span><strong>{String(requirement.id||'NONE').toUpperCase()}</strong></div>
+   <div className="task"><span>SELECTED REQUIREMENT</span><strong>{taskId}</strong><small>{taskTitle}</small></div>
    <div><span>LOCATION / NAI</span><strong>{requirement.nai||requirement.location||requirement.fire||requirement.incident||'—'}</strong></div>
-   <div><span>LTIOV</span><strong>{requirement.when||requirement.ltiov||'—'}</strong></div>
+   <div><span>LTIOV</span><strong>{requirement.when||requirement.ltiov||'—'}</strong>{remaining!==null&&<small className={remaining<=90?'warning':''}>{remaining<=0?'EXPIRED':`${Math.floor(remaining/60)}:${String(remaining%60).padStart(2,'0')} REMAINING`}</small>}</div>
    <div><span>REQUIRED CAPABILITY</span><strong>{requirement.requiredCapability||requirement.requiredEffect||requirement.desiredProduct||'—'}</strong></div>
   </div>
-
-  <div className="rx-taskability-options-title">
-   <strong>BEST COLLECTION OPTIONS</strong>
-   <button onClick={onViewAllSorties}>VIEW ALL {options.length} SORTIES</button>
-  </div>
-
+  <div className="rx-taskability-options-title"><strong>BEST COLLECTION OPTIONS</strong><button onClick={onViewAllSorties}>VIEW ALL {options.length} SORTIES</button></div>
   <div className="rx-taskability-options-list">
    {topOptions.map(option=><article className={`rx-taskability-option ${assignedItem?.assignedSortieId===option.id?'assigned':''}`} key={option.id}>
-    <header>
-     <div><strong>{option.label}</strong><span>{option.primaryIncident} · {option.window} · {option.capability}</span></div>
-     <em className={option.fit==='GOOD FIT'?'good':option.fit==='MODERATE FIT'?'med':'high'}>{option.fit}</em>
-    </header>
-    <dl>
-     <div><dt>Capability</dt><dd>{option.capabilityMatch?'Supports requirement':'Review mismatch'}</dd></div>
-     <div><dt>Timing</dt><dd>{option.timeMatch?'Supports LTIOV':'LTIOV at risk'}</dd></div>
-     <div><dt>Deck Load</dt><dd>{option.assignedCount} assigned</dd></div>
-    </dl>
+    <header><div><strong>{option.label}</strong><span>{option.primaryIncident} · {option.assetType||option.asset} · {option.window}</span></div><em className={option.fit==='GOOD FIT'?'good':option.fit==='MODERATE FIT'?'med':'high'}>{option.fit}</em></header>
+    <dl><div><dt>Capability</dt><dd>{option.capabilityMatch?'Supports requirement':'Review mismatch'}</dd></div><div><dt>Timing</dt><dd>{option.timeMatch?'Supports LTIOV':'LTIOV at risk'}</dd></div><div><dt>Deck Load</dt><dd>{option.assignedCount} assigned</dd></div></dl>
     {option.warnings.length>0&&<ul>{option.warnings.map(warning=><li key={warning}>{warning}</li>)}</ul>}
-    <button disabled={!requirementId} onClick={()=>onAssignRequirement?.(requirement,option.id)}>
-     {assignedItem?.assignedSortieId===option.id?'ASSIGNED TO THIS SORTIE':'ASSIGN TO SORTIE'}
-    </button>
+    <button disabled={!requirementId} onClick={()=>onAssignRequirement?.(requirement,option.id)}>{assignedItem?.assignedSortieId===option.id?'ASSIGNED TO THIS SORTIE':'ASSIGN TO SORTIE'}</button>
    </article>)}
   </div>
  </Panel>
@@ -793,46 +797,38 @@ function SortieDeckEditor({
  </div>
 }
 
-function CollectionSyncPreview({title,subtitle,items,draft=false,onOpen,sorties=[]}){
+function CollectionSyncPreview({title,subtitle,items,draft=false,onOpen,sorties=[],currentTime='1732L'}){
  const sortieById=Object.fromEntries(sorties.map(sortie=>[sortie.id,sortie]))
+ const callsignFor=asset=>{
+  const value=String(asset||'')
+  if(value.toUpperCase().includes('MQ-9')||value.toUpperCase().includes('MQ9')) return 'GARGOYLE'
+  if(value.toUpperCase().includes('UH-72')||value.toUpperCase().includes('UH-72')) return 'UH-72'
+  if(value.toUpperCase().includes('CAP')) return 'CAP'
+  return value||'UNASSIGNED'
+ }
  const rows=(items||[]).slice(0,8).map((item,index)=>{
   const assigned=sortieById[item.assignedSortieId]
   const sequence=Math.max(1,Number(item.deckSequence)||index+1)
   const baseStart=Number(assigned?.start||String(item.start||item.acquisitionStart||[9,11,13,15,17][index]).replace(/[^\d]/g,'').slice(0,2))||[9,11,13,15,17][index]
   const start=Math.min(23,baseStart+Math.max(0,sequence-1))
   const end=Math.min(24,start+1)
-  return {
-   id:item.id||`REQ-${index+1}`,
-   asset:assigned?.asset||item.asset||item.platform||item.requiredPlatform||'UNASSIGNED',
-   requirement:item.requirement||item.id||`REQ-${index+1}`,
-   area:item.fire||item.incident||item.location||item.nai||`Collection Area ${index+1}`,
-   start,
-   end,
-   status:assigned?`SEQ ${sequence}`:'UNASSIGNED',
-  }
+  return {id:item.id||`REQ-${index+1}`,asset:assigned?.callsign||callsignFor(assigned?.asset||item.asset||item.platform||item.requiredPlatform),requirement:item.requirement||item.id||`REQ-${index+1}`,area:item.fire||item.incident||item.location||item.nai||`Collection Area ${index+1}`,start,end,status:assigned?`SEQ ${sequence}`:'UNASSIGNED'}
  })
  const minHour=Math.min(6,...rows.map(row=>row.start))
  const maxHour=Math.max(22,...rows.map(row=>row.end))
  const span=Math.max(1,maxHour-minHour)
  const left=row=>`${((row.start-minHour)/span)*100}%`
  const width=row=>`${Math.max(6,((row.end-row.start)/span)*100)}%`
+ const timeDigits=String(currentTime).replace(/[^\d]/g,'').padStart(4,'0').slice(0,4)
+ const currentDecimal=Number(timeDigits.slice(0,2))+Number(timeDigits.slice(2))/60
+ const currentLeft=Math.max(0,Math.min(100,((currentDecimal-minHour)/span)*100))
 
  return <Panel title={title} className={`rx-collection-sync-preview ${draft?'draft':''}`}>
   <div className="rx-collection-sync-subtitle">{subtitle}</div>
-  <div className="rx-collection-sync-hours">
-   {[minHour,Math.round((minHour+maxHour)/2),maxHour].map(hour=><span key={hour}>{String(hour).padStart(2,'0')}00</span>)}
-  </div>
+  <div className="rx-collection-sync-hours">{[minHour,Math.round((minHour+maxHour)/2),maxHour].map(hour=><span key={hour}>{String(hour).padStart(2,'0')}00</span>)}</div>
   <div className="rx-collection-sync-body">
-   {rows.length?rows.map(row=><div className="rx-collection-sync-row" key={`${row.asset}-${row.id}`}>
-    <strong>{row.asset}</strong>
-    <div className="rx-collection-sync-track">
-     <span className={`rx-collection-sync-block ${draft?'draft':''}`} style={{left:left(row),width:width(row)}}>
-      <b>{String(row.requirement).toUpperCase()}</b>
-      <small>{row.area}</small>
-     </span>
-    </div>
-    <em>{row.status}</em>
-   </div>):<div className="rx-collection-sync-empty">No collection activity is available for this view.</div>}
+   {!draft&&currentDecimal>=minHour&&currentDecimal<=maxHour&&<div className="rx-sync-now-line" style={{left:`calc(106px + (100% - 190px) * ${currentLeft/100})`}}><span>{timeDigits}L</span></div>}
+   {rows.length?rows.map(row=><div className="rx-collection-sync-row" key={`${row.asset}-${row.id}`}><strong>{row.asset}</strong><div className="rx-collection-sync-track"><span className={`rx-collection-sync-block ${draft?'draft':''}`} style={{left:left(row),width:width(row)}}><b>{String(row.requirement).toUpperCase()}</b><small>{row.area}</small></span></div><em>{row.status}</em></div>):<div className="rx-collection-sync-empty">No collection activity is available for this view.</div>}
   </div>
   <Button onClick={onOpen}>VIEW FULL SYNC MATRIX</Button>
  </Panel>
@@ -845,19 +841,22 @@ function CollectionView(props){
  const plannedSorties=useMemo(()=>{
   const incidentNames=['Pine Ridge','Bear Creek','Eagle Peak']
   const incidentCodes={'Pine Ridge':'PR','Bear Creek':'BC','Eagle Peak':'EP'}
-  const aircraftCodes={'MQ-9':'MQ9','LUH-72':'L72','CAP':'CAP','DoD Partner Asset':'DOD','Satellite Source':'SAT'}
+  const aircraftCodes={'MQ-9':'GARGOYLE','UH-72':'UH72','UH-72':'UH72','CAP':'CAP','DoD Partner Asset':'DOD','Satellite Source':'SAT'}
   const source=missionState.currentOps?.missions||[]
   const mapped=source.slice(0,12).map((mission,index)=>{
    const primaryIncident=mission.fire||mission.incident||mission.area||incidentNames[index%incidentNames.length]
-   const asset=mission.platform||mission.assetId||mission.asset||['MQ-9','LUH-72','CAP'][index%3]
+   const assetType=String(mission.platform||mission.assetId||mission.asset||['MQ-9','UH-72','CAP'][index%3]).replaceAll('UH-72','UH-72')
+   const callsign=assetType.includes('MQ-9')?'GARGOYLE':assetType.includes('UH-72')?'UH-72':assetType.includes('CAP')?'CAP':assetType
    const incidentCode=incidentCodes[primaryIncident]||String(primaryIncident).split(/\s+/).map(word=>word[0]).join('').slice(0,3).toUpperCase()
-   const aircraftCode=aircraftCodes[asset]||String(asset).replace(/[^A-Za-z0-9]/g,'').slice(0,4).toUpperCase()
+   const aircraftCode=aircraftCodes[assetType]||String(callsign).replace(/[^A-Za-z0-9]/g,'').slice(0,8).toUpperCase()
    const sequence=String(index+1).padStart(2,'0')
    return {
     id:mission.id||`${incidentCode}-${aircraftCode}-${sequence}`,
     label:`${incidentCode}-${aircraftCode}-${sequence}`,
     primaryIncident,
-    asset,
+    asset:callsign,
+    assetType,
+    callsign,
     start:Number(String(mission.start||mission.plannedStart||[9,11,13,15][index%4]).replace(/[^\d]/g,'').slice(0,2))||[9,11,13,15][index%4],
     end:Number(String(mission.end||mission.plannedEnd||[12,14,16,18][index%4]).replace(/[^\d]/g,'').slice(0,2))||[12,14,16,18][index%4],
     capability:mission.capability||mission.product||'EO/IR',
@@ -865,12 +864,12 @@ function CollectionView(props){
    }
   })
   return mapped.length?mapped:[
-   {id:'PR-MQ9-01',label:'PR-MQ9-01',primaryIncident:'Pine Ridge',asset:'MQ-9',start:9,end:14,capability:'EO/IR',window:'0900L–1400L'},
-   {id:'BC-L72-01',label:'BC-L72-01',primaryIncident:'Bear Creek',asset:'LUH-72',start:11,end:16,capability:'EO / Still Imagery',window:'1100L–1600L'},
-   {id:'EP-CAP-01',label:'EP-CAP-01',primaryIncident:'Eagle Peak',asset:'CAP',start:13,end:18,capability:'Wide Area EO',window:'1300L–1800L'},
-   {id:'PR-MQ9-02',label:'PR-MQ9-02',primaryIncident:'Pine Ridge',asset:'MQ-9',start:15,end:20,capability:'EO/IR',window:'1500L–2000L'},
-   {id:'BC-CAP-02',label:'BC-CAP-02',primaryIncident:'Bear Creek',asset:'CAP',start:8,end:12,capability:'Wide Area EO',window:'0800L–1200L'},
-   {id:'EP-L72-02',label:'EP-L72-02',primaryIncident:'Eagle Peak',asset:'LUH-72',start:10,end:14,capability:'EO / Still Imagery',window:'1000L–1400L'},
+   {id:'PR-GARGOYLE-01',label:'PR-GARGOYLE-01',primaryIncident:'Pine Ridge',asset:'GARGOYLE',assetType:'MQ-9',callsign:'GARGOYLE',start:9,end:14,capability:'EO/IR',window:'0900L–1400L'},
+   {id:'BC-UH72-01',label:'BC-UH72-01',primaryIncident:'Bear Creek',asset:'UH-72',assetType:'UH-72',callsign:'UH-72',start:11,end:16,capability:'EO / Still Imagery',window:'1100L–1600L'},
+   {id:'EP-CAP-01',label:'EP-CAP-01',primaryIncident:'Eagle Peak',asset:'CAP',assetType:'CAP',callsign:'CAP',start:13,end:18,capability:'Wide Area EO',window:'1300L–1800L'},
+   {id:'PR-GARGOYLE-02',label:'PR-GARGOYLE-02',primaryIncident:'Pine Ridge',asset:'GARGOYLE',assetType:'MQ-9',callsign:'GARGOYLE',start:15,end:20,capability:'EO/IR',window:'1500L–2000L'},
+   {id:'BC-CAP-02',label:'BC-CAP-02',primaryIncident:'Bear Creek',asset:'CAP',assetType:'CAP',callsign:'CAP',start:8,end:12,capability:'Wide Area EO',window:'0800L–1200L'},
+   {id:'EP-UH72-02',label:'EP-UH72-02',primaryIncident:'Eagle Peak',asset:'UH-72',assetType:'UH-72',callsign:'UH-72',start:10,end:14,capability:'EO / Still Imagery',window:'1000L–1400L'},
   ]
  },[missionState.currentOps?.missions])
 
@@ -1004,6 +1003,9 @@ function CollectionView(props){
    .rx-taskability-selected>div:last-child{border-right:0}
    .rx-taskability-selected span{display:block;color:#819ba9;font-size:9px}
    .rx-taskability-selected strong{display:block;margin-top:3px;color:#e5f0f4;font-size:11px}
+   .rx-taskability-selected .task strong{font-size:15px}
+   .rx-taskability-selected small{display:block;margin-top:3px;color:#8fa8b5;font-size:9px;text-transform:uppercase}
+   .rx-taskability-selected small.warning{color:#ffbd54}
    .rx-taskability-options-title{display:flex;justify-content:space-between;align-items:center;padding:8px 10px 0}
    .rx-taskability-options-title strong{color:#dce9ee;font-size:10px}
    .rx-taskability-options-title button{height:28px;border:1px solid #2ebdca;background:#0b3443;color:#7fe8f4;padding:0 10px;cursor:pointer}
@@ -1040,7 +1042,9 @@ function CollectionView(props){
    .rx-collection-sync-subtitle{padding:8px 10px;border-bottom:1px solid rgba(127,232,244,.15);color:#8ea6b3}
    .rx-collection-sync-hours{display:grid;grid-template-columns:repeat(3,1fr);padding:6px 9px 6px 115px;border-bottom:1px solid rgba(127,232,244,.12);color:#7895a4}
    .rx-collection-sync-hours span:nth-child(2){text-align:center}.rx-collection-sync-hours span:last-child{text-align:right}
-   .rx-collection-sync-body{padding:5px 8px}
+   .rx-collection-sync-body{position:relative;padding:5px 8px}
+   .rx-sync-now-line{position:absolute;top:0;bottom:0;z-index:4;border-left:1px dashed rgba(255,196,84,.9);pointer-events:none}
+   .rx-sync-now-line span{position:absolute;top:1px;left:4px;color:#ffc454;font-size:7px;background:#071827;padding:1px 3px}
    .rx-collection-sync-row{display:grid;grid-template-columns:98px minmax(0,1fr) 76px;gap:8px;align-items:center;min-height:35px;border-bottom:1px solid rgba(127,232,244,.1)}
    .rx-collection-sync-row>strong{font-size:10px;color:#d8e7ec;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
    .rx-collection-sync-row>em{font-style:normal;font-size:9px;text-align:right;color:#8fa6b2}
@@ -1050,6 +1054,8 @@ function CollectionView(props){
    .rx-collection-sync-block b{display:block;font-size:7px;line-height:7px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
    .rx-collection-sync-block small{display:block;font-size:6px;line-height:7px;color:#c0d3dc;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
    .rx-collection-map-row{min-height:360px}
+   .rx-collection-map-full{display:block}
+   .rx-collection-map-full>.rx-panel{width:100%;height:100%}
    .rx-collection-map-row>.rx-panel{height:100%}
    .rx-collection-support-stack{display:grid;grid-template-rows:minmax(135px,.8fr) 5px minmax(145px,1fr);min-height:0}
    .rx-collection-support-stack>.rx-panel{min-height:0;display:flex;flex-direction:column}
@@ -1108,6 +1114,7 @@ function CollectionView(props){
     sorties={plannedSorties}
     onAssignRequirement={assignRequirementToSortie}
     onViewAllSorties={()=>setShowAllSorties(true)}
+    currentTime={missionState.exercise?.localIncidentTime||missionState.asOf||'1732L'}
    />
    <ActiveCollectionDeck
     items={deckItems}
@@ -1120,17 +1127,13 @@ function CollectionView(props){
   <DragHandle className="horizontal rx-cm-height-handle" onDrag={delta=>setMiddleHeight(value=>clamp(value+delta.dy,220,680))}/>
 
   <ResizableRow storageKey="nexus-rs-collection-sync-previews-v2" initial={[50,50]} min={28} className="rx-collection-sync-row-layout">
-   <CollectionSyncPreview title="SYNC MATRIX — TODAY'S PLAN" subtitle="Approved / executing collection picture" items={todaySyncItems} onOpen={()=>onNavigate?.('sync')}/>
+   <CollectionSyncPreview title="SYNC MATRIX — TODAY'S PLAN" subtitle="Approved / executing collection picture" items={todaySyncItems} currentTime={missionState.exercise?.localIncidentTime||missionState.asOf||'1732L'} onOpen={()=>onNavigate?.('sync')}/>
    <CollectionSyncPreview title="SYNC MATRIX — TOMORROW'S PLAN (DRAFT)" subtitle="Updates from sortie assignment and deck sequence" items={deckItems} sorties={plannedSorties} draft onOpen={()=>onNavigate?.('sync')}/>
   </ResizableRow>
 
-  <ResizableRow storageKey="nexus-rs-collection-map-support-v3" initial={[58,42]} min={30} className="rx-collection-map-row">
+  <div className="rx-collection-map-row rx-collection-map-full">
    <RegionalMissionPicture role={role} missionState={missionState}/>
-   <ResizableStack storageKey="nexus-rs-collection-support-stack-v1">
-    <DeadlinesCard role={role}/>
-    <AirspacePanel/>
-   </ResizableStack>
-  </ResizableRow>
+  </div>
 
   {showDeckOutput&&<CollectionDeckOutput items={deckItems} onClose={()=>setShowDeckOutput(false)}/>}
   {showAllSorties&&<AllSortiesModal requirement={selectedRequirement} deckItems={deckItems} sorties={plannedSorties} onAssign={assignRequirementToSortie} onClose={()=>setShowAllSorties(false)}/>}
