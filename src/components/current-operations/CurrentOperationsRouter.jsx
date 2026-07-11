@@ -1143,11 +1143,162 @@ function CollectionView(props){
 
 function UPADView(props){
  const {missionState,role,onNavigate,onUpdateDelivery}=props
- return <div className="rx-role-layout upad">
-  <div className="rx-top-grid"><CurrentPeriodCard role={role} missionState={missionState}/><TomorrowCard role={role} missionState={missionState} onNavigate={onNavigate}/><DeadlinesCard role={role}/></div>
-  <UPADOverview missionState={missionState} onUpdateDelivery={onUpdateDelivery}/>
-  <div className="rx-three-grid"><Panel title="UPAD CAPACITY & CONSTRAINTS" accent="purple" className="rx-small-list"><ul>{[['Total Processing Capacity','High'],['Network Bandwidth','Limited'],['Exploitation Specialists','Tight'],['Pilot / Crew Availability','Limited'],['System Availability','Good'],['Launch Turn Time','Moderate']].map(x=><li key={x[0]}>{x[0]}<em>{x[1]}</em></li>)}</ul><Button>VIEW UPAD DETAILS</Button></Panel><UPADTable missionState={missionState}/><Panel title="UPAD SUPPORT REQUESTS" accent="purple" className="rx-small-list"><ul>{['Additional Bandwidth','Extra Exploitation Support','Accelerated Processing','Alternate Landing Site'].map((x,i)=><li key={x}>{x}<span>U{i+1} &nbsp; OPEN</span></li>)}</ul><Button>VIEW ALL REQUESTS</Button></Panel></div>
-  <div className="rx-three-grid bottom"><RegionalMissionPicture role={role} missionState={missionState}/><AirspacePanel/><OversightPanel missionState={missionState}/></div>
+ const ReactRef=React
+ const [selectedId,setSelectedId]=ReactRef.useState('BC-022')
+ const [assignments,setAssignments]=ReactRef.useState({
+  'PR-018':'U1','BC-022':'U2','EP-033':'U3','BC-027':'U2','PR-024':'U1','EP-038':'U4'
+ })
+ const [priorities,setPriorities]=ReactRef.useState({'PR-018':'PRI 1','BC-022':'PRI 1','EP-033':'PRI 1','BC-027':'PRI 2','PR-024':'PRI 2','EP-038':'PRI 2'})
+ const [shifts,setShifts]=ReactRef.useState({
+  U1:'0600–1400L',U2:'1000–1800L',U3:'1400–2200L',U4:'1800–0200L'
+ })
+ const [supportStatus,setSupportStatus]=ReactRef.useState({
+  bandwidth:'OPEN',exploit:'OPEN',accelerated:'IN REVIEW',staffing:'OPEN'
+ })
+
+ const tasks=[
+  {id:'PR-018',incident:'Pine Ridge',title:'Late-Period Fire Perimeter',sortie:'PR-GARGOYLE-01',source:'GARGOYLE · MQ-9',skills:['IMAGERY','FMV'],imagery:'RECEIVED · 18 FILES',status:'PRODUCTION',deadline:'1800L',need:'Determine whether evacuation trigger points should expand east of Pine Ridge.',eeis:['Fire perimeter east of Route 18','Spot fires beyond the containment line','Structures actively threatened'],product:'IMINT / CHANGE DETECTION'},
+  {id:'BC-022',incident:'Bear Creek',title:'East Flank Change Detection',sortie:'BC-GARGOYLE-02',source:'GARGOYLE · MQ-9',skills:['IMAGERY','GIS'],imagery:'INGESTING · 14 FILES',status:'AT RISK',deadline:'1800L',need:'Determine if the fire crossed Bear Creek Ridge and identify structures currently threatened.',eeis:['Fire perimeter east of Bear Creek Ridge','Structures within 2 NM of active fire','Active fire behavior near structures'],product:'CHANGE DETECTION'},
+  {id:'EP-033',incident:'Eagle Peak',title:'Structure Damage Assessment',sortie:'EP-CAP-03',source:'CAP',skills:['IMAGERY','GIS'],imagery:'RECEIVED · 22 FILES',status:'QUEUED',deadline:'1930L',need:'Identify damaged infrastructure and community impacts around Eagle Peak.',eeis:['Destroyed or damaged structures','Blocked access routes','Critical infrastructure impacts'],product:'DAMAGE ASSESSMENT'},
+  {id:'BC-027',incident:'Bear Creek',title:'Road Access Assessment',sortie:'BC-CAP-02',source:'CAP',skills:['GIS','PUBLIC INFO'],imagery:'RECEIVED · 11 FILES',status:'QUEUED',deadline:'2000L',need:'Determine which access routes remain usable for emergency movement.',eeis:['Road closures','Bridge or culvert damage','Civil traffic obstructions'],product:'GIS / MAP LAYER'},
+  {id:'PR-024',incident:'Pine Ridge',title:'Fire Behavior FMV Review',sortie:'PR-GARGOYLE-01',source:'GARGOYLE · MQ-9',skills:['FMV'],imagery:'LIVE FEED',status:'PRODUCTION',deadline:'1830L',need:'Characterize current fire behavior on the north and east flanks.',eeis:['Rate and direction of spread','Long-range spotting','Changes in flame intensity'],product:'FMV ASSESSMENT'},
+  {id:'EP-038',incident:'Eagle Peak',title:'Public Information Support',sortie:'EP-CAP-03',source:'CAP',skills:['ALL SOURCE','PUBLIC INFO'],imagery:'RECEIVED · 8 FILES',status:'WAITING',deadline:'2100L',need:'Support public information with releasable impact context.',eeis:['Visible community impacts','Major access disruptions','Releasable overview imagery'],product:'ALL SOURCE / PUBLIC INFO'},
+ ]
+ const upads=[
+  {id:'U1',name:'UPAD 1 · NORTH',location:'Reno, NV',skills:['IMAGERY','FMV'],load:86,pending:4,state:'AT RISK'},
+  {id:'U2',name:'UPAD 2 · CENTRAL',location:'Salt Lake City, UT',skills:['IMAGERY','GIS'],load:92,pending:5,state:'OVER CAPACITY'},
+  {id:'U3',name:'UPAD 3 · SOUTH',location:'Phoenix, AZ',skills:['FMV','ALL SOURCE'],load:61,pending:3,state:'ACTIVE'},
+  {id:'U4',name:'UPAD 4 · RESERVE',location:'Albuquerque, NM',skills:['GIS','ALL SOURCE','PUBLIC INFO'],load:22,pending:0,state:'RESERVE'},
+ ]
+ const selected=tasks.find(task=>task.id===selectedId)||tasks[0]
+ const assigned=assignments[selected.id]||''
+ const assignedUpad=upads.find(upad=>upad.id===assigned)
+ const recommended=[...upads].map(upad=>{
+  const match=selected.skills.filter(skill=>upad.skills.includes(skill)).length
+  return {...upad,match,score:match*50-upad.load}
+ }).sort((a,b)=>b.score-a.score)
+
+ const assign=(upadId)=>setAssignments(current=>({...current,[selected.id]:upadId}))
+ const assignedTasks=(upadId)=>tasks.filter(task=>assignments[task.id]===upadId)
+ const splitTask=(taskId,fromId,toId)=>{
+  const task=tasks.find(item=>item.id===taskId)
+  if(!task||fromId===toId) return
+  const targetTasks=assignedTasks(fromId)
+  const movable=targetTasks[Math.max(0,targetTasks.length-1)]
+  if(movable) setAssignments(current=>({...current,[movable.id]:toId}))
+ }
+
+ return <div className="rx-role-layout upad rx-upad-workspace">
+  <style>{`
+   .rx-upad-workspace{font-size:12px}
+   .rx-upad-top{display:grid;grid-template-columns:minmax(360px,.88fr) minmax(520px,1.35fr);gap:10px;min-height:410px}
+   .rx-upad-queue-list{padding:6px 10px;overflow:auto}
+   .rx-upad-queue-row{width:100%;display:grid;grid-template-columns:82px 1fr 110px 90px;gap:8px;align-items:center;text-align:left;border:0;border-bottom:1px solid #1c3c4d;background:transparent;color:#d9e6eb;padding:10px 6px;cursor:pointer}
+   .rx-upad-queue-row.active{background:#153f58;border-left:3px solid #42d9e8}
+   .rx-upad-queue-row strong{font-size:13px}.rx-upad-queue-row span b{display:block;font-size:11px}.rx-upad-queue-row span small{color:#8fa7b3}
+   .rx-upad-queue-row em{font-style:normal;font-size:9px;padding:4px 6px;background:#203947}.rx-upad-queue-row em.risk{color:#ff6d6d;background:#4b2028}
+   .rx-upad-detail{padding:12px;overflow:auto}
+   .rx-upad-task-head{display:flex;justify-content:space-between;gap:10px;border-bottom:1px solid #255064;padding-bottom:10px}
+   .rx-upad-task-head h2{margin:2px 0;font-size:21px}.rx-upad-task-head span,.rx-upad-section-label{color:#62dfed;font-size:9px;letter-spacing:.08em}
+   .rx-upad-task-head em{font-style:normal;color:#ffbd54}
+   .rx-upad-detail-grid{display:grid;grid-template-columns:1.2fr .8fr;gap:10px;margin-top:10px}
+   .rx-upad-detail-card{border:1px solid #24495b;background:#0a2130;padding:10px}
+   .rx-upad-detail-card p{margin:6px 0;line-height:1.45}.rx-upad-detail-card ol{margin:6px 0;padding-left:20px}
+   .rx-upad-facts{display:grid;grid-template-columns:repeat(2,1fr);gap:6px}.rx-upad-facts div{border-bottom:1px solid #244354;padding:6px}.rx-upad-facts span{display:block;color:#89a3b0;font-size:9px}.rx-upad-facts strong{display:block;margin-top:3px}
+   .rx-upad-recommend{margin-top:10px}.rx-upad-recommend-row{display:grid;grid-template-columns:1.1fr 1fr 80px 105px;gap:8px;align-items:center;border-top:1px solid #244354;padding:7px 0}.rx-upad-recommend-row small{display:block;color:#8ea5b0}.rx-upad-recommend-row button,.rx-upad-actions button,.rx-upad-shift button{border:1px solid #38bfd0;background:#0c3342;color:#83eaf3;padding:6px 8px;cursor:pointer}
+   .rx-upad-board{margin-top:10px}.rx-upad-board-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;padding:10px}
+   .rx-upad-card{border:1px solid #2b5366;background:#0a2130;padding:10px}.rx-upad-card header{display:flex;justify-content:space-between;gap:8px}.rx-upad-card h3{font-size:12px;margin:0}.rx-upad-card header em{font-size:9px;font-style:normal;color:#ffbd54}
+   .rx-upad-skills{display:flex;gap:4px;flex-wrap:wrap;margin:8px 0}.rx-upad-skills span{font-size:8px;border:1px solid #376172;padding:3px 5px;color:#a8dce4}
+   .rx-upad-load{height:7px;background:#183443;margin:7px 0}.rx-upad-load i{display:block;height:100%;background:#39bac8}
+   .rx-upad-card dl{margin:8px 0}.rx-upad-card dl div{display:flex;justify-content:space-between;border-top:1px solid #203f50;padding:5px 0}.rx-upad-card dt{color:#8ca3af}.rx-upad-card dd{margin:0}
+   .rx-upad-shift{display:flex;gap:5px}.rx-upad-shift select{flex:1;background:#071b29;border:1px solid #31596b;color:#dce9ed;padding:5px}
+   .rx-upad-bottom{display:grid;grid-template-columns:1.4fr .8fr;gap:10px;margin-top:10px;min-height:280px}
+   .rx-upad-product-table .head,.rx-upad-product-table .row{display:grid;grid-template-columns:75px 1.3fr 70px 110px 80px 70px;gap:8px;align-items:center;padding:8px 10px;border-bottom:1px solid #1f4051}.rx-upad-product-table .head{color:#79dfea;font-size:9px}.rx-upad-product-table .row button{border:1px solid #327d91;background:#0a2b39;color:#7ee5ef;padding:5px}
+   .rx-upad-support{padding:8px 10px}.rx-upad-support-row{display:grid;grid-template-columns:1fr 55px 65px 90px;gap:8px;align-items:center;border-bottom:1px solid #234657;padding:9px 0}.rx-upad-support-row select{background:#071b29;border:1px solid #31596b;color:#dce9ed;padding:5px}
+   .rx-upad-risk{margin-top:8px;border:1px solid #a46726;background:#342716;padding:8px;color:#ffd27c}.rx-upad-risk strong{display:block;color:#ffb94e}
+   @media(max-width:1200px){.rx-upad-top,.rx-upad-bottom{grid-template-columns:1fr}.rx-upad-board-grid{grid-template-columns:repeat(2,1fr)}}
+  `}</style>
+
+  <div className="rx-upad-top">
+   <Panel title="INCOMING COLLECTION / PRODUCTION TASKINGS">
+    <div className="rx-upad-queue-list">
+     {tasks.map(task=><button key={task.id} className={`rx-upad-queue-row ${selected.id===task.id?'active':''}`} onClick={()=>setSelectedId(task.id)}>
+      <strong>{task.id}</strong>
+      <span><b>{task.title}</b><small>{task.incident} · {task.sortie}</small></span>
+      <span><b>{task.imagery}</b><small>{assignments[task.id]||'UNASSIGNED'} · {task.product}</small></span>
+      <em className={task.status==='AT RISK'?'risk':''}>{task.status}</em>
+     </button>)}
+    </div>
+   </Panel>
+
+   <Panel title="TASK ASSIGNMENT WORKSPACE">
+    <div className="rx-upad-detail">
+     <div className="rx-upad-task-head">
+      <div><span>ACTIVE TASK ID</span><h2>{selected.id} · {selected.title}</h2><small>{selected.incident} · {selected.sortie}</small></div>
+      <div><span>DELIVERY</span><h2>{selected.deadline}</h2><em>{selected.status}</em></div>
+     </div>
+     <div className="rx-upad-detail-grid">
+      <div className="rx-upad-detail-card">
+       <span className="rx-upad-section-label">CUSTOMER NEED / DECISION TO SUPPORT</span><p>{selected.need}</p>
+       <span className="rx-upad-section-label">ESSENTIAL ELEMENTS OF INFORMATION</span>
+       <ol>{selected.eeis.map(eei=><li key={eei}>{eei}</li>)}</ol>
+      </div>
+      <div className="rx-upad-detail-card rx-upad-facts">
+       <div><span>REQUIRED SKILLS</span><strong>{selected.skills.join(' + ')}</strong></div>
+       <div><span>PRODUCT</span><strong>{selected.product}</strong></div>
+       <div><span>COLLECTION SOURCE</span><strong>{selected.source}</strong></div>
+       <div><span>IMAGERY STATUS</span><strong>{selected.imagery}</strong></div>
+       <div><span>ASSIGNED UPAD</span><strong>{assignedUpad?.name||'UNASSIGNED'}</strong></div>
+       <div><span>PRODUCTION PRIORITY</span><strong>{priorities[selected.id]}</strong></div>
+      </div>
+     </div>
+     {selected.status==='AT RISK'&&<div className="rx-upad-risk"><strong>⚠ DELIVERY RISK</strong>{assignedUpad?.name||'Assigned UPAD'} is carrying {assignedUpad?.load||0}% workload. Network bandwidth is limited and {selected.imagery.toLowerCase()}.</div>}
+     <div className="rx-upad-recommend">
+      <span className="rx-upad-section-label">RECOMMENDED UPADS — SPECIALTY + CAPACITY MATCH</span>
+      {recommended.slice(0,3).map(upad=><div className="rx-upad-recommend-row" key={upad.id}>
+       <strong>{upad.name}<small>{upad.skills.join(' · ')}</small></strong>
+       <span>{upad.match}/{selected.skills.length} SKILL MATCH</span><span>{upad.load}% LOAD</span>
+       <button onClick={()=>assign(upad.id)}>{assigned===upad.id?'ASSIGNED':'ASSIGN'}</button>
+      </div>)}
+     </div>
+     <div className="rx-upad-actions">
+      <button onClick={()=>setPriorities(current=>({...current,[selected.id]:current[selected.id]==='PRI 1'?'PRI 2':'PRI 1'}))}>SET {priorities[selected.id]==='PRI 1'?'PRI 2':'PRI 1'}</button>
+     </div>
+    </div>
+   </Panel>
+  </div>
+
+  <Panel title="UPAD MANNING, SPECIALTY & SHIFT BOARD" className="rx-upad-board">
+   <div className="rx-upad-board-grid">
+    {upads.map(upad=><article className="rx-upad-card" key={upad.id}>
+     <header><div><h3>{upad.name}</h3><small>{upad.location}</small></div><em>{upad.state}</em></header>
+     <div className="rx-upad-skills">{upad.skills.map(skill=><span key={skill}>{skill}</span>)}</div>
+     <div className="rx-upad-load"><i style={{width:`${upad.load}%`}}/></div>
+     <dl><div><dt>Workload</dt><dd>{upad.load}%</dd></div><div><dt>Products Pending</dt><dd>{upad.pending}</dd></div><div><dt>Assigned Tasks</dt><dd>{assignedTasks(upad.id).length}</dd></div></dl>
+     <div className="rx-upad-shift"><select value={shifts[upad.id]} onChange={event=>setShifts(current=>({...current,[upad.id]:event.target.value}))}><option>0600–1400L</option><option>1000–1800L</option><option>1400–2200L</option><option>1800–0200L</option><option>OFF SHIFT</option></select>{upad.id!=='U4'&&<button onClick={()=>splitTask(selected.id,upad.id,'U4')}>FLOW TO U4</button>}</div>
+    </article>)}
+   </div>
+  </Panel>
+
+  <div className="rx-upad-bottom">
+   <Panel title="ACTIVE PRODUCTION / PRODUCT BOARD">
+    <div className="rx-upad-product-table">
+     <div className="head"><span>TASK ID</span><span>PRODUCT</span><span>UPAD</span><span>IMAGERY</span><span>DELIVERY</span><span>ACTION</span></div>
+     {tasks.map(task=><div className="row" key={task.id}><strong>{task.id}</strong><span>{task.product}</span><span>{assignments[task.id]||'—'}</span><span>{task.imagery}</span><span>{task.deadline}</span><button onClick={()=>setSelectedId(task.id)}>OPEN</button></div>)}
+    </div>
+   </Panel>
+   <Panel title="UPAD SUPPORT REQUESTS" accent="purple">
+    <div className="rx-upad-support">
+     {[
+      ['bandwidth','Additional Bandwidth','U1','HIGH'],
+      ['exploit','Extra Exploitation Support','U2','MED'],
+      ['accelerated','Accelerated Processing','U3','MED'],
+      ['staffing','Additional Imagery Analyst','U2','HIGH'],
+     ].map(([id,label,from,priority])=><div className="rx-upad-support-row" key={id}><strong>{label}</strong><span>{from}</span><em className={priority==='HIGH'?'high':'med'}>{priority}</em><select value={supportStatus[id]} onChange={event=>setSupportStatus(current=>({...current,[id]:event.target.value}))}><option>OPEN</option><option>IN REVIEW</option><option>FLOW TO RS COORD</option><option>RESOLVED</option></select></div>)}
+    </div>
+    <Button onClick={()=>onNavigate?.('mission')}>FLOW UNMET NEEDS TO RS COORD</Button>
+   </Panel>
+  </div>
  </div>
 }
 
