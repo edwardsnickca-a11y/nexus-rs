@@ -39,23 +39,23 @@ function selectNextInject(state, role, decisionText) {
   const used = new Set((state.simulation?.injects || []).map((i) => i.code))
   const candidates = {
     remote_sensing_coordinator: [
-      { code:'COORD-GAP', title:'Partner Coverage Opportunity', priority:'HIGH', deadline:'1230 Local', text:'A coordinated partner asset may cover the Fire Charlie gap, but support is not confirmed. Decide whether to pursue the partner option, protect another mission, or accept the gap.' },
+      { code:'COORD-GAP', title:'Partner Coverage Opportunity', priority:'HIGH', deadline:'1230 Local', text:'A coordinated partner asset may cover the Eagle Peak gap, but support is not confirmed. Decide whether to pursue the partner option, protect another mission, or accept the gap.' },
       { code:'COORD-J3', title:'State J3 Allocation Decision', priority:'HIGH', deadline:'1300 Local', text:'State J3 asks whether the second CAP aircraft can be released. Holding it preserves flexibility; releasing it returns capacity to the state.' },
       { code:'COORD-BRIEF', title:'Leadership Brief Readiness', priority:'MEDIUM', deadline:'1400 Local', text:'The leadership brief is approaching and the matrix still shows an unresolved requirement-to-UPAD gap.' },
     ],
     remote_sensing_manager: [
-      { code:'RSM-RETASK', title:'Life-Safety Retask Request', priority:'HIGH', deadline:'1015 Local', text:'Fire Bravo requests immediate route-status collection. Retasking now creates a coverage loss over Fire Alpha during an evacuation window.' },
-      { code:'RSM-AIRSPACE', title:'Airspace Constraint', priority:'HIGH', deadline:'1045 Local', text:'The LUH-72 mission window may slip because the TFR update is not complete. Provide the execution impact and recommendation to the Coordinator.' },
-      { code:'RSM-WEATHER', title:'Smoke Degradation', priority:'MEDIUM', deadline:'1130 Local', text:'Smoke is reducing useful collection over Fire Alpha. Decide how to preserve mission value and what impact must be passed up.' },
+      { code:'RSM-RETASK', title:'Life-Safety Retask Request', priority:'HIGH', deadline:'1015 Local', text:'Bear Creek requests immediate route-status collection. Retasking now creates a coverage loss over Pine Ridge during an evacuation window.' },
+      { code:'RSM-AIRSPACE', title:'Airspace Constraint', priority:'HIGH', deadline:'1045 Local', text:'The UH-72 mission window may slip because the TFR update is not complete. Provide the execution impact and recommendation to the Coordinator.' },
+      { code:'RSM-WEATHER', title:'Smoke Degradation', priority:'MEDIUM', deadline:'1130 Local', text:'Smoke is reducing useful collection over Pine Ridge. Decide how to preserve mission value and what impact must be passed up.' },
     ],
     collection_manager: [
-      { code:'CM-VAGUE', title:'Incomplete Customer Request', priority:'HIGH', deadline:'1100 Local', text:'The Fire Bravo customer asks for “MQ-9 imagery of blocked roads” but has not identified the decision, NAI, latest time of value, or required effect.' },
+      { code:'CM-VAGUE', title:'Incomplete Customer Request', priority:'HIGH', deadline:'1100 Local', text:'The Bear Creek customer asks for “MQ-9 imagery of blocked roads” but has not identified the decision, NAI, latest time of value, or required effect.' },
       { code:'CM-DUP', title:'Possible Duplicate Requirement', priority:'MEDIUM', deadline:'1200 Local', text:'A state request and county request appear to seek the same route-status information with different deadlines. Deconflict before tasking.' },
       { code:'CM-ALT', title:'Existing-Source Opportunity', priority:'MEDIUM', deadline:'1230 Local', text:'A state transportation source may answer part of the requirement without airborne collection. Determine what remains unanswered.' },
     ],
     upad_lno: [
       { code:'UPAD-SURGE', title:'Simultaneous Data Arrival', priority:'HIGH', deadline:'1430 Local', text:'Two collections will arrive within fifteen minutes. Current staffing cannot complete both products by their customer cutoffs.' },
-      { code:'UPAD-TRANSFER', title:'Data Transfer Delay', priority:'HIGH', deadline:'1500 Local', text:'The Fire Alpha dataset transfer is slower than planned. The delivery estimate will slip unless workload or product scope changes.' },
+      { code:'UPAD-TRANSFER', title:'Data Transfer Delay', priority:'HIGH', deadline:'1500 Local', text:'The Pine Ridge dataset transfer is slower than planned. The delivery estimate will slip unless workload or product scope changes.' },
       { code:'UPAD-REL', title:'Releasability Coordination', priority:'MEDIUM', deadline:'1730 Local', text:'Partner imagery has not cleared the planned dissemination path. Identify the production action and report the delivery risk.' },
     ],
   }[role] || []
@@ -125,9 +125,9 @@ export function evaluateMissionDecision({ state, role, exactText }) {
 
 export function getInitialAdvisorMessage(role) {
   return {
-    remote_sensing_coordinator: 'You own the regional mission picture. The Sync Matrix has a Fire Charlie coverage gap, Fire Alpha is protected, and the State J3 may ask for unused capacity back. Give me the regional decision and the trade-off you are accepting.',
-    remote_sensing_manager: 'You own current execution. Fire Alpha is protected, Fire Bravo has an emerging need, and the LUH-72 window may be affected by airspace coordination. Give the Coordinator your execution recommendation and mission impact.',
-    collection_manager: 'You own requirement quality. Fire Bravo is not taskable because the request does not yet define the decision, NAI, time of value, or required effect. Refine it and send a defensible recommendation forward.',
-    upad_lno: 'You own production linkage. Two products are converging on the same production window and Fire Bravo has no confirmed UPAD support. Give the RS Manager a realistic delivery-risk update and workload recommendation.',
+    remote_sensing_coordinator: 'You own the regional mission picture. The Sync Matrix has a Eagle Peak coverage gap, Pine Ridge is protected, and the State J3 may ask for unused capacity back. Give me the regional decision and the trade-off you are accepting.',
+    remote_sensing_manager: 'You own current execution. Pine Ridge is protected, Bear Creek has an emerging need, and the UH-72 window may be affected by airspace coordination. Give the Coordinator your execution recommendation and mission impact.',
+    collection_manager: 'You own requirement quality. Bear Creek is not taskable because the request does not yet define the decision, NAI, time of value, or required effect. Refine it and send a defensible recommendation forward.',
+    upad_lno: 'You own production linkage. Two products are converging on the same production window and Bear Creek has no confirmed UPAD support. Give the RS Manager a realistic delivery-risk update and workload recommendation.',
   }[role]
 }
