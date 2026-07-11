@@ -412,7 +412,7 @@ function RequirementDevelopment({
     <dl>
      <div><dt>Request ID</dt><dd>{selected.id||'—'}</dd></div>
      <div><dt>Customer</dt><dd>{selected.customer||'—'}</dd></div>
-     <div><dt>Priority</dt><dd><em className={tone(selected.priority||'high')}>{(selected.priority||'HIGH').toUpperCase()}</em></dd></div>
+     <div><dt>Priority</dt><dd><em className={tone(selected.priority||'high')}>{String(selected.priority||'HIGH').toUpperCase()}</em></dd></div>
     </dl>
     <p className="rx-raw-request">{selected.what||selected.title||'Customer request requires clarification.'}</p>
     <dl>
