@@ -629,9 +629,52 @@ function ActiveCollectionDeck({items,onOpen}){
  </Panel>
 }
 
+function CollectionSyncPreview({title,subtitle,items,draft=false,onOpen}){
+ const rows=(items||[]).slice(0,5).map((item,index)=>{
+  const start=Number(String(item.start||item.acquisitionStart||item.collectionStart||[9,11,13,15,17][index]).replace(/[^\d]/g,'').slice(0,2))||[9,11,13,15,17][index]
+  const rawEnd=Number(String(item.end||item.acquisitionEnd||item.collectionEnd||start+2).replace(/[^\d]/g,'').slice(0,2))||start+2
+  const end=rawEnd<=start?Math.min(23,start+2):rawEnd
+  return {
+   id:item.id||`REQ-${index+1}`,
+   asset:item.asset||item.platform||item.requiredPlatform||['MQ-9','LUH-72','CAP','DoD Partner Asset','Satellite Source'][index%5],
+   requirement:item.requirement||item.id||`REQ-${index+1}`,
+   area:item.fire||item.incident||item.location||item.nai||`Collection Area ${index+1}`,
+   start,
+   end,
+   status:String(item.missionStatus||item.status||(draft?'DRAFT':'PLANNED')).replaceAll('_',' ').toUpperCase(),
+  }
+ })
+ const minHour=Math.min(6,...rows.map(row=>row.start))
+ const maxHour=Math.max(22,...rows.map(row=>row.end))
+ const span=Math.max(1,maxHour-minHour)
+ const left=row=>`${((row.start-minHour)/span)*100}%`
+ const width=row=>`${Math.max(6,((row.end-row.start)/span)*100)}%`
+
+ return <Panel title={title} className={`rx-collection-sync-preview ${draft?'draft':''}`}>
+  <div className="rx-collection-sync-subtitle">{subtitle}</div>
+  <div className="rx-collection-sync-hours">
+   {[minHour,Math.round((minHour+maxHour)/2),maxHour].map(hour=><span key={hour}>{String(hour).padStart(2,'0')}00</span>)}
+  </div>
+  <div className="rx-collection-sync-body">
+   {rows.length?rows.map(row=><div className="rx-collection-sync-row" key={`${row.asset}-${row.id}`}>
+    <strong>{row.asset}</strong>
+    <div className="rx-collection-sync-track">
+     <span className={`rx-collection-sync-block ${draft?'draft':''}`} style={{left:left(row),width:width(row)}}>
+      <b>{String(row.requirement).toUpperCase()}</b>
+      <small>{row.area}</small>
+     </span>
+    </div>
+    <em>{row.status}</em>
+   </div>):<div className="rx-collection-sync-empty">No collection activity is available for this view.</div>}
+  </div>
+  <Button onClick={onOpen}>VIEW FULL SYNC MATRIX</Button>
+ </Panel>
+}
+
 function CollectionView(props){
  const {missionState,role,onNavigate,onUpdateRequirement,onValidateRequirement,onSendRequirementForward}=props
  const requirements=missionState.requirements?.items||[]
+ const todaySyncItems=missionState.currentOps?.missions||[]
  const [selectedRequirementId,setSelectedRequirementId]=useState(requirements[0]?.id)
  const [deckItems,setDeckItems]=useState(()=>{
   try{
@@ -672,6 +715,23 @@ function CollectionView(props){
    .rx-collection-ppt-layout .rx-middle-work-row{min-height:185px}
    .rx-collection-ppt-layout .rx-middle-work-row>.rx-panel{height:100%;display:flex;flex-direction:column}
    .rx-collection-ppt-layout .rx-middle-work-row .rx-outline-button{margin-top:auto}
+   .rx-collection-sync-row-layout{min-height:230px}
+   .rx-collection-sync-row-layout>.rx-panel{height:100%;display:flex;flex-direction:column}
+   .rx-collection-sync-preview>.rx-outline-button{margin-top:auto}
+   .rx-collection-sync-subtitle{padding:7px 10px;border-bottom:1px solid rgba(127,232,244,.15);color:#8ea6b3;font-size:9px}
+   .rx-collection-sync-hours{display:grid;grid-template-columns:repeat(3,1fr);padding:5px 9px 5px 105px;border-bottom:1px solid rgba(127,232,244,.12);color:#6f8d9d;font-size:8px}
+   .rx-collection-sync-hours span:nth-child(2){text-align:center}
+   .rx-collection-sync-hours span:last-child{text-align:right}
+   .rx-collection-sync-body{padding:4px 8px}
+   .rx-collection-sync-row{display:grid;grid-template-columns:88px minmax(0,1fr) 72px;gap:8px;align-items:center;min-height:31px;border-bottom:1px solid rgba(127,232,244,.1)}
+   .rx-collection-sync-row>strong{font-size:9px;color:#d8e7ec;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+   .rx-collection-sync-row>em{font-style:normal;font-size:7px;text-align:right;color:#8fa6b2}
+   .rx-collection-sync-track{position:relative;height:19px;background:repeating-linear-gradient(90deg,rgba(30,75,94,.35) 0,rgba(30,75,94,.35) 1px,transparent 1px,transparent 12.5%);border:1px solid rgba(35,81,99,.55)}
+   .rx-collection-sync-block{position:absolute;top:2px;height:13px;min-width:42px;border:1px solid #28bbc6;background:#0a6871;border-radius:2px;overflow:hidden;padding:0 4px;color:#edffff}
+   .rx-collection-sync-block.draft{border-style:dashed;border-color:#62a9ef;background:#1c4f7d}
+   .rx-collection-sync-block b{display:block;font-size:6.5px;line-height:7px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+   .rx-collection-sync-block small{display:block;font-size:5.5px;line-height:6px;color:#c0d3dc;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+   .rx-collection-sync-empty{padding:24px 10px;color:#7f97a4;font-size:9px;text-align:center}
    .rx-collection-ppt-layout .rx-active-deck{height:100%;display:flex;flex-direction:column}
    .rx-collection-ppt-layout .rx-active-deck>.rx-outline-button{margin-top:auto}
    .rx-active-deck-meta{display:flex;gap:18px;padding:7px 10px;border-bottom:1px solid rgba(127,232,244,.15);color:#9eb2bf;font-size:10px}
@@ -731,6 +791,22 @@ function CollectionView(props){
   <ResizableRow storageKey="nexus-rs-collection-middle-work-v2" initial={[56,44]} min={28} className="rx-middle-work-row">
    <Taskability missionState={missionState}/>
    <ActiveCollectionDeck items={deckItems} onOpen={()=>setShowDeck(true)}/>
+  </ResizableRow>
+
+  <ResizableRow storageKey="nexus-rs-collection-sync-previews-v1" initial={[50,50]} min={28} className="rx-collection-sync-row-layout">
+   <CollectionSyncPreview
+    title="SYNC MATRIX — TODAY'S PLAN"
+    subtitle="Approved / executing collection picture"
+    items={todaySyncItems}
+    onOpen={()=>onNavigate?.('sync')}
+   />
+   <CollectionSyncPreview
+    title="SYNC MATRIX — TOMORROW'S PLAN (DRAFT)"
+    subtitle="Updates as requirements are added to the collection deck"
+    items={deckItems}
+    draft
+    onOpen={()=>onNavigate?.('sync')}
+   />
   </ResizableRow>
 
   <ResizableRow storageKey="nexus-rs-collection-map-support-v2" initial={[58,42]} min={30} className="rx-collection-map-row">
