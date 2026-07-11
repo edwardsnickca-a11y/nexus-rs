@@ -364,14 +364,14 @@ function UPADTable({missionState}){
 }
 
 function AirspacePanel(){
- return <Panel title="AIRSPACE / TFR CONSTRAINTS" className="rx-small-list"><ul>{['TFR – Fire 1 (VIP Visit)','TFR – Fire 2 (Aerial Operations)','TFR – Fire 3 (Aviation Hazard)','MOA – R-2505','Severed Airspace – North'].map((x,i)=><li key={x}>{x}<span><i className={`rx-dot ${i===4?'amber':'red'}`}/>{i===4?'Advisory':'Active'}</span></li>)}</ul><Button>VIEW AIRSPACE DETAIL</Button></Panel>
+ return <Panel title="AIRSPACE / TFR CONSTRAINTS" className="rx-small-list rx-bottom-button-panel"><ul>{['TFR – Fire 1 (VIP Visit)','TFR – Fire 2 (Aerial Operations)','TFR – Fire 3 (Aviation Hazard)','MOA – R-2505','Severed Airspace – North'].map((x,i)=><li key={x}>{x}<span><i className={`rx-dot ${i===4?'amber':'red'}`}/>{i===4?'Advisory':'Active'}</span></li>)}</ul><div style={{marginTop:'auto'}}><Button>VIEW AIRSPACE DETAIL</Button></div></Panel>
 }
 
 function OversightPanel({missionState}){
  const cases=missionState.oversight?.cases||[]
- return <Panel title="INTELLIGENCE OVERSIGHT" accent="purple" className="rx-small-list"><ul>{(cases.length?cases:[
+ return <Panel title="INTELLIGENCE OVERSIGHT" accent="purple" className="rx-small-list rx-bottom-button-panel"><ul>{(cases.length?cases:[
   {title:'Collection over populated area',severity:'medium'},{title:'Need-to-know validation',severity:'medium'},{title:'Potential privacy concern',severity:'low'}
- ]).slice(0,4).map((x,i)=><li key={x.id||x.title}>{x.title||x.concern}<em className={tone(x.severity||'medium')}>{(x.severity||'MED').toUpperCase()}</em></li>)}</ul><Button>VIEW IO GUIDANCE</Button></Panel>
+ ]).slice(0,4).map((x,i)=><li key={x.id||x.title}>{x.title||x.concern}<em className={tone(x.severity||'medium')}>{(x.severity||'MED').toUpperCase()}</em></li>)}</ul><div style={{marginTop:'auto'}}><Button>VIEW IO GUIDANCE</Button></div></Panel>
 }
 
 function DecisionWindows(){
@@ -454,6 +454,9 @@ function ManagerView(props){
    .rx-manager-top-grid>.rx-panel{min-height:0;height:100%;display:flex;flex-direction:column}
    .rx-manager-top-grid>.rx-panel>.rx-outline-button{margin-top:auto}
    .rx-manager-top-grid .rx-panel-body{padding-top:8px;padding-bottom:8px}
+   .rx-bottom-button-panel{display:flex;flex-direction:column}
+   .rx-bottom-button-panel>div:last-child{width:100%}
+   .rx-bottom-button-panel>div:last-child>.rx-outline-button{width:100%}
    .rx-manager-top-grid>.rx-small-list>.rx-outline-button{margin-top:auto}
    .rx-three-grid>.rx-small-list{display:flex;flex-direction:column}
    .rx-three-grid>.rx-small-list>.rx-outline-button{margin-top:auto}
