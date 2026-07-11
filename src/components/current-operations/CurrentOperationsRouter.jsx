@@ -443,15 +443,48 @@ function CoordinatorView(props){
   </ResizableRow>
  </div>
 }
+function ExecutionWatch({missionState,onNavigate}){
+ const watchItems=[
+  {label:'MQ-9-22',detail:'Repositioning',level:'WATCH'},
+  {label:'LUH-72-13',detail:'Maintenance',level:'HIGH'},
+  {label:'UPAD 2',detail:'92% workload',level:'WATCH'},
+ ]
+ return <Panel title="EXECUTION WATCH">
+  <div className="rx-manager-execution-watch">
+   {watchItems.map(item=><div className="rx-manager-watch-row" key={item.label}>
+    <div><strong>{item.label}</strong><span>{item.detail}</span></div>
+    <b className={`rx-manager-watch-level ${item.level==='HIGH'?'high':'watch'}`}>{item.level}</b>
+   </div>)}
+  </div>
+  <Button onClick={()=>onNavigate?.('platforms')}>VIEW EXECUTION DETAILS</Button>
+ </Panel>
+}
+
 function ManagerView(props){
  const {missionState,role,onNavigate,onUpdateMission}=props
  const [middleHeight,setMiddleHeight]=useStoredSize('nexus-rs-manager-middle-height',500,360,760)
  const resizeMiddle=(delta)=>setMiddleHeight(value=>clamp(value+delta.dy,360,760))
 
  return <div className="rx-role-layout manager">
-  <ResizableRow storageKey="nexus-rs-manager-top-panels" initial={[50,50]} min={30} className="rx-top-grid two rx-top-grid-resizable">
+  <style>{`
+   .rx-manager-top-grid{align-items:stretch}
+   .rx-manager-top-grid>.rx-panel{min-height:0;height:100%;display:flex;flex-direction:column}
+   .rx-manager-top-grid>.rx-panel>.rx-outline-button{margin-top:auto}
+   .rx-manager-top-grid .rx-panel-body{padding-top:8px;padding-bottom:8px}
+   .rx-manager-execution-watch{display:flex;flex-direction:column}
+   .rx-manager-watch-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 0;border-bottom:1px solid rgba(127,232,244,.14)}
+   .rx-manager-watch-row:last-child{border-bottom:0}
+   .rx-manager-watch-row>div{display:flex;flex-direction:column;gap:2px;min-width:0}
+   .rx-manager-watch-row strong{font-size:12px;color:#e6f1f5}
+   .rx-manager-watch-row span{font-size:11px;color:#9fb3bf}
+   .rx-manager-watch-level{font-size:10px;font-weight:700;padding:3px 7px;border-radius:3px}
+   .rx-manager-watch-level.high{color:#ff7b7b;background:rgba(255,76,76,.18)}
+   .rx-manager-watch-level.watch{color:#ffd45c;background:rgba(255,196,0,.16)}
+  `}</style>
+  <ResizableRow storageKey="nexus-rs-manager-top-panels-v2" initial={[30,40,30]} min={22} className="rx-top-grid rx-manager-top-grid">
    <CurrentPeriodCard role={role} missionState={missionState}/>
    <TomorrowCard role={role} missionState={missionState} onNavigate={onNavigate}/>
+   <ExecutionWatch missionState={missionState} onNavigate={onNavigate}/>
   </ResizableRow>
 
   <ResizableRow storageKey="nexus-rs-manager-middle-panels" initial={[62,38]} min={28} className="rx-manager-main rx-coordinator-middle-resizable" style={{height:middleHeight}}>
