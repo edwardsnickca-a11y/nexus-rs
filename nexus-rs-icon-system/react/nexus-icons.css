@@ -1,0 +1,55 @@
+:root {
+  --nexus-icon-color: #7fe8f4;
+  --nexus-icon-color-hover: #a2f3fa;
+  --nexus-icon-selected-bg: rgb(127 232 244 / 14%);
+  --nexus-icon-hover-bg: rgb(127 232 244 / 6%);
+  --nexus-icon-disabled-opacity: 0.36;
+}
+
+.nexus-icon {
+  box-sizing: border-box;
+  display: inline-grid;
+  width: 32px;
+  height: 32px;
+  place-items: center;
+  color: var(--nexus-icon-color);
+  border: 1px solid transparent;
+  border-radius: 3px;
+  transition:
+    color 120ms ease,
+    background-color 120ms ease,
+    border-color 120ms ease,
+    opacity 120ms ease;
+}
+
+.nexus-icon > svg {
+  display: block;
+  overflow: visible;
+}
+
+.nexus-icon--default {
+  background: transparent;
+}
+
+.nexus-icon--hover,
+.nexus-icon:hover {
+  color: var(--nexus-icon-color-hover);
+  background: var(--nexus-icon-hover-bg);
+}
+
+.nexus-icon--selected.nexus-icon--with-selected-background {
+  color: var(--nexus-icon-color);
+  background: var(--nexus-icon-selected-bg);
+  border-color: rgb(127 232 244 / 16%);
+}
+
+.nexus-icon--disabled {
+  pointer-events: none;
+  opacity: var(--nexus-icon-disabled-opacity);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .nexus-icon {
+    transition: none;
+  }
+}

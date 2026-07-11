@@ -37,7 +37,20 @@ function LiveHeader({role,missionState,onEnd}){
 function Sidebar({role,active,onNavigate}){
  const meta=ROLES.find(r=>r.id===role)
  return <aside className="rx-sidebar">
-  <nav>{NAV.map(([id,label])=><button key={id} className={active===id?'active':''} onClick={()=>onNavigate?.(id)}><span>{id==='mission'?'◎':'◌'}</span>{label}</button>)}</nav>
+  <nav>
+  {NAV.map(([id, label]) => (
+    <button
+      key={id}
+      className={active === id ? 'active' : ''}
+      onClick={() => onNavigate?.(id)}
+    >
+      <span>
+        {id === 'mission' ? <Icon name="mission" size={20} /> : '◌'}
+      </span>
+      {label}
+    </button>
+  ))}
+</nav>
   <button className="rx-collapse">≪ &nbsp; COLLAPSE</button>
  </aside>
 }

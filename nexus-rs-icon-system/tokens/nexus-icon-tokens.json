@@ -1,0 +1,66 @@
+{
+  "nexusRS": {
+    "icon": {
+      "canvas": {
+        "value": "24px",
+        "type": "dimension"
+      },
+      "strokeWidth": {
+        "value": "1.5px",
+        "type": "dimension"
+      },
+      "cornerRadius": {
+        "value": "1px",
+        "type": "dimension"
+      },
+      "opticalPadding": {
+        "value": "2px",
+        "type": "dimension"
+      },
+      "colors": {
+        "cyan": {
+          "value": "#7FE8F4",
+          "type": "color"
+        },
+        "white": {
+          "value": "#FFFFFF",
+          "type": "color"
+        },
+        "background900": {
+          "value": "#081320",
+          "type": "color"
+        },
+        "background800": {
+          "value": "#0F1A28",
+          "type": "color"
+        },
+        "background700": {
+          "value": "#142535",
+          "type": "color"
+        }
+      },
+      "states": {
+        "default": {
+          "color": "{colors.cyan}",
+          "background": "transparent",
+          "opacity": 1
+        },
+        "hover": {
+          "color": "#A2F3FA",
+          "background": "rgba(127, 232, 244, 0.06)",
+          "opacity": 1
+        },
+        "selected": {
+          "color": "{colors.cyan}",
+          "background": "rgba(127, 232, 244, 0.14)",
+          "opacity": 1
+        },
+        "disabled": {
+          "color": "{colors.cyan}",
+          "background": "transparent",
+          "opacity": 0.36
+        }
+      }
+    }
+  }
+}

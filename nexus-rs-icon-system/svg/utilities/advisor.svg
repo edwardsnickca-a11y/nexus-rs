@@ -1,0 +1,17 @@
+<svg
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="1.5"
+  stroke-linecap="square"
+  stroke-linejoin="round"
+  vector-effect="non-scaling-stroke"
+>
+  <title>Advisor</title>
+  <path d="M4 5h16v12H9l-4 4v-4H4z"/>
+  <path d="M8 10h8M8 13h5"/>
+  <path d="M17 3v4M15 5h4"/>
+</svg>

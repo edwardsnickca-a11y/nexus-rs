@@ -1,0 +1,787 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1"
+  />
+  <title>NEXUS RS Icon System</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      font-family:
+        Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
+        "Segoe UI", sans-serif;
+      background: #081320;
+      color: #dffbff;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      padding: 40px;
+      background:
+        linear-gradient(rgb(127 232 244 / 3%) 1px, transparent 1px),
+        linear-gradient(90deg, rgb(127 232 244 / 3%) 1px, transparent 1px),
+        #081320;
+      background-size: 24px 24px;
+    }
+
+    header {
+      max-width: 960px;
+      margin-bottom: 36px;
+    }
+
+    h1 {
+      margin: 0 0 8px;
+      color: #7fe8f4;
+      letter-spacing: .08em;
+      font-size: 24px;
+    }
+
+    p {
+      color: #91adb7;
+      line-height: 1.6;
+    }
+
+    section { margin-top: 40px; }
+
+    h2 {
+      padding-bottom: 10px;
+      border-bottom: 1px solid rgb(127 232 244 / 16%);
+      color: #fff;
+      font-size: 15px;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns:
+        repeat(auto-fill, minmax(240px, 1fr));
+      gap: 12px;
+    }
+
+    .card {
+      padding: 16px;
+      border: 1px solid rgb(127 232 244 / 12%);
+      border-radius: 4px;
+      background: #0f1a28;
+    }
+
+    .states {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 14px;
+    }
+
+    .state {
+      display: grid;
+      width: 38px;
+      height: 38px;
+      place-items: center;
+      border: 1px solid transparent;
+      border-radius: 3px;
+      color: #7fe8f4;
+    }
+
+    .state svg {
+      width: 24px;
+      height: 24px;
+      fill: none;
+      stroke: currentColor;
+      stroke-width: 1.5;
+      stroke-linecap: square;
+      stroke-linejoin: round;
+    }
+
+    .state.hover {
+      color: #a2f3fa;
+      background: rgb(127 232 244 / 6%);
+    }
+
+    .state.selected {
+      background: rgb(127 232 244 / 14%);
+      border-color: rgb(127 232 244 / 16%);
+    }
+
+    .state.disabled { opacity: .36; }
+
+    strong {
+      display: block;
+      font-size: 13px;
+      letter-spacing: .02em;
+    }
+
+    small {
+      display: block;
+      margin-top: 5px;
+      color: #66828d;
+      font: 11px ui-monospace, SFMono-Regular, Menlo, monospace;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>NEXUS RS / ICON SYSTEM</h1>
+    <p>
+      Technical command-and-control iconography for remote sensing,
+      ISR coordination, mission planning, and intelligence workflows.
+    </p>
+  </header>
+
+  <section>
+    <h2>Navigation</h2>
+    <div class="grid">
+      
+      <article class="card">
+        <div class="states">
+          <div class="state">
+            <svg><use href="../sprite/nexus-rs-icons.svg#icon-mission"/></svg>
+          </div>
+          <div class="state hover">
+            <svg><use href="../sprite/nexus-rs-icons.svg#icon-mission"/></svg>
+          </div>
+          <div class="state selected">
+            <svg><use href="../sprite/nexus-rs-icons.svg#icon-mission"/></svg>
+          </div>
+          <div class="state disabled">
+            <svg><use href="../sprite/nexus-rs-icons.svg#icon-mission"/></svg>
+          </div>
+        </div>
+        <strong>Mission</strong>
+        <small>navigation/mission.svg</small>
+      </article>
+
+      <article class="card">
+        <div class="states">
+          <div class="state">
+            <svg><use href="../sprite/nexus-rs-icons.svg#icon-current-ops"/></svg>
+          </div>
+          <div class="state hover">
+            <svg><use href="../sprite/nexus-rs-icons.svg#icon-current-ops"/></svg>
+          </div>
+          <div class="state selected">
+            <svg><use href="../sprite/nexus-rs-icons.svg#icon-current-ops"/></svg>
+          </div>
+          <div class="state disabled">
+            <svg><use href="../sprite/nexus-rs-icons.svg#icon-current-ops"/></svg>
+          </div>
+        </div>
+        <strong>Current Ops</strong>
+        <small>navigation/current-ops.svg</small>
+      </article>
+
+      <article class="card">
+        <div class="states">
+          <div class="state">
+            <svg><use href="../sprite/nexus-rs-icons.svg#icon-tomorrows-plan"/></svg>
+          </div>
+          <div class="state hover">
+            <svg><use href="../sprite/nexus-rs-icons.svg#icon-tomorrows-plan"/></svg>
+          </div>
+          <div class="state selected">
+            <svg><use href="../sprite/nexus-rs-icons.svg#icon-tomorrows-plan"/></svg>
+          </div>
+          <div class="state disabled">
+            <svg><use href="../sprite/nexus-rs-icons.svg#icon-tomorrows-plan"/></svg>
+          </div>
+        </div>
+        <strong>Tomorrow's Plan</strong>
+        <small>navigation/tomorrows-plan.svg</small>
+      </article>
+
+      <article class="card">
+        <div class="states">
+          <div class="state">
+            <svg><use href="../sprite/nexus-rs-icons.svg#icon-sync-matrix"/></svg>
+          </div>
+          <div class="state hover">
+            <svg><use href="../sprite/nexus-rs-icons.svg#icon-sync-matrix"/></svg>
+          </div>
+          <div class="state selected">
+            <svg><use href="../sprite/nexus-rs-icons.svg#icon-sync-matrix"/></svg>
+          </div>
+          <div class="state disabled">
+            <svg><use href="../sprite/nexus-rs-icons.svg#icon-sync-matrix"/></svg>
+          </div>
+        </div>
+        <strong>Sync Matrix</strong>
+        <small>navigation/sync-matrix.svg</small>
+      </article>
+
+      <article class="card">
+        <div class="states">
+          <div class="state">
+            <svg><use href="../sprite/nexus-rs-icons.svg#icon-requirements"/></svg>
+          </div>
+          <div class="state hover">
+            <svg><use href="../sprite/nexus-rs-icons.svg#icon-requirements"/></svg>
+          </div>
+          <div class="state selected">
+            <svg><use href="../sprite/nexus-rs-icons.svg#icon-requirements"/></svg>
+          </div>
+          <div class="state disabled">
+            <svg><use href="../sprite/nexus-rs-icons.svg#icon-requirements"/></svg>
+          </div>
+        </div>
+        <strong>Requirements</strong>
+        <small>navigation/requirements.svg</small>
+      </article>
+
+      <article class="card">
+        <div class="states">
+          <div class="state">
+            <svg><use href="../sprite/nexus-rs-icons.svg#icon-platforms"/></svg>
+          </div>
+          <div class="state hover">
+            <svg><use href="../sprite/nexus-rs-icons.svg#icon-platforms"/></svg>
+          </div>
+          <div class="state selected">
+            <svg><use href="../sprite/nexus-rs-icons.svg#icon-platforms"/></svg>
+          </div>
+          <div class="state disabled">
+            <svg><use href="../sprite/nexus-rs-icons.svg#icon-platforms"/></svg>
+          </div>
+        </div>
+        <strong>Platforms</strong>
+        <small>navigation/platforms.svg</small>
+      </article>
+
+      <article class="card">
+        <div class="states">
+          <div class="state">
+            <svg><use href="../sprite/nexus-rs-icons.svg#icon-upad-status"/></svg>
+          </div>
+          <div class="state hover">
+            <svg><use href="../sprite/nexus-rs-icons.svg#icon-upad-status"/></svg>
+          </div>
+          <div class="state selected">
+            <svg><use href="../sprite/nexus-rs-icons.svg#icon-upad-status"/></svg>
+          </div>
+          <div class="state disabled">
+            <svg><use href="../sprite/nexus-rs-icons.svg#icon-upad-status"/></svg>
+          </div>
+        </div>
+        <strong>UPAD Status</strong>
+        <small>navigation/upad-status.svg</small>
+      </article>
+
+      <article class="card">
+        <div class="states">
+          <div class="state">
+            <svg><use href="../sprite/nexus-rs-icons.svg#icon-airspace"/></svg>
+          </div>
+          <div class="state hover">
+            <svg><use href="../sprite/nexus-rs-icons.svg#icon-airspace"/></svg>
+          </div>
+          <div class="state selected">
+            <svg><use href="../sprite/nexus-rs-icons.svg#icon-airspace"/></svg>
+          </div>
+          <div class="state disabled">
+            <svg><use href="../sprite/nexus-rs-icons.svg#icon-airspace"/></svg>
+          </div>
+        </div>
+        <strong>Airspace</strong>
+        <small>navigation/airspace.svg</small>
+      </article>
+
+      <article class="card">
+        <div class="states">
+          <div class="state">
+            <svg><use href="../sprite/nexus-rs-icons.svg#icon-intel-oversight"/></svg>
+          </div>
+          <div class="state hover">
+            <svg><use href="../sprite/nexus-rs-icons.svg#icon-intel-oversight"/></svg>
+          </div>
+          <div class="state selected">
+            <svg><use href="../sprite/nexus-rs-icons.svg#icon-intel-oversight"/></svg>
+          </div>
+          <div class="state disabled">
+            <svg><use href="../sprite/nexus-rs-icons.svg#icon-intel-oversight"/></svg>
+          </div>
+        </div>
+        <strong>Intelligence Oversight</strong>
+        <small>navigation/intel-oversight.svg</small>
+      </article>
+
+      <article class="card">
+        <div class="states">
+          <div class="state">
+            <svg><use href="../sprite/nexus-rs-icons.svg#icon-deadlines"/></svg>
+          </div>
+          <div class="state hover">
+            <svg><use href="../sprite/nexus-rs-icons.svg#icon-deadlines"/></svg>
+          </div>
+          <div class="state selected">
+            <svg><use href="../sprite/nexus-rs-icons.svg#icon-deadlines"/></svg>
+          </div>
+          <div class="state disabled">
+            <svg><use href="../sprite/nexus-rs-icons.svg#icon-deadlines"/></svg>
+          </div>
+        </div>
+        <strong>Deadlines</strong>
+        <small>navigation/deadlines.svg</small>
+      </article>
+
+      <article class="card">
+        <div class="states">
+          <div class="state">
+            <svg><use href="../sprite/nexus-rs-icons.svg#icon-decision-log"/></svg>
+          </div>
+          <div class="state hover">
+            <svg><use href="../sprite/nexus-rs-icons.svg#icon-decision-log"/></svg>
+          </div>
+          <div class="state selected">
+            <svg><use href="../sprite/nexus-rs-icons.svg#icon-decision-log"/></svg>
+          </div>
+          <div class="state disabled">
+            <svg><use href="../sprite/nexus-rs-icons.svg#icon-decision-log"/></svg>
+          </div>
+        </div>
+        <strong>Decision Log</strong>
+        <small>navigation/decision-log.svg</small>
+      </article>
+
+      <article class="card">
+        <div class="states">
+          <div class="state">
+            <svg><use href="../sprite/nexus-rs-icons.svg#icon-notes"/></svg>
+          </div>
+          <div class="state hover">
+            <svg><use href="../sprite/nexus-rs-icons.svg#icon-notes"/></svg>
+          </div>
+          <div class="state selected">
+            <svg><use href="../sprite/nexus-rs-icons.svg#icon-notes"/></svg>
+          </div>
+          <div class="state disabled">
+            <svg><use href="../sprite/nexus-rs-icons.svg#icon-notes"/></svg>
+          </div>
+        </div>
+        <strong>Notes</strong>
+        <small>utilities/notes.svg</small>
+      </article>
+
+      <article class="card">
+        <div class="states">
+          <div class="state">
+            <svg><use href="../sprite/nexus-rs-icons.svg#icon-menu"/></svg>
+          </div>
+          <div class="state hover">
+            <svg><use href="../sprite/nexus-rs-icons.svg#icon-menu"/></svg>
+          </div>
+          <div class="state selected">
+            <svg><use href="../sprite/nexus-rs-icons.svg#icon-menu"/></svg>
+          </div>
+          <div class="state disabled">
+            <svg><use href="../sprite/nexus-rs-icons.svg#icon-menu"/></svg>
+          </div>
+        </div>
+        <strong>Menu</strong>
+        <small>utilities/menu.svg</small>
+      </article>
+
+      <article class="card">
+        <div class="states">
+          <div class="state">
+            <svg><use href="../sprite/nexus-rs-icons.svg#icon-settings"/></svg>
+          </div>
+          <div class="state hover">
+            <svg><use href="../sprite/nexus-rs-icons.svg#icon-settings"/></svg>
+          </div>
+          <div class="state selected">
+            <svg><use href="../sprite/nexus-rs-icons.svg#icon-settings"/></svg>
+          </div>
+          <div class="state disabled">
+            <svg><use href="../sprite/nexus-rs-icons.svg#icon-settings"/></svg>
+          </div>
+        </div>
+        <strong>Settings</strong>
+        <small>utilities/settings.svg</small>
+      </article>
+
+      <article class="card">
+        <div class="states">
+          <div class="state">
+            <svg><use href="../sprite/nexus-rs-icons.svg#icon-notifications"/></svg>
+          </div>
+          <div class="state hover">
+            <svg><use href="../sprite/nexus-rs-icons.svg#icon-notifications"/></svg>
+          </div>
+          <div class="state selected">
+            <svg><use href="../sprite/nexus-rs-icons.svg#icon-notifications"/></svg>
+          </div>
+          <div class="state disabled">
+            <svg><use href="../sprite/nexus-rs-icons.svg#icon-notifications"/></svg>
+          </div>
+        </div>
+        <strong>Notifications</strong>
+        <small>utilities/notifications.svg</small>
+      </article>
+
+      <article class="card">
+        <div class="states">
+          <div class="state">
+            <svg><use href="../sprite/nexus-rs-icons.svg#icon-help"/></svg>
+          </div>
+          <div class="state hover">
+            <svg><use href="../sprite/nexus-rs-icons.svg#icon-help"/></svg>
+          </div>
+          <div class="state selected">
+            <svg><use href="../sprite/nexus-rs-icons.svg#icon-help"/></svg>
+          </div>
+          <div class="state disabled">
+            <svg><use href="../sprite/nexus-rs-icons.svg#icon-help"/></svg>
+          </div>
+        </div>
+        <strong>Help</strong>
+        <small>utilities/help.svg</small>
+      </article>
+
+      <article class="card">
+        <div class="states">
+          <div class="state">
+            <svg><use href="../sprite/nexus-rs-icons.svg#icon-history"/></svg>
+          </div>
+          <div class="state hover">
+            <svg><use href="../sprite/nexus-rs-icons.svg#icon-history"/></svg>
+          </div>
+          <div class="state selected">
+            <svg><use href="../sprite/nexus-rs-icons.svg#icon-history"/></svg>
+          </div>
+          <div class="state disabled">
+            <svg><use href="../sprite/nexus-rs-icons.svg#icon-history"/></svg>
+          </div>
+        </div>
+        <strong>History</strong>
+        <small>utilities/history.svg</small>
+      </article>
+
+      <article class="card">
+        <div class="states">
+          <div class="state">
+            <svg><use href="../sprite/nexus-rs-icons.svg#icon-advisor"/></svg>
+          </div>
+          <div class="state hover">
+            <svg><use href="../sprite/nexus-rs-icons.svg#icon-advisor"/></svg>
+          </div>
+          <div class="state selected">
+            <svg><use href="../sprite/nexus-rs-icons.svg#icon-advisor"/></svg>
+          </div>
+          <div class="state disabled">
+            <svg><use href="../sprite/nexus-rs-icons.svg#icon-advisor"/></svg>
+          </div>
+        </div>
+        <strong>Advisor</strong>
+        <small>utilities/advisor.svg</small>
+      </article>
+
+      <article class="card">
+        <div class="states">
+          <div class="state">
+            <svg><use href="../sprite/nexus-rs-icons.svg#icon-products"/></svg>
+          </div>
+          <div class="state hover">
+            <svg><use href="../sprite/nexus-rs-icons.svg#icon-products"/></svg>
+          </div>
+          <div class="state selected">
+            <svg><use href="../sprite/nexus-rs-icons.svg#icon-products"/></svg>
+          </div>
+          <div class="state disabled">
+            <svg><use href="../sprite/nexus-rs-icons.svg#icon-products"/></svg>
+          </div>
+        </div>
+        <strong>Products</strong>
+        <small>utilities/products.svg</small>
+      </article>
+
+      <article class="card">
+        <div class="states">
+          <div class="state">
+            <svg><use href="../sprite/nexus-rs-icons.svg#icon-mission-board"/></svg>
+          </div>
+          <div class="state hover">
+            <svg><use href="../sprite/nexus-rs-icons.svg#icon-mission-board"/></svg>
+          </div>
+          <div class="state selected">
+            <svg><use href="../sprite/nexus-rs-icons.svg#icon-mission-board"/></svg>
+          </div>
+          <div class="state disabled">
+            <svg><use href="../sprite/nexus-rs-icons.svg#icon-mission-board"/></svg>
+          </div>
+        </div>
+        <strong>Mission Board</strong>
+        <small>utilities/mission-board.svg</small>
+      </article>
+
+      <article class="card">
+        <div class="states">
+          <div class="state">
+            <svg><use href="../sprite/nexus-rs-icons.svg#icon-timeline"/></svg>
+          </div>
+          <div class="state hover">
+            <svg><use href="../sprite/nexus-rs-icons.svg#icon-timeline"/></svg>
+          </div>
+          <div class="state selected">
+            <svg><use href="../sprite/nexus-rs-icons.svg#icon-timeline"/></svg>
+          </div>
+          <div class="state disabled">
+            <svg><use href="../sprite/nexus-rs-icons.svg#icon-timeline"/></svg>
+          </div>
+        </div>
+        <strong>Timeline</strong>
+        <small>utilities/timeline.svg</small>
+      </article>
+
+      <article class="card">
+        <div class="states">
+          <div class="state">
+            <svg><use href="../sprite/nexus-rs-icons.svg#icon-map-layers"/></svg>
+          </div>
+          <div class="state hover">
+            <svg><use href="../sprite/nexus-rs-icons.svg#icon-map-layers"/></svg>
+          </div>
+          <div class="state selected">
+            <svg><use href="../sprite/nexus-rs-icons.svg#icon-map-layers"/></svg>
+          </div>
+          <div class="state disabled">
+            <svg><use href="../sprite/nexus-rs-icons.svg#icon-map-layers"/></svg>
+          </div>
+        </div>
+        <strong>Map Layers</strong>
+        <small>utilities/map-layers.svg</small>
+      </article>
+
+      <article class="card">
+        <div class="states">
+          <div class="state">
+            <svg><use href="../sprite/nexus-rs-icons.svg#icon-zoom"/></svg>
+          </div>
+          <div class="state hover">
+            <svg><use href="../sprite/nexus-rs-icons.svg#icon-zoom"/></svg>
+          </div>
+          <div class="state selected">
+            <svg><use href="../sprite/nexus-rs-icons.svg#icon-zoom"/></svg>
+          </div>
+          <div class="state disabled">
+            <svg><use href="../sprite/nexus-rs-icons.svg#icon-zoom"/></svg>
+          </div>
+        </div>
+        <strong>Zoom</strong>
+        <small>utilities/zoom.svg</small>
+      </article>
+
+      <article class="card">
+        <div class="states">
+          <div class="state">
+            <svg><use href="../sprite/nexus-rs-icons.svg#icon-reset-view"/></svg>
+          </div>
+          <div class="state hover">
+            <svg><use href="../sprite/nexus-rs-icons.svg#icon-reset-view"/></svg>
+          </div>
+          <div class="state selected">
+            <svg><use href="../sprite/nexus-rs-icons.svg#icon-reset-view"/></svg>
+          </div>
+          <div class="state disabled">
+            <svg><use href="../sprite/nexus-rs-icons.svg#icon-reset-view"/></svg>
+          </div>
+        </div>
+        <strong>Reset View</strong>
+        <small>utilities/reset-view.svg</small>
+      </article>
+
+      <article class="card">
+        <div class="states">
+          <div class="state">
+            <svg><use href="../sprite/nexus-rs-icons.svg#icon-expand"/></svg>
+          </div>
+          <div class="state hover">
+            <svg><use href="../sprite/nexus-rs-icons.svg#icon-expand"/></svg>
+          </div>
+          <div class="state selected">
+            <svg><use href="../sprite/nexus-rs-icons.svg#icon-expand"/></svg>
+          </div>
+          <div class="state disabled">
+            <svg><use href="../sprite/nexus-rs-icons.svg#icon-expand"/></svg>
+          </div>
+        </div>
+        <strong>Expand</strong>
+        <small>utilities/expand.svg</small>
+      </article>
+
+      <article class="card">
+        <div class="states">
+          <div class="state">
+            <svg><use href="../sprite/nexus-rs-icons.svg#icon-collapse"/></svg>
+          </div>
+          <div class="state hover">
+            <svg><use href="../sprite/nexus-rs-icons.svg#icon-collapse"/></svg>
+          </div>
+          <div class="state selected">
+            <svg><use href="../sprite/nexus-rs-icons.svg#icon-collapse"/></svg>
+          </div>
+          <div class="state disabled">
+            <svg><use href="../sprite/nexus-rs-icons.svg#icon-collapse"/></svg>
+          </div>
+        </div>
+        <strong>Collapse</strong>
+        <small>utilities/collapse.svg</small>
+      </article>
+
+      <article class="card">
+        <div class="states">
+          <div class="state">
+            <svg><use href="../sprite/nexus-rs-icons.svg#icon-filter"/></svg>
+          </div>
+          <div class="state hover">
+            <svg><use href="../sprite/nexus-rs-icons.svg#icon-filter"/></svg>
+          </div>
+          <div class="state selected">
+            <svg><use href="../sprite/nexus-rs-icons.svg#icon-filter"/></svg>
+          </div>
+          <div class="state disabled">
+            <svg><use href="../sprite/nexus-rs-icons.svg#icon-filter"/></svg>
+          </div>
+        </div>
+        <strong>Filter</strong>
+        <small>utilities/filter.svg</small>
+      </article>
+
+      <article class="card">
+        <div class="states">
+          <div class="state">
+            <svg><use href="../sprite/nexus-rs-icons.svg#icon-search"/></svg>
+          </div>
+          <div class="state hover">
+            <svg><use href="../sprite/nexus-rs-icons.svg#icon-search"/></svg>
+          </div>
+          <div class="state selected">
+            <svg><use href="../sprite/nexus-rs-icons.svg#icon-search"/></svg>
+          </div>
+          <div class="state disabled">
+            <svg><use href="../sprite/nexus-rs-icons.svg#icon-search"/></svg>
+          </div>
+        </div>
+        <strong>Search</strong>
+        <small>utilities/search.svg</small>
+      </article>
+
+      <article class="card">
+        <div class="states">
+          <div class="state">
+            <svg><use href="../sprite/nexus-rs-icons.svg#icon-close"/></svg>
+          </div>
+          <div class="state hover">
+            <svg><use href="../sprite/nexus-rs-icons.svg#icon-close"/></svg>
+          </div>
+          <div class="state selected">
+            <svg><use href="../sprite/nexus-rs-icons.svg#icon-close"/></svg>
+          </div>
+          <div class="state disabled">
+            <svg><use href="../sprite/nexus-rs-icons.svg#icon-close"/></svg>
+          </div>
+        </div>
+        <strong>Close</strong>
+        <small>utilities/close.svg</small>
+      </article>
+
+      <article class="card">
+        <div class="states">
+          <div class="state">
+            <svg><use href="../sprite/nexus-rs-icons.svg#icon-submit"/></svg>
+          </div>
+          <div class="state hover">
+            <svg><use href="../sprite/nexus-rs-icons.svg#icon-submit"/></svg>
+          </div>
+          <div class="state selected">
+            <svg><use href="../sprite/nexus-rs-icons.svg#icon-submit"/></svg>
+          </div>
+          <div class="state disabled">
+            <svg><use href="../sprite/nexus-rs-icons.svg#icon-submit"/></svg>
+          </div>
+        </div>
+        <strong>Submit</strong>
+        <small>utilities/submit.svg</small>
+      </article>
+
+      <article class="card">
+        <div class="states">
+          <div class="state">
+            <svg><use href="../sprite/nexus-rs-icons.svg#icon-send"/></svg>
+          </div>
+          <div class="state hover">
+            <svg><use href="../sprite/nexus-rs-icons.svg#icon-send"/></svg>
+          </div>
+          <div class="state selected">
+            <svg><use href="../sprite/nexus-rs-icons.svg#icon-send"/></svg>
+          </div>
+          <div class="state disabled">
+            <svg><use href="../sprite/nexus-rs-icons.svg#icon-send"/></svg>
+          </div>
+        </div>
+        <strong>Send</strong>
+        <small>utilities/send.svg</small>
+      </article>
+
+      <article class="card">
+        <div class="states">
+          <div class="state">
+            <svg><use href="../sprite/nexus-rs-icons.svg#icon-download"/></svg>
+          </div>
+          <div class="state hover">
+            <svg><use href="../sprite/nexus-rs-icons.svg#icon-download"/></svg>
+          </div>
+          <div class="state selected">
+            <svg><use href="../sprite/nexus-rs-icons.svg#icon-download"/></svg>
+          </div>
+          <div class="state disabled">
+            <svg><use href="../sprite/nexus-rs-icons.svg#icon-download"/></svg>
+          </div>
+        </div>
+        <strong>Download</strong>
+        <small>utilities/download.svg</small>
+      </article>
+
+      <article class="card">
+        <div class="states">
+          <div class="state">
+            <svg><use href="../sprite/nexus-rs-icons.svg#icon-upload"/></svg>
+          </div>
+          <div class="state hover">
+            <svg><use href="../sprite/nexus-rs-icons.svg#icon-upload"/></svg>
+          </div>
+          <div class="state selected">
+            <svg><use href="../sprite/nexus-rs-icons.svg#icon-upload"/></svg>
+          </div>
+          <div class="state disabled">
+            <svg><use href="../sprite/nexus-rs-icons.svg#icon-upload"/></svg>
+          </div>
+        </div>
+        <strong>Upload</strong>
+        <small>utilities/upload.svg</small>
+      </article>
+
+      <article class="card">
+        <div class="states">
+          <div class="state">
+            <svg><use href="../sprite/nexus-rs-icons.svg#icon-refresh"/></svg>
+          </div>
+          <div class="state hover">
+            <svg><use href="../sprite/nexus-rs-icons.svg#icon-refresh"/></svg>
+          </div>
+          <div class="state selected">
+            <svg><use href="../sprite/nexus-rs-icons.svg#icon-refresh"/></svg>
+          </div>
+          <div class="state disabled">
+            <svg><use href="../sprite/nexus-rs-icons.svg#icon-refresh"/></svg>
+          </div>
+        </div>
+        <strong>Refresh</strong>
+        <small>utilities/refresh.svg</small>
+      </article>
+    </div>
+  </section>
+</body>
+</html>

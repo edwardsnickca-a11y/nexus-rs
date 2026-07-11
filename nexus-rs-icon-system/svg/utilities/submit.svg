@@ -1,0 +1,17 @@
+<svg
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="1.5"
+  stroke-linecap="square"
+  stroke-linejoin="round"
+  vector-effect="non-scaling-stroke"
+>
+  <title>Submit</title>
+  <path d="M4 12h13"/>
+  <path d="m13 7 5 5-5 5"/>
+  <path d="M4 6v12"/>
+</svg>

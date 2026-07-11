@@ -1,0 +1,180 @@
+import type { ReactNode } from "react";
+import type { NexusIconName } from "./icon-types";
+
+export const iconPaths: Record<NexusIconName, ReactNode> = {
+  "mission": <>
+    <path d="M12 3v4" />
+    <path d="M12 17v4" />
+    <path d="M3 12h4" />
+    <path d="M17 12h4" />
+    <path d="M8 8h8v8H8z" />
+    <path d="M12 8v8M8 12h8" />
+  </>,
+  "current-ops": <>
+    <path d="M4 5h16v14H4z" />
+    <path d="M4 9h16" />
+    <path d="M7 13h3M7 16h5" />
+    <path d="M15 12v5" />
+    <path d="M13.5 15.5 15 17l3-3" />
+  </>,
+  "tomorrows-plan": <>
+    <path d="M5 4h14v16H5z" />
+    <path d="M8 2v4M16 2v4M5 8h14" />
+    <path d="M8 12h3v3H8z" />
+    <path d="M12 16h3l3-3" />
+    <path d="m16 12 2 1-1 2" />
+  </>,
+  "sync-matrix": <>
+    <path d="M5 5h4v4H5zM15 5h4v4h-4zM5 15h4v4H5zM15 15h4v4h-4z" />
+    <path d="M9 7h6M7 9v6M17 9v6M9 17h6" />
+    <path d="M10 12h4M12 10v4" />
+  </>,
+  "requirements": <>
+    <path d="M6 3h9l3 3v15H6z" />
+    <path d="M15 3v4h4" />
+    <path d="M9 11h6M9 15h6M9 19h4" />
+    <path d="M7.5 11h.01M7.5 15h.01M7.5 19h.01" />
+  </>,
+  "platforms": <>
+    <path d="M3 12 10 9l1-5h2l1 5 7 3-1 2-6-1v4l2 2v1l-4-1-4 1v-1l2-2v-4l-6 1z" />
+    <path d="M12 10v3" />
+    <path d="M17 17h3M18.5 15.5v3" />
+  </>,
+  "upad-status": <>
+    <path d="M4 5h11v9H4z" />
+    <path d="M7 8h11v9H7z" />
+    <path d="M10 11h10v9H10z" />
+    <path d="m12 17 2-2 2 2 2-3" />
+  </>,
+  "airspace": <>
+    <path d="M3 7 8 4h8l5 3v10l-5 3H8l-5-3z" />
+    <path d="M3 12h18M8 4v16M16 4v16" />
+    <path d="m10 13 2-2 2 2" />
+  </>,
+  "intel-oversight": <>
+    <path d="M4 4h13v13H4z" />
+    <path d="M7 13 10 9l2 2 3-4" />
+    <path d="M8 20h8" />
+    <path d="m15 16 2 2 4-5" />
+  </>,
+  "deadlines": <>
+    <path d="M4 7h12" />
+    <path d="M4 17h12" />
+    <path d="M7 7v10M13 7v10" />
+    <path d="M18 5v14" />
+    <path d="m16 7 2-2 2 2M16 17l2 2 2-2" />
+    <path d="M10 10v4" />
+  </>,
+  "decision-log": <>
+    <path d="M5 3h12l2 2v16H5z" />
+    <path d="M8 8h7M8 12h5M8 16h4" />
+    <path d="m14 16 2 2 4-5" />
+  </>,
+  "notes": <>
+    <path d="M5 3h14v18H5z" />
+    <path d="M8 8h8M8 12h8M8 16h5" />
+  </>,
+  "menu": <>
+    <path d="M4 7h16M4 12h16M4 17h16" />
+  </>,
+  "settings": <>
+    <circle cx="12" cy="12" r="3" />
+    <path d="M12 2v3M12 19v3M2 12h3M19 12h3" />
+    <path d="m4.9 4.9 2.2 2.2M16.9 16.9l2.2 2.2M19.1 4.9l-2.2 2.2M7.1 16.9l-2.2 2.2" />
+  </>,
+  "notifications": <>
+    <path d="M6 17h12l-2-3V9a4 4 0 0 0-8 0v5z" />
+    <path d="M10 20h4" />
+  </>,
+  "help": <>
+    <path d="M4 5h16v14H4z" />
+    <path d="M9.5 9a2.5 2.5 0 1 1 3.5 2.3c-.8.4-1 1-1 1.7" />
+    <path d="M12 16h.01" />
+  </>,
+  "history": <>
+    <path d="M5 8V4H1" />
+    <path d="M5 4a9 9 0 1 1-2 10" />
+    <path d="M12 7v5l3 2" />
+  </>,
+  "advisor": <>
+    <path d="M4 5h16v12H9l-4 4v-4H4z" />
+    <path d="M8 10h8M8 13h5" />
+    <path d="M17 3v4M15 5h4" />
+  </>,
+  "products": <>
+    <path d="m12 3 8 4-8 4-8-4z" />
+    <path d="m4 11 8 4 8-4" />
+    <path d="m4 15 8 4 8-4" />
+  </>,
+  "mission-board": <>
+    <path d="M3 4h18v16H3z" />
+    <path d="M8 4v16M16 4v16" />
+    <path d="M5 8h1M10 8h4M18 8h1" />
+    <path d="M5 13h1M10 13h4M18 13h1" />
+  </>,
+  "timeline": <>
+    <path d="M4 5v14" />
+    <path d="M8 7h12M8 12h9M8 17h12" />
+    <circle cx="5" cy="7" r="1" />
+    <circle cx="5" cy="12" r="1" />
+    <circle cx="5" cy="17" r="1" />
+  </>,
+  "map-layers": <>
+    <path d="m12 3 9 5-9 5-9-5z" />
+    <path d="m3 12 9 5 9-5" />
+    <path d="m3 16 9 5 9-5" />
+  </>,
+  "zoom": <>
+    <circle cx="10" cy="10" r="6" />
+    <path d="m14.5 14.5 5 5" />
+    <path d="M10 7v6M7 10h6" />
+  </>,
+  "reset-view": <>
+    <path d="M5 8V4H1" />
+    <path d="M5 4a9 9 0 1 1-2 10" />
+    <path d="M8 8h8v8H8z" />
+  </>,
+  "expand": <>
+    <path d="M9 4H4v5M15 4h5v5M4 15v5h5M20 15v5h-5" />
+    <path d="m4 4 5 5M20 4l-5 5M4 20l5-5M20 20l-5-5" />
+  </>,
+  "collapse": <>
+    <path d="M9 9H4V4M15 9h5V4M9 15H4v5M15 15h5v5" />
+    <path d="m4 4 5 5M20 4l-5 5M4 20l5-5M20 20l-5-5" />
+  </>,
+  "filter": <>
+    <path d="M3 5h18l-7 8v6l-4 2v-8z" />
+  </>,
+  "search": <>
+    <circle cx="10" cy="10" r="6" />
+    <path d="m14.5 14.5 5 5" />
+  </>,
+  "close": <>
+    <path d="M5 5l14 14M19 5 5 19" />
+  </>,
+  "submit": <>
+    <path d="M4 12h13" />
+    <path d="m13 7 5 5-5 5" />
+    <path d="M4 6v12" />
+  </>,
+  "send": <>
+    <path d="m3 4 18 8-18 8 3-8z" />
+    <path d="M6 12h15" />
+  </>,
+  "download": <>
+    <path d="M12 3v12" />
+    <path d="m8 11 4 4 4-4" />
+    <path d="M4 19h16" />
+  </>,
+  "upload": <>
+    <path d="M12 15V3" />
+    <path d="m8 7 4-4 4 4" />
+    <path d="M4 19h16" />
+  </>,
+  "refresh": <>
+    <path d="M20 7V3h-4" />
+    <path d="M20 3a9 9 0 0 0-15 3" />
+    <path d="M4 17v4h4" />
+    <path d="M4 21a9 9 0 0 0 15-3" />
+  </>,
+};

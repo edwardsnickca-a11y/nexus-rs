@@ -1,0 +1,308 @@
+[
+  {
+    "category": "Navigation",
+    "label": "Mission",
+    "slug": "mission",
+    "svg": "svg/navigation/mission.svg",
+    "spriteId": "icon-mission",
+    "reactComponent": "MissionIcon",
+    "figmaComponent": "Navigation/Mission"
+  },
+  {
+    "category": "Navigation",
+    "label": "Current Ops",
+    "slug": "current-ops",
+    "svg": "svg/navigation/current-ops.svg",
+    "spriteId": "icon-current-ops",
+    "reactComponent": "CurrentOpsIcon",
+    "figmaComponent": "Navigation/Current Ops"
+  },
+  {
+    "category": "Navigation",
+    "label": "Tomorrow's Plan",
+    "slug": "tomorrows-plan",
+    "svg": "svg/navigation/tomorrows-plan.svg",
+    "spriteId": "icon-tomorrows-plan",
+    "reactComponent": "TomorrowsPlanIcon",
+    "figmaComponent": "Navigation/Tomorrow's Plan"
+  },
+  {
+    "category": "Navigation",
+    "label": "Sync Matrix",
+    "slug": "sync-matrix",
+    "svg": "svg/navigation/sync-matrix.svg",
+    "spriteId": "icon-sync-matrix",
+    "reactComponent": "SyncMatrixIcon",
+    "figmaComponent": "Navigation/Sync Matrix"
+  },
+  {
+    "category": "Navigation",
+    "label": "Requirements",
+    "slug": "requirements",
+    "svg": "svg/navigation/requirements.svg",
+    "spriteId": "icon-requirements",
+    "reactComponent": "RequirementsIcon",
+    "figmaComponent": "Navigation/Requirements"
+  },
+  {
+    "category": "Navigation",
+    "label": "Platforms",
+    "slug": "platforms",
+    "svg": "svg/navigation/platforms.svg",
+    "spriteId": "icon-platforms",
+    "reactComponent": "PlatformsIcon",
+    "figmaComponent": "Navigation/Platforms"
+  },
+  {
+    "category": "Navigation",
+    "label": "UPAD Status",
+    "slug": "upad-status",
+    "svg": "svg/navigation/upad-status.svg",
+    "spriteId": "icon-upad-status",
+    "reactComponent": "UpadStatusIcon",
+    "figmaComponent": "Navigation/UPAD Status"
+  },
+  {
+    "category": "Navigation",
+    "label": "Airspace",
+    "slug": "airspace",
+    "svg": "svg/navigation/airspace.svg",
+    "spriteId": "icon-airspace",
+    "reactComponent": "AirspaceIcon",
+    "figmaComponent": "Navigation/Airspace"
+  },
+  {
+    "category": "Navigation",
+    "label": "Intelligence Oversight",
+    "slug": "intel-oversight",
+    "svg": "svg/navigation/intel-oversight.svg",
+    "spriteId": "icon-intel-oversight",
+    "reactComponent": "IntelOversightIcon",
+    "figmaComponent": "Navigation/Intelligence Oversight"
+  },
+  {
+    "category": "Navigation",
+    "label": "Deadlines",
+    "slug": "deadlines",
+    "svg": "svg/navigation/deadlines.svg",
+    "spriteId": "icon-deadlines",
+    "reactComponent": "DeadlinesIcon",
+    "figmaComponent": "Navigation/Deadlines"
+  },
+  {
+    "category": "Navigation",
+    "label": "Decision Log",
+    "slug": "decision-log",
+    "svg": "svg/navigation/decision-log.svg",
+    "spriteId": "icon-decision-log",
+    "reactComponent": "DecisionLogIcon",
+    "figmaComponent": "Navigation/Decision Log"
+  },
+  {
+    "category": "Utilities",
+    "label": "Notes",
+    "slug": "notes",
+    "svg": "svg/utilities/notes.svg",
+    "spriteId": "icon-notes",
+    "reactComponent": "NotesIcon",
+    "figmaComponent": "Utilities/Notes"
+  },
+  {
+    "category": "Utilities",
+    "label": "Menu",
+    "slug": "menu",
+    "svg": "svg/utilities/menu.svg",
+    "spriteId": "icon-menu",
+    "reactComponent": "MenuIcon",
+    "figmaComponent": "Utilities/Menu"
+  },
+  {
+    "category": "Utilities",
+    "label": "Settings",
+    "slug": "settings",
+    "svg": "svg/utilities/settings.svg",
+    "spriteId": "icon-settings",
+    "reactComponent": "SettingsIcon",
+    "figmaComponent": "Utilities/Settings"
+  },
+  {
+    "category": "Utilities",
+    "label": "Notifications",
+    "slug": "notifications",
+    "svg": "svg/utilities/notifications.svg",
+    "spriteId": "icon-notifications",
+    "reactComponent": "NotificationsIcon",
+    "figmaComponent": "Utilities/Notifications"
+  },
+  {
+    "category": "Utilities",
+    "label": "Help",
+    "slug": "help",
+    "svg": "svg/utilities/help.svg",
+    "spriteId": "icon-help",
+    "reactComponent": "HelpIcon",
+    "figmaComponent": "Utilities/Help"
+  },
+  {
+    "category": "Utilities",
+    "label": "History",
+    "slug": "history",
+    "svg": "svg/utilities/history.svg",
+    "spriteId": "icon-history",
+    "reactComponent": "HistoryIcon",
+    "figmaComponent": "Utilities/History"
+  },
+  {
+    "category": "Utilities",
+    "label": "Advisor",
+    "slug": "advisor",
+    "svg": "svg/utilities/advisor.svg",
+    "spriteId": "icon-advisor",
+    "reactComponent": "AdvisorIcon",
+    "figmaComponent": "Utilities/Advisor"
+  },
+  {
+    "category": "Utilities",
+    "label": "Products",
+    "slug": "products",
+    "svg": "svg/utilities/products.svg",
+    "spriteId": "icon-products",
+    "reactComponent": "ProductsIcon",
+    "figmaComponent": "Utilities/Products"
+  },
+  {
+    "category": "Utilities",
+    "label": "Mission Board",
+    "slug": "mission-board",
+    "svg": "svg/utilities/mission-board.svg",
+    "spriteId": "icon-mission-board",
+    "reactComponent": "MissionBoardIcon",
+    "figmaComponent": "Utilities/Mission Board"
+  },
+  {
+    "category": "Utilities",
+    "label": "Timeline",
+    "slug": "timeline",
+    "svg": "svg/utilities/timeline.svg",
+    "spriteId": "icon-timeline",
+    "reactComponent": "TimelineIcon",
+    "figmaComponent": "Utilities/Timeline"
+  },
+  {
+    "category": "Utilities",
+    "label": "Map Layers",
+    "slug": "map-layers",
+    "svg": "svg/utilities/map-layers.svg",
+    "spriteId": "icon-map-layers",
+    "reactComponent": "MapLayersIcon",
+    "figmaComponent": "Utilities/Map Layers"
+  },
+  {
+    "category": "Utilities",
+    "label": "Zoom",
+    "slug": "zoom",
+    "svg": "svg/utilities/zoom.svg",
+    "spriteId": "icon-zoom",
+    "reactComponent": "ZoomIcon",
+    "figmaComponent": "Utilities/Zoom"
+  },
+  {
+    "category": "Utilities",
+    "label": "Reset View",
+    "slug": "reset-view",
+    "svg": "svg/utilities/reset-view.svg",
+    "spriteId": "icon-reset-view",
+    "reactComponent": "ResetViewIcon",
+    "figmaComponent": "Utilities/Reset View"
+  },
+  {
+    "category": "Utilities",
+    "label": "Expand",
+    "slug": "expand",
+    "svg": "svg/utilities/expand.svg",
+    "spriteId": "icon-expand",
+    "reactComponent": "ExpandIcon",
+    "figmaComponent": "Utilities/Expand"
+  },
+  {
+    "category": "Utilities",
+    "label": "Collapse",
+    "slug": "collapse",
+    "svg": "svg/utilities/collapse.svg",
+    "spriteId": "icon-collapse",
+    "reactComponent": "CollapseIcon",
+    "figmaComponent": "Utilities/Collapse"
+  },
+  {
+    "category": "Utilities",
+    "label": "Filter",
+    "slug": "filter",
+    "svg": "svg/utilities/filter.svg",
+    "spriteId": "icon-filter",
+    "reactComponent": "FilterIcon",
+    "figmaComponent": "Utilities/Filter"
+  },
+  {
+    "category": "Utilities",
+    "label": "Search",
+    "slug": "search",
+    "svg": "svg/utilities/search.svg",
+    "spriteId": "icon-search",
+    "reactComponent": "SearchIcon",
+    "figmaComponent": "Utilities/Search"
+  },
+  {
+    "category": "Utilities",
+    "label": "Close",
+    "slug": "close",
+    "svg": "svg/utilities/close.svg",
+    "spriteId": "icon-close",
+    "reactComponent": "CloseIcon",
+    "figmaComponent": "Utilities/Close"
+  },
+  {
+    "category": "Utilities",
+    "label": "Submit",
+    "slug": "submit",
+    "svg": "svg/utilities/submit.svg",
+    "spriteId": "icon-submit",
+    "reactComponent": "SubmitIcon",
+    "figmaComponent": "Utilities/Submit"
+  },
+  {
+    "category": "Utilities",
+    "label": "Send",
+    "slug": "send",
+    "svg": "svg/utilities/send.svg",
+    "spriteId": "icon-send",
+    "reactComponent": "SendIcon",
+    "figmaComponent": "Utilities/Send"
+  },
+  {
+    "category": "Utilities",
+    "label": "Download",
+    "slug": "download",
+    "svg": "svg/utilities/download.svg",
+    "spriteId": "icon-download",
+    "reactComponent": "DownloadIcon",
+    "figmaComponent": "Utilities/Download"
+  },
+  {
+    "category": "Utilities",
+    "label": "Upload",
+    "slug": "upload",
+    "svg": "svg/utilities/upload.svg",
+    "spriteId": "icon-upload",
+    "reactComponent": "UploadIcon",
+    "figmaComponent": "Utilities/Upload"
+  },
+  {
+    "category": "Utilities",
+    "label": "Refresh",
+    "slug": "refresh",
+    "svg": "svg/utilities/refresh.svg",
+    "spriteId": "icon-refresh",
+    "reactComponent": "RefreshIcon",
+    "figmaComponent": "Utilities/Refresh"
+  }
+]

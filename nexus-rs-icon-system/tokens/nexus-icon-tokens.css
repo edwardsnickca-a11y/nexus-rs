@@ -1,0 +1,18 @@
+:root {
+  --nexus-icon-canvas: 24px;
+  --nexus-icon-stroke-width: 1.5px;
+  --nexus-icon-corner-radius: 1px;
+  --nexus-icon-optical-padding: 2px;
+
+  --nexus-color-icon-primary: #7fe8f4;
+  --nexus-color-icon-secondary: #ffffff;
+
+  --nexus-color-bg-900: #081320;
+  --nexus-color-bg-800: #0f1a28;
+  --nexus-color-bg-700: #142535;
+
+  --nexus-icon-hover-bg: rgb(127 232 244 / 6%);
+  --nexus-icon-selected-bg: rgb(127 232 244 / 14%);
+  --nexus-icon-selected-border: rgb(127 232 244 / 16%);
+  --nexus-icon-disabled-opacity: 0.36;
+}
