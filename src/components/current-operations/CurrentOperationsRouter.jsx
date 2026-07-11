@@ -445,11 +445,31 @@ function CoordinatorView(props){
 }
 function ManagerView(props){
  const {missionState,role,onNavigate,onUpdateMission}=props
+ const [middleHeight,setMiddleHeight]=useStoredSize('nexus-rs-manager-middle-height',500,360,760)
+ const resizeMiddle=(delta)=>setMiddleHeight(value=>clamp(value+delta.dy,360,760))
+
  return <div className="rx-role-layout manager">
-  <div className="rx-top-grid two"><CurrentPeriodCard role={role} missionState={missionState}/><TomorrowCard role={role} missionState={missionState} onNavigate={onNavigate}/></div>
-  <div className="rx-manager-main"><RegionalMissionPicture role={role} missionState={missionState}/><RequirementsSummary missionState={missionState} onNavigate={onNavigate}/></div>
-  <div className="rx-three-grid"><PlatformTable missionState={missionState} role={role} onUpdateMission={onUpdateMission}/><UPADTable missionState={missionState}/><AirspacePanel/></div>
-  <div className="rx-two-grid"><OversightPanel missionState={missionState}/><DeadlinesCard role={role}/></div>
+  <ResizableRow storageKey="nexus-rs-manager-top-panels" initial={[50,50]} min={30} className="rx-top-grid two rx-top-grid-resizable">
+   <CurrentPeriodCard role={role} missionState={missionState}/>
+   <TomorrowCard role={role} missionState={missionState} onNavigate={onNavigate}/>
+  </ResizableRow>
+
+  <ResizableRow storageKey="nexus-rs-manager-middle-panels" initial={[62,38]} min={28} className="rx-manager-main rx-coordinator-middle-resizable" style={{height:middleHeight}}>
+   <RegionalMissionPicture role={role} missionState={missionState}/>
+   <RequirementsSummary missionState={missionState} onNavigate={onNavigate}/>
+  </ResizableRow>
+  <DragHandle className="horizontal rx-middle-bottom-handle" onDrag={resizeMiddle}/>
+
+  <ResizableRow storageKey="nexus-rs-manager-operations-panels" initial={[45,28,27]} min={18} className="rx-three-grid">
+   <PlatformTable missionState={missionState} role={role} onUpdateMission={onUpdateMission}/>
+   <UPADTable missionState={missionState}/>
+   <AirspacePanel/>
+  </ResizableRow>
+
+  <ResizableRow storageKey="nexus-rs-manager-bottom-panels" initial={[45,55]} min={28} className="rx-two-grid">
+   <OversightPanel missionState={missionState}/>
+   <DeadlinesCard role={role}/>
+  </ResizableRow>
  </div>
 }
 function CollectionView(props){
