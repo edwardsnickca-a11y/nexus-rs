@@ -454,6 +454,9 @@ function ManagerView(props){
    .rx-manager-top-grid>.rx-panel{min-height:0;height:100%;display:flex;flex-direction:column}
    .rx-manager-top-grid>.rx-panel>.rx-outline-button{margin-top:auto}
    .rx-manager-top-grid .rx-panel-body{padding-top:8px;padding-bottom:8px}
+   .rx-manager-top-grid>.rx-small-list>.rx-outline-button{margin-top:auto}
+   .rx-three-grid>.rx-small-list{display:flex;flex-direction:column}
+   .rx-three-grid>.rx-small-list>.rx-outline-button{margin-top:auto}
   `}</style>
 
   <ResizableRow storageKey="nexus-rs-manager-top-panels-v3" initial={[27,31,19,23]} min={15} className="rx-top-grid rx-manager-top-grid">
