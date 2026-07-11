@@ -654,21 +654,38 @@ function CollectionView(props){
   onSendRequirementForward?.(requirement.id)
  }
 
- return <div className="rx-role-layout collection rx-collection-deck-layout">
+ return <div className="rx-role-layout collection rx-collection-ppt-layout">
   <style>{`
-   .rx-collection-top{align-items:stretch}
-   .rx-collection-top>.rx-panel{display:flex;flex-direction:column;min-height:0}
-   .rx-collection-top>.rx-panel>.rx-outline-button{margin-top:auto}
-   .rx-req-dev-grid-deck{grid-template-columns:25% minmax(0,48%) minmax(220px,27%)}
-   .rx-active-deck{display:flex;flex-direction:column}
-   .rx-active-deck>.rx-outline-button{margin-top:auto}
+   .rx-collection-ppt-layout{display:grid;grid-template-rows:auto auto minmax(315px,1fr);gap:10px;min-height:calc(100vh - 96px)}
+   .rx-collection-requirements-row{min-height:310px}
+   .rx-collection-requirements-row>.rx-panel{height:100%}
+   .rx-collection-ppt-layout .rx-requirement-workspace{height:100%;display:flex;flex-direction:column}
+   .rx-collection-ppt-layout .rx-requirement-workspace>.rx-req-dev-grid-deck{flex:1}
+   .rx-collection-ppt-layout .rx-req-dev-grid-deck{grid-template-columns:24% minmax(0,50%) 26%;gap:10px}
+   .rx-collection-ppt-layout .rx-requirement-workspace section{min-height:0}
+   .rx-collection-ppt-layout .rx-form-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
+   .rx-collection-ppt-layout .rx-form-grid label{font-size:8px}
+   .rx-collection-ppt-layout .rx-form-grid input,
+   .rx-collection-ppt-layout .rx-form-grid select{height:27px}
+   .rx-collection-ppt-layout .rx-form-grid textarea{min-height:48px}
+   .rx-collection-ppt-layout .rx-form-actions{margin-top:7px}
+   .rx-collection-ppt-layout .rx-middle-work-row{min-height:185px}
+   .rx-collection-ppt-layout .rx-middle-work-row>.rx-panel{height:100%;display:flex;flex-direction:column}
+   .rx-collection-ppt-layout .rx-middle-work-row .rx-outline-button{margin-top:auto}
+   .rx-collection-ppt-layout .rx-active-deck{height:100%;display:flex;flex-direction:column}
+   .rx-collection-ppt-layout .rx-active-deck>.rx-outline-button{margin-top:auto}
    .rx-active-deck-meta{display:flex;gap:18px;padding:7px 10px;border-bottom:1px solid rgba(127,232,244,.15);color:#9eb2bf;font-size:10px}
    .rx-active-deck-meta b{color:#7fe8f4;font-size:15px;margin-right:4px}
    .rx-deck-preview-table{min-width:0}
-   .rx-deck-preview-table .head,.rx-deck-preview-table .row{display:grid;grid-template-columns:52px 78px 1fr 2fr 70px 78px;gap:8px;align-items:center}
+   .rx-deck-preview-table .head,.rx-deck-preview-table .row{display:grid;grid-template-columns:48px 72px 1fr 2fr 62px 75px;gap:8px;align-items:center}
    .rx-deck-preview-table .head{padding:7px 9px;color:#7f96a5;font-size:8px;border-bottom:1px solid rgba(127,232,244,.18)}
    .rx-deck-preview-table .row{padding:8px 9px;border-bottom:1px solid rgba(127,232,244,.12);font-size:10px}
    .rx-deck-preview-table .row>span:nth-child(4){white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+   .rx-collection-map-row{min-height:330px}
+   .rx-collection-map-row>.rx-panel{height:100%}
+   .rx-collection-support-stack{display:grid;grid-template-rows:minmax(120px,.8fr) minmax(130px,1fr);gap:10px;min-height:0}
+   .rx-collection-support-stack>.rx-panel{min-height:0;display:flex;flex-direction:column}
+   .rx-collection-support-stack .rx-outline-button{margin-top:auto}
    .rx-deck-modal{position:fixed;inset:0;z-index:9999;background:rgba(0,8,15,.9);display:flex;align-items:center;justify-content:center;padding:24px}
    .rx-deck-modal-card{width:min(96vw,1800px);height:min(92vh,1000px);background:#071827;border:1px solid #2a7189;display:flex;flex-direction:column;box-shadow:0 25px 80px #000}
    .rx-deck-modal-card>header{display:flex;justify-content:space-between;align-items:flex-start;padding:16px 18px;border-bottom:1px solid #21485b}
@@ -686,6 +703,11 @@ function CollectionView(props){
    .rx-deck-full-table td{vertical-align:top;padding:8px;border:1px solid #1d3b4c;color:#c3d1d9;max-width:220px}
    .rx-deck-full-table tbody tr:nth-child(even){background:rgba(19,51,68,.3)}
    .rx-deck-modal-card>footer{display:flex;justify-content:space-between;align-items:center;padding:12px 16px;border-top:1px solid #21485b;color:#9cb0bb;font-size:10px}
+   @media(max-width:1200px){
+    .rx-collection-ppt-layout .rx-req-dev-grid-deck{grid-template-columns:1fr}
+    .rx-collection-ppt-layout{grid-template-rows:auto auto auto}
+    .rx-collection-map-row{grid-template-columns:1fr!important}
+   }
    @media print{
     body *{visibility:hidden!important}
     .rx-deck-modal,.rx-deck-modal *{visibility:visible!important}
@@ -695,28 +717,28 @@ function CollectionView(props){
    }
   `}</style>
 
-  <ResizableRow storageKey="nexus-rs-collection-top-panels-v1" initial={[25,28,24,23]} min={15} className="rx-top-grid rx-collection-top">
-   <CurrentPeriodCard role={role} missionState={missionState}/>
-   <TomorrowCard role={role} missionState={missionState} onNavigate={onNavigate}/>
-   <DeadlinesCard role={role}/>
+  <div className="rx-collection-requirements-row">
+   <RequirementDevelopment
+    missionState={missionState}
+    onUpdateRequirement={onUpdateRequirement}
+    onValidateRequirement={onValidateRequirement}
+    onAddToDeck={addToDeck}
+    selectedRequirementId={selectedRequirementId}
+    onSelectRequirement={setSelectedRequirementId}
+   />
+  </div>
+
+  <ResizableRow storageKey="nexus-rs-collection-middle-work-v2" initial={[56,44]} min={28} className="rx-middle-work-row">
+   <Taskability missionState={missionState}/>
    <ActiveCollectionDeck items={deckItems} onOpen={()=>setShowDeck(true)}/>
   </ResizableRow>
 
-  <RequirementDevelopment
-   missionState={missionState}
-   onUpdateRequirement={onUpdateRequirement}
-   onValidateRequirement={onValidateRequirement}
-   onAddToDeck={addToDeck}
-   selectedRequirementId={selectedRequirementId}
-   onSelectRequirement={setSelectedRequirementId}
-  />
-
-  <Taskability missionState={missionState}/>
-
-  <ResizableRow storageKey="nexus-rs-collection-bottom-panels-v1" initial={[45,27,28]} min={18} className="rx-three-grid bottom">
+  <ResizableRow storageKey="nexus-rs-collection-map-support-v2" initial={[58,42]} min={30} className="rx-collection-map-row">
    <RegionalMissionPicture role={role} missionState={missionState}/>
-   <AirspacePanel/>
-   <UPADTable missionState={missionState}/>
+   <div className="rx-collection-support-stack">
+    <DeadlinesCard role={role}/>
+    <AirspacePanel/>
+   </div>
   </ResizableRow>
 
   {showDeck&&<CollectionDeckOutput items={deckItems} onClose={()=>setShowDeck(false)}/>}

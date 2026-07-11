@@ -139,9 +139,12 @@ function MatrixTimeline({sorties,selectedId,onSelect,draft=false}){
 function ImpactSummary({sorties,draft=false}){
   const overlaps=[]
   const gaps=[]
-  const byAsset=Object.groupBy
-    ? Object.groupBy(sorties,sortie=>sortie.asset)
-    : sorties.reduce((acc,sortie)=>((acc[sortie.asset]??=[]).push(sortie),acc),{})
+  const byAsset=sorties.reduce((acc,sortie)=>{
+    const key=sortie.asset||'Unassigned'
+    if(!acc[key]) acc[key]=[]
+    acc[key].push(sortie)
+    return acc
+  },{})
 
   Object.entries(byAsset).forEach(([asset,items])=>{
     const ordered=[...items].sort((a,b)=>a.start-b.start)
@@ -219,9 +222,11 @@ export default function SyncMatrix({
     loadDraft()
     window.addEventListener('storage',loadDraft)
     window.addEventListener('focus',loadDraft)
+    document.addEventListener('visibilitychange',loadDraft)
     return ()=>{
       window.removeEventListener('storage',loadDraft)
       window.removeEventListener('focus',loadDraft)
+      document.removeEventListener('visibilitychange',loadDraft)
     }
   },[])
 
