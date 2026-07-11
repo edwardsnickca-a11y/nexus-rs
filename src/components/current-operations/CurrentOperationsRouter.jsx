@@ -633,8 +633,18 @@ function CollectionView(props){
  const {missionState,role,onNavigate,onUpdateRequirement,onValidateRequirement,onSendRequirementForward}=props
  const requirements=missionState.requirements?.items||[]
  const [selectedRequirementId,setSelectedRequirementId]=useState(requirements[0]?.id)
- const [deckItems,setDeckItems]=useState(()=>requirements.slice(0,3).map((r,index)=>({...r,status:index===1?'draft':'ready'})))
+ const [deckItems,setDeckItems]=useState(()=>{
+  try{
+   const saved=JSON.parse(localStorage.getItem('nexus-rs-collection-deck-draft')||'null')
+   if(Array.isArray(saved)&&saved.length) return saved
+  }catch{}
+  return requirements.slice(0,3).map((r,index)=>({...r,status:index===1?'draft':'ready'}))
+ })
  const [showDeck,setShowDeck]=useState(false)
+
+ useEffect(()=>{
+  localStorage.setItem('nexus-rs-collection-deck-draft',JSON.stringify(deckItems))
+ },[deckItems])
 
  const addToDeck=(requirement)=>{
   setDeckItems(current=>{
