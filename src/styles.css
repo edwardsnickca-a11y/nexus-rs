@@ -1311,3 +1311,104 @@
     grid-template-rows:70px minmax(0,1fr)!important;
   }
 }
+
+
+/* Header logo, view-button alignment, map scale, and advisor cleanup. */
+.rx-brand{
+  padding:6px 12px!important;
+  overflow:hidden;
+}
+.rx-brand-image{
+  display:block;
+  width:100%;
+  max-width:250px;
+  height:56px;
+  object-fit:contain;
+  object-position:left center;
+}
+.rx-logo,
+.rx-brand>div:not(:first-child){
+  display:none!important;
+}
+
+.rx-top-card{
+  display:flex!important;
+  flex-direction:column!important;
+}
+.rx-top-card>.rx-outline-button{
+  margin-top:auto!important;
+}
+.rx-outline-button{
+  display:flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  width:calc(100% - 22px)!important;
+  min-height:31px!important;
+  margin:8px 11px 9px!important;
+  border:1px solid #28cddd!important;
+  border-radius:4px!important;
+  background:linear-gradient(180deg,rgba(0,213,230,.10),rgba(0,213,230,.035))!important;
+  color:#6eeaf3!important;
+  font-size:9px!important;
+  font-weight:700!important;
+  letter-spacing:.025em!important;
+  text-transform:uppercase!important;
+  transition:background .15s ease,border-color .15s ease,color .15s ease!important;
+}
+.rx-outline-button:hover,
+.rx-outline-button:focus-visible{
+  background:rgba(0,213,230,.18)!important;
+  border-color:#65eef5!important;
+  color:#eaffff!important;
+  outline:none!important;
+}
+.rx-outline-button:disabled{
+  opacity:.45!important;
+  cursor:not-allowed!important;
+}
+
+.rx-map-scale{
+  position:absolute;
+  left:18px;
+  bottom:15px;
+  z-index:7;
+  width:148px;
+  height:31px;
+  color:#eef7fb;
+  font-size:8px;
+  pointer-events:none;
+}
+.rx-map-scale span{
+  position:absolute;
+  bottom:15px;
+  transform:translateX(-50%);
+  text-shadow:0 1px 2px #020d1b;
+}
+.rx-map-scale span:nth-child(1){left:0;transform:none}
+.rx-map-scale span:nth-child(2){left:50%}
+.rx-map-scale span:nth-child(3){right:0;left:auto;transform:none}
+.rx-map-scale i{
+  position:absolute;
+  left:0;
+  right:0;
+  bottom:6px;
+  height:7px;
+  border-left:2px solid #eef7fb;
+  border-right:2px solid #eef7fb;
+  border-bottom:2px solid #eef7fb;
+}
+.rx-map-scale i:after{
+  content:"";
+  position:absolute;
+  left:50%;
+  bottom:-2px;
+  height:7px;
+  border-left:2px solid #eef7fb;
+}
+.rx-map-attribution{
+  bottom:2px!important;
+}
+
+.advisor-brief-summary-only{
+  display:none!important;
+}

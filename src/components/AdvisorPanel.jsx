@@ -30,14 +30,6 @@ export default function AdvisorPanel({ role, missionState, operationalSummary, o
         message={advisorText}
       />
 
-      <div className="advisor-brief advisor-brief-summary-only">
-        {operationalSummary && <div className="advisor-summary-line">
-          <span>{operationalSummary.openRequirements} open requirements</span>
-          <span>{operationalSummary.activeMissions} active missions</span>
-          <span>{operationalSummary.unverifiedDeliveries} unverified deliveries</span>
-        </div>}
-      </div>
-
       <details className="advisor-history advisor-history-visible">
         <summary>View Advisor History{history.length ? ` (${Math.min(history.length,12)})` : ''}</summary>
         <div>{history.length ? history.slice(-6).map((item)=><article key={item.id}>

@@ -25,7 +25,7 @@ function LiveHeader({role,missionState,onEnd}){
  const participant=missionState.exercise?.participantName?.trim()
  const identity=participant || meta?.name || 'Role not selected'
  return <header className="rx-header">
-  <div className="rx-brand"><div className="rx-logo">◇</div><div><strong>NEXUS <em>RS</em></strong><small>REMOTE SENSING OPERATIONS SIMULATOR</small></div></div>
+  <div className="rx-brand"><img src="/images/brand/nexus-rs-header-logo.png" alt="NEXUS RS — Remote Sensing Simulation Platform" className="rx-brand-image"/></div>
   <div className="rx-head-block"><span>ROLE</span><strong>{identity}</strong>{participant&&<small>{meta?.name}</small>}</div>
   <div className="rx-head-block"><span>SCENARIO</span><strong>{missionState.exercise?.scenarioName||missionState.scenario?.name||'Western Region Multi-Fire'}</strong></div>
   <div className="rx-head-block"><span>OPERATIONAL PERIOD</span><div className="rx-op-toggle"><b>OP {missionState.exercise?.activeOperationalPeriod||missionState.operationalPeriod||1}</b><span>OP 2</span></div></div>
@@ -204,6 +204,10 @@ function OperationalMap({missionState}){
    <button type="button" onPointerDown={e=>e.stopPropagation()} onClick={reset} title="Reset map">⌂</button>
    <button type="button" onPointerDown={e=>e.stopPropagation()} onClick={()=>zoomBy(1)} title="Zoom in">＋</button>
    <button type="button" onPointerDown={e=>e.stopPropagation()} onClick={()=>zoomBy(-1)} title="Zoom out">−</button>
+  </div>
+  <div className="rx-map-scale" aria-label="Map scale">
+   <span>0</span><span>10 NM</span><span>20 NM</span>
+   <i/>
   </div>
   <div className="rx-map-attribution">© OpenStreetMap contributors</div>
  </div>
