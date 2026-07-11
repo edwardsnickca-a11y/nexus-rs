@@ -7,12 +7,20 @@ const label = (value='') => value.replaceAll('_',' ')
 export default function AdvisorPanel({ role, missionState, operationalSummary, onSubmitDecision, pending, busy, mode, onConfirm, onCancel }) {
   const [text,setText]=useState('')
   const [lastSentAt,setLastSentAt]=useState(0)
+  const scratchpadKey = `nexus-rs-advisor-scratchpad:${missionState.exercise?.scenarioId || 'exercise'}:${role || 'role'}`
+  const [scratchpad,setScratchpad]=useState(()=>localStorage.getItem(scratchpadKey) || '')
   const initial = useMemo(() => getInitialAdvisorMessage(role), [role])
   const history = missionState.simulation?.advisorHistory || []
   const latest = history[history.length-1]
   const advisorText = latest?.advisorMessage || missionState.lastAdvisorUpdate?.text || initial
 
   useEffect(() => setText(''), [role])
+  useEffect(() => {
+    setScratchpad(localStorage.getItem(scratchpadKey) || '')
+  }, [scratchpadKey])
+  useEffect(() => {
+    localStorage.setItem(scratchpadKey, scratchpad)
+  }, [scratchpadKey, scratchpad])
 
   const submit=async()=>{
     const value=text.trim()
@@ -39,6 +47,19 @@ export default function AdvisorPanel({ role, missionState, operationalSummary, o
         </article>) : <p className="advisor-history-empty">No prior advisor exchanges recorded for this exercise.</p>}</div>
       </details>
 
+      <section className="advisor-scratchpad">
+        <div className="advisor-scratchpad-head">
+          <strong>MY NOTES</strong>
+          <span>Saved automatically</span>
+        </div>
+        <textarea
+          value={scratchpad}
+          onChange={(event)=>setScratchpad(event.target.value)}
+          placeholder="Capture notes, assumptions, and reminders. These notes are not sent to the advisor."
+          aria-label="Persistent exercise scratchpad"
+        />
+      </section>
+
       {pending && <div className="advisor-decision-card">
         <div className="panel-head"><h4>Interpreted Decision</h4><span className={`chip ${pending.result.authorityAssessment.status==='within_authority'?'teal':'amber'}`}>{label(pending.result.authorityAssessment.status).toUpperCase()}</span></div>
         <p><strong>{pending.result.interpretedIntent}</strong></p>
@@ -57,7 +78,7 @@ export default function AdvisorPanel({ role, missionState, operationalSummary, o
         </div>
       </div>}
 
-      <textarea value={text} onChange={(e)=>setText(e.target.value)} placeholder="Enter your decision, rationale, coordination path, or question..." disabled={busy}/>
+      <textarea className="advisor-response-input" value={text} onChange={(e)=>setText(e.target.value)} placeholder="Enter your decision, rationale, coordination path, or question..." disabled={busy}/>
       <div className="advisor-actions">
         <span>Exact text preserved · role authority checked · state changes require validation</span>
         <button className="primary small" onClick={submit} disabled={!text.trim()||busy}>{busy?'Reviewing…':'Send'}</button>

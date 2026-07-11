@@ -30,7 +30,7 @@ function LiveHeader({role,missionState,onEnd}){
   <div className="rx-head-block"><span>SCENARIO</span><strong>{missionState.exercise?.scenarioName||missionState.scenario?.name||'Western Region Multi-Fire'}</strong></div>
   <div className="rx-head-block"><span>OPERATIONAL PERIOD</span><div className="rx-op-toggle"><b>OP {missionState.exercise?.activeOperationalPeriod||missionState.operationalPeriod||1}</b><span>OP 2</span></div></div>
   <div className="rx-head-block"><span>LOCAL INCIDENT TIME</span><strong>{missionState.exercise?.localIncidentTime||missionState.asOf||'1732L'}</strong><small>Period remains active</small></div>
-  <div className="rx-header-actions"><button>▤<small>NOTES</small></button><button>☰<small>MENU</small></button>{onEnd&&<button className="rx-end" onClick={onEnd}>END EXERCISE</button>}</div>
+  <div className="rx-header-actions"><button>☰<small>MENU</small></button>{onEnd&&<button className="rx-end" onClick={onEnd}>END EXERCISE</button>}</div>
  </header>
 }
 
@@ -169,7 +169,15 @@ function OperationalMap({missionState}){
  const zoomBy=(amount)=>{
   setView(v=>({...v,zoom:clamp(v.zoom+amount,5,13)}))
  }
- const reset=()=>setView({lat:39.55,lng:-121.55,zoom:8})
+ const metersPerPixel=156543.03392*Math.cos(view.lat*Math.PI/180)/(2**view.zoom)
+ const targetNauticalMiles=(metersPerPixel*120)/1852
+ const magnitude=10**Math.floor(Math.log10(Math.max(targetNauticalMiles,.01)))
+ const normalized=targetNauticalMiles/magnitude
+ const niceFactor=normalized>=5?5:normalized>=2?2:1
+ const scaleNauticalMiles=niceFactor*magnitude
+ const scaleWidth=Math.max(42,Math.min(140,(scaleNauticalMiles*1852)/metersPerPixel))
+ const halfScale=scaleNauticalMiles/2
+ const formatScale=(value)=>value>=10?Math.round(value):value>=1?Number(value.toFixed(1)):Number(value.toFixed(2))
 
  return <div
   ref={hostRef}
@@ -201,13 +209,12 @@ function OperationalMap({missionState}){
    </button>
   })}
   <div className="rx-map-controls">
-   <button type="button" onPointerDown={e=>e.stopPropagation()} onClick={reset} title="Reset map">⌂</button>
    <button type="button" onPointerDown={e=>e.stopPropagation()} onClick={()=>zoomBy(1)} title="Zoom in">＋</button>
    <button type="button" onPointerDown={e=>e.stopPropagation()} onClick={()=>zoomBy(-1)} title="Zoom out">−</button>
   </div>
-  <div className="rx-map-scale" aria-label="Map scale">
-   <span>0</span><span>10 NM</span><span>20 NM</span>
-   <i/>
+  <div className="rx-map-scale" aria-label={`Map scale: ${formatScale(scaleNauticalMiles)} nautical miles`} style={{width:scaleWidth}}>
+   <div className="rx-map-scale-labels"><span>0</span><span>{formatScale(halfScale)}</span><span>{formatScale(scaleNauticalMiles)} NM</span></div>
+   <div className="rx-map-scale-line"><i/><i/><i/></div>
   </div>
   <div className="rx-map-attribution">© OpenStreetMap contributors</div>
  </div>
@@ -287,7 +294,7 @@ function useStoredFractions(key,initial){
  return [values,setValues]
 }
 
-function ResizableRow({storageKey,initial,min=12,className='',children}){
+function ResizableRow({storageKey,initial,min=12,className='',style,children}){
  const host=useRef(null)
  const [sizes,setSizes]=useStoredFractions(storageKey,initial)
  const items=React.Children.toArray(children)
@@ -303,7 +310,7 @@ function ResizableRow({storageKey,initial,min=12,className='',children}){
   })
  }
  const columns=sizes.flatMap((size,index)=>index<sizes.length-1?[`minmax(0,${size}fr)`,'5px']:[`minmax(0,${size}fr)`]).join(' ')
- return <div ref={host} className={`rx-resizable-row ${className}`} style={{gridTemplateColumns:columns}}>
+ return <div ref={host} className={`rx-resizable-row ${className}`} style={{gridTemplateColumns:columns,...style}}>
   {items.map((child,index)=><React.Fragment key={index}>{child}{index<items.length-1&&<DragHandle className="vertical" onDrag={delta=>resize(index,delta)}/>}</React.Fragment>)}
  </div>
 }
@@ -389,6 +396,8 @@ function UPADOverview({missionState,onUpdateDelivery}){
 
 function CoordinatorView(props){
  const {missionState,role,onNavigate,onReleaseAsset}=props
+ const [middleHeight,setMiddleHeight]=useStoredSize('nexus-rs-coordinator-middle-height',500,360,760)
+ const resizeMiddle=(delta)=>setMiddleHeight(value=>clamp(value+delta.dy,360,760))
  return <div className="rx-role-layout coordinator">
   <ResizableRow storageKey="nexus-rs-coordinator-top-panels" initial={[31,32,37]} min={20} className="rx-top-grid rx-top-grid-resizable">
    <CurrentPeriodCard role={role} missionState={missionState}/>
@@ -396,13 +405,14 @@ function CoordinatorView(props){
    <DeadlinesCard role={role}/>
   </ResizableRow>
 
-  <ResizableRow storageKey="nexus-rs-coordinator-middle-panels" initial={[63,37]} min={24} className="rx-coordinator-middle rx-coordinator-middle-resizable">
+  <ResizableRow storageKey="nexus-rs-coordinator-middle-panels" initial={[63,37]} min={24} className="rx-coordinator-middle rx-coordinator-middle-resizable" style={{height:middleHeight}}>
    <RegionalMissionPicture role={role} missionState={missionState}/>
    <ResizableStack>
     <PlatformTable missionState={missionState} role={role} onRelease={onReleaseAsset}/>
     <UPADTable missionState={missionState}/>
    </ResizableStack>
   </ResizableRow>
+  <DragHandle className="horizontal rx-middle-bottom-handle" onDrag={resizeMiddle}/>
 
   <ResizableRow storageKey="nexus-rs-coordinator-lower-panels" initial={[40,20,19,21]} min={13} className="rx-coordinator-lower rx-coordinator-lower-resizable">
    <MiniSyncMatrix missionState={missionState} onNavigate={onNavigate}/>

@@ -1,44 +1,47 @@
-# NEXUS RS Header Logo and View Control Cleanup
+# NEXUS RS Map, Scratchpad, and Panel Alignment Fix
 
 ## Summary
-Applies the requested visual cleanup to the active Current Operations workspace without changing exercise logic.
+Applies a focused Current Operations cleanup without changing mission logic or role authority.
 
 ## Changes
-- Replaces the generated top-left NEXUS RS mark with a cropped brand asset from the supplied `RS logo sheet.png`.
-- Aligns the three top-row View buttons by anchoring them to the bottom of their panels.
-- Standardizes all `.rx-outline-button` controls to one shared teal style across the role workspace.
-- Adds a simple EOC-style 0 / 10 NM / 20 NM scale bar to the operational map.
-- Removes the empty advisor summary container that created the unexplained rounded blank element.
+- Replaced the fixed decorative map ruler with a scale bar calculated from the current map latitude and zoom level.
+- The map scale updates whenever the user zooms or pans.
+- Added a draggable horizontal divider below the Coordinator map area so the map and adjacent platform/UPAD stack can be resized vertically.
+- Removed the unused map reset/home control. Zoom controls remain.
+- Removed the top-header Notes control.
+- Added a persistent `MY NOTES` scratchpad inside the advisor column.
+- Scratchpad content is stored in browser local storage by scenario and role and survives refreshes and browser restarts.
+- Scratchpad text is never submitted to Lt Col Edwards.
+- Aligned the lower-row action buttons by using consistent panel heights and bottom anchoring.
 
 ## Files changed
 - `src/components/current-operations/CurrentOperationsRouter.jsx`
 - `src/components/AdvisorPanel.jsx`
 - `src/styles.css`
-- `public/images/brand/nexus-rs-header-logo.png`
 
 ## Installation
-Extract the patch into:
+Extract this patch into:
 
 `C:\Dev\nexus-rs`
 
-Allow the included paths to overwrite matching files.
-
-## Logic preserved
-- Role-specific Current Operations layouts
-- Shared mission state
-- Map pan and zoom
-- Advisor messaging, history, Anthropic integration, and deterministic fallback
-- STARTEX and ENDEX
-- Role authority and downstream workflows
+Allow the included files to overwrite the matching project paths.
 
 ## Build verification
 `npm run build` completed successfully with Vite 6.4.3.
 
 ## Manual test checklist
-- Confirm the supplied NEXUS RS brand appears at the top left.
-- Confirm all three top-row View buttons share the same baseline.
-- Confirm View buttons across the workspace share the same style.
-- Confirm the map shows the 0 / 10 NM / 20 NM scale.
-- Confirm the unexplained empty rounded advisor element is gone.
-- Confirm advisor history and response submission still work.
-- Confirm map pan and zoom still work.
+- Open the Coordinator Current Operations workspace.
+- Zoom the map with the mouse wheel and confirm the page does not scroll.
+- Confirm the scale values and scale width change as map zoom changes.
+- Pan the map and confirm the scale remains geographically appropriate.
+- Confirm only zoom-in and zoom-out controls remain on the map.
+- Drag the horizontal divider below the map to change the map area height.
+- Refresh and confirm the selected map height persists.
+- Enter text in `MY NOTES`, refresh the page, and confirm the text remains.
+- Confirm scratchpad text is not copied into the advisor response field.
+- Confirm no Notes control appears in the top header.
+- Confirm the four lower-row buttons align along the same baseline.
+- Confirm STARTEX, advisor Send, advisor history, and ENDEX remain functional.
+
+## Known limitation
+The map uses network-delivered OpenStreetMap tiles. Basemap tiles require an internet connection.
