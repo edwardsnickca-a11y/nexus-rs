@@ -113,10 +113,13 @@ const responseSchema = {
     proposedAction: {
       type: 'object',
       additionalProperties: false,
-      required: ['type', 'payload'],
+      required: ['type', 'payloadJson'],
       properties: {
         type: { type: 'string', enum: ACTIONS },
-        payload: { type: 'object', additionalProperties: true },
+        payloadJson: {
+          type: 'string',
+          description: 'A compact JSON object encoded as a string. Use "{}" when no payload is needed.',
+        },
       },
     },
   },
@@ -166,6 +169,8 @@ Authority baseline:
 ${ROLE_GUIDANCE[role] || ROLE_GUIDANCE.remote_sensing_coordinator}
 
 Use proposedAction only when the controlled context clearly supports a safe state change.
+Set proposedAction.payloadJson to a compact JSON object encoded as a string.
+Use "{}" when no payload is needed.
 Use no_state_action when the trainee is discussing, asking a question, missing essential facts,
 or proposing something outside their authority.
 Return only the required structured JSON.`
@@ -291,8 +296,24 @@ Reference only entity IDs present in the context.`,
       })
     }
 
+    let payload = {}
+    try {
+      payload = JSON.parse(parsed?.proposedAction?.payloadJson || '{}')
+      if (!payload || typeof payload !== 'object' || Array.isArray(payload)) payload = {}
+    } catch {
+      payload = {}
+    }
+
+    const normalized = {
+      ...parsed,
+      proposedAction: {
+        type: parsed?.proposedAction?.type || 'no_state_action',
+        payload,
+      },
+    }
+
     return sendJson(response, 200, {
-      response: parsed,
+      response: normalized,
       model: data.model || DEFAULT_MODEL,
       requestId: data.id || null,
     })
