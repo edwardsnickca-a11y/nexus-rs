@@ -31,6 +31,7 @@ export const AUTHORITY = {
       'Sortie timing',
       'Airspace and execution impacts',
       'Operational retasking with gain-loss assessment',
+      'Crew feasibility coordination before recommending sortie extensions',
     ],
     limits: [
       'Cannot allocate state assets',
@@ -42,6 +43,7 @@ export const AUTHORITY = {
       'Gain-loss assessment',
       'What must be protected',
       'What must be reported to the Coordinator',
+      'Crew-confirmed feasibility and the cost of any proposed extension',
     ],
   },
   collection_manager: {

@@ -100,6 +100,70 @@ function scopeMissionStateForRole(state,role){
  }
 }
 
+
+function AdvisorConversation({
+ role,
+ missionState,
+ operationalSummary,
+ onSubmitDecision,
+ pending,
+ busy,
+ mode,
+ onConfirm,
+ onCancel,
+ onClose,
+}){
+ const [text,setText]=useState('')
+ const history=missionState.simulation?.advisorHistory||[]
+ const submit=()=>{
+  const value=text.trim()
+  if(!value||busy) return
+  onSubmitDecision?.(value)
+  setText('')
+ }
+ return <section style={{minHeight:'calc(100vh - 120px)',padding:18,background:'#071827'}}>
+  <div style={{maxWidth:1180,margin:'0 auto',border:'1px solid #28556b',background:'#0a2130'}}>
+   <header style={{display:'flex',justifyContent:'space-between',gap:16,padding:'16px 18px',borderBottom:'1px solid #28556b'}}>
+    <div>
+     <span style={{color:'#67e1ed',fontSize:10,letterSpacing:'.1em'}}>ADVISOR CONVERSATION</span>
+     <h2 style={{margin:'4px 0 0'}}>Lt Col Edwards</h2>
+     <small style={{color:'#8ea6b2'}}>{role?.replaceAll('_',' ')} · {missionState.exercise?.assignedIncident||'Regional'} · {mode==='connected'?'OpenAI connected':'Local fallback'}</small>
+    </div>
+    <button onClick={onClose} style={{height:36,padding:'0 14px',border:'1px solid #3fc4d2',background:'#0c3342',color:'#eaffff',cursor:'pointer'}}>RETURN TO WORKSPACE</button>
+   </header>
+
+   <div style={{minHeight:420,maxHeight:'58vh',overflow:'auto',padding:18}}>
+    {history.length===0&&<div style={{padding:28,color:'#8fa7b3',textAlign:'center'}}>Ask Edwards about the mission, your authority, a trade-off, or the consequence of a decision.</div>}
+    {history.map(item=><div key={item.id} style={{marginBottom:18}}>
+     <div style={{display:'flex',justifyContent:'flex-end'}}>
+      <div style={{maxWidth:'72%',padding:'10px 13px',background:'#17445a',border:'1px solid #2d7188',borderRadius:6}}>
+       <strong style={{display:'block',fontSize:10,color:'#8fe8f0',marginBottom:4}}>YOU</strong>
+       <span>{item.traineeText}</span>
+      </div>
+     </div>
+     <div style={{display:'flex',justifyContent:'flex-start',marginTop:9}}>
+      <div style={{maxWidth:'78%',padding:'12px 14px',background:'#0b2a39',border:'1px solid #2b5668',borderRadius:6,lineHeight:1.55}}>
+       <strong style={{display:'block',fontSize:10,color:'#c7a8ff',marginBottom:5}}>LT COL EDWARDS</strong>
+       <span>{item.advisorMessage}</span>
+      </div>
+     </div>
+    </div>)}
+   </div>
+
+   {pending&&<div style={{padding:'10px 18px',borderTop:'1px solid #6d5727',background:'#2c2718'}}>
+    <strong style={{color:'#ffd278'}}>CONFIRM STATE CHANGE</strong>
+    <p style={{margin:'5px 0 9px'}}>{pending.result?.recommendedNextStep||pending.result?.advisorMessage}</p>
+    <div style={{display:'flex',gap:8}}><button onClick={onConfirm}>CONFIRM</button><button onClick={onCancel}>CANCEL</button></div>
+   </div>}
+
+   <div style={{display:'grid',gridTemplateColumns:'1fr 110px',gap:8,padding:14,borderTop:'1px solid #28556b'}}>
+    <textarea value={text} onChange={event=>setText(event.target.value)} onKeyDown={event=>{if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();submit()}}} placeholder="Talk to Edwards..." style={{minHeight:76,resize:'vertical',padding:10,background:'#061722',border:'1px solid #31596b',color:'#eef7fa',font:'inherit'}}/>
+    <button disabled={!text.trim()||busy} onClick={submit} style={{border:'1px solid #3fc4d2',background:'#0d5968',color:'#eaffff',cursor:'pointer',opacity:!text.trim()||busy?.5:1}}>{busy?'THINKING…':'SEND'}</button>
+   </div>
+  </div>
+ </section>
+}
+
 function Placeholder({title}){return <section className="panel placeholder"><span className="eyebrow">NEXUS RS v0.1</span><h3>{title}</h3><p>This workspace shell is ready for state-driven data, role permissions, and AI integration in the next development pass.</p></section>}
 
 export default function App(){
@@ -112,6 +176,7 @@ export default function App(){
  const [advisorBusy,setAdvisorBusy]=useState(false)
  const [advisorMode,setAdvisorMode]=useState('local')
  const [pendingIncident,setPendingIncident]=useState('')
+ const [pendingStart,setPendingStart]=useState(null)
 
 
  const currentRole=missionState.exercise?.selectedRole || role || 'remote_sensing_coordinator'
@@ -132,30 +197,39 @@ export default function App(){
  const confirmRoleSelection=(selectedRole)=>{
   setRole(selectedRole)
   setMissionState(prev=>controllerSelectRole(prev,selectedRole))
-  if(selectedRole==='remote_sensing_manager'){
-   setPendingIncident('')
-   setActive('incident')
-  }
+  if(selectedRole!=='remote_sensing_manager') setPendingIncident('')
  }
  const confirmIncidentAssignment=()=>{
-  if(!pendingIncident) return
-  setMissionState(prev=>({
-   ...prev,
-   exercise:{...(prev.exercise||{}),assignedIncident:pendingIncident,currentPhase:'STARTEX Ready'},
-   activeIncident:pendingIncident,
-  }))
-  setActive('portal')
+  if(!pendingIncident||!pendingStart) return
+  setMissionState(prev=>{
+   const configured={
+    ...pendingStart.configured,
+    exercise:{...(pendingStart.configured.exercise||{}),assignedIncident:pendingIncident,currentPhase:'STARTEX Ready'},
+    activeIncident:pendingIncident,
+   }
+   return startExercise(configured)
+  })
+  setPendingStart(null)
+  setActive('current')
  }
- const confirmStartEx=(scenario, setup={})=>{setMissionState(prev=>{
-  const initialized=applyPortalScenario(prev,scenario)
+ const confirmStartEx=(scenario, setup={})=>{
+  const initialized=applyPortalScenario(missionState,scenario)
   const configured={...initialized,exercise:{...(initialized.exercise||{}),participantName:(setup.participantName||initialized.exercise?.participantName||'').trim(),operationalContext:setup.operationalContext||initialized.exercise?.operationalContext||'',exerciseFocus:setup.exerciseFocus||initialized.exercise?.exerciseFocus||'Full Mission Cycle'}}
-  return startExercise(configured)
- });setActive('current')}
+  const selectedRole=configured.exercise?.selectedRole||role
+  if(selectedRole==='remote_sensing_manager'&&!configured.exercise?.assignedIncident){
+   setPendingIncident('')
+   setPendingStart({configured})
+   setActive('incident')
+   return
+  }
+  setMissionState(startExercise(configured))
+  setActive('current')
+ }
  const advanceExercise=()=>setMissionState(prev=>advanceTurn(prev))
  const reviewTransition=()=>{setMissionState(prev=>beginTransition(prev));setActive('transition')}
  const approveLifecycleTransition=()=>{setMissionState(prev=>approveTransition(prev));setActive('current')}
  const confirmEndEx=(reason)=>{setMissionState(prev=>endExercise(prev,reason));setShowEndEx(false);setActive('aar')}
- const resetActiveExercise=()=>{if(window.confirm('Reset Exercise? This clears the active mission state and returns to the Mission Portal.')){setMissionState(resetExercise(INITIAL_MISSION_STATE));setSyncMatrix(INITIAL_MATRIX);setRole(null);setPendingIncident('');setActive('portal')}}
+ const resetActiveExercise=()=>{if(window.confirm('Reset Exercise? This clears the active mission state and returns to the Mission Portal.')){setMissionState(resetExercise(INITIAL_MISSION_STATE));setSyncMatrix(INITIAL_MATRIX);setRole(null);setPendingIncident('');setPendingStart(null);setActive('portal')}}
  const readOnly=isWorkspaceReadOnly(missionState,active)
 
  const recordDecision=(type,detail)=>setMissionState(prev=>({...prev,decisions:[...prev.decisions,{id:`decision-${prev.decisions.length+1}`,type,detail,asOf:prev.asOf,role:currentRole}]}))
@@ -273,8 +347,9 @@ export default function App(){
   'portal-resources':<Placeholder title="Mission Portal Resources"/>,
   portal:<MissionPortal missionState={missionState} selectedRole={missionState.exercise?.selectedRole || role} onSelectRole={confirmRoleSelection} onSelectScenario={selectPortalScenario} onOpenBrief={openScenarioBrief} onStart={confirmStartEx} onResume={()=>setActive('current')} onReviewAar={()=>setActive('aar')}/>,
   brief:<ScenarioBrief missionState={missionState} onContinue={openRoleSelection}/>,
-  roles:<RoleSelection selectedRole={role} onSelectRole={confirmRoleSelection} onStart={()=>currentRole==='remote_sensing_manager'&&!missionState.exercise?.assignedIncident?setActive('incident'):setActive('portal')}/>,
+  roles:<RoleSelection selectedRole={role} onSelectRole={confirmRoleSelection} onStart={()=>setActive('portal')}/>,
   incident:<IncidentAssignment selectedIncident={pendingIncident} onSelect={setPendingIncident} onConfirm={confirmIncidentAssignment}/>,
+  advisor:<AdvisorConversation role={currentRole} missionState={missionState} operationalSummary={deriveOperationalSummary(missionState)} onSubmitDecision={submitFreeTextDecision} pending={advisorPending} busy={advisorBusy} mode={advisorMode} onConfirm={confirmAdvisorAction} onCancel={cancelAdvisorAction} onClose={()=>setActive('current')}/>,
   mission:<Overview role={currentRole}/>,
   current:<CurrentOperationsRouter role={currentRole} missionState={workspaceMissionState} readOnly={readOnly} onNavigate={setActive} onToggleProtection={toggleProtection} onReleaseAsset={releaseAsset} onUpdateMission={updateCurrentMission} onUpdateRequirement={updateRequirement} onValidateRequirement={validateRequirement} onSendRequirementForward={sendRequirementForward} onUpdateDelivery={updateDelivery} advisorProps={{role:currentRole,missionState,operationalSummary:deriveOperationalSummary(missionState),onSubmitDecision:submitFreeTextDecision,pending:advisorPending,busy:advisorBusy,mode:advisorMode,onConfirm:confirmAdvisorAction,onCancel:cancelAdvisorAction}} onEndExercise={()=>setShowEndEx(true)}/>,
   tomorrow:<TomorrowPlan role={currentRole} missionState={workspaceMissionState} readOnly={readOnly} onMarkTaskable={markTaskable} onAssignUpad={assignUpad} onApprovePlan={approvePlan} onOpenCurrent={()=>setActive('current')}/>,
@@ -310,6 +385,7 @@ export default function App(){
     advisorProps={{role:currentRole,missionState,operationalSummary:deriveOperationalSummary(missionState),onSubmitDecision:submitFreeTextDecision,pending:advisorPending,busy:advisorBusy,mode:advisorMode,onConfirm:confirmAdvisorAction,onCancel:cancelAdvisorAction}}
     onEndExercise={()=>setShowEndEx(true)}
    />
+   <button type="button" onClick={()=>setActive('advisor')} style={{position:'fixed',right:22,bottom:22,zIndex:9998,height:42,padding:'0 15px',border:'1px solid #6edce8',background:'#0b5363',color:'#efffff',fontWeight:700,cursor:'pointer',boxShadow:'0 8px 28px rgba(0,0,0,.38)'}}>OPEN ADVISOR</button>
    {showEndEx && <EndExModal missionState={missionState} onCancel={()=>setShowEndEx(false)} onConfirm={confirmEndEx}/>}
   </>
  }
