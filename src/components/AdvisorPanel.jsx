@@ -1,10 +1,9 @@
 import { useEffect, useMemo, useState } from 'react'
 import { getInitialAdvisorMessage } from '../engine/missionAdvisor.js'
-import AdvisorIdentity from './AdvisorIdentity.jsx'
 
 const label = (value='') => value.replaceAll('_',' ')
 
-export default function AdvisorPanel({ role, missionState, operationalSummary, onSubmitDecision, pending, busy, mode, onConfirm, onCancel }) {
+export default function AdvisorPanel({ role, missionState, operationalSummary, onSubmitDecision, pending, busy, mode, onConfirm, onCancel, onOpenAdvisor }) {
   const [text,setText]=useState('')
   const [lastSentAt,setLastSentAt]=useState(0)
   const scratchpadKey = `nexus-rs-advisor-scratchpad:${missionState.exercise?.scenarioId || 'exercise'}:${role || 'role'}`
@@ -32,11 +31,18 @@ export default function AdvisorPanel({ role, missionState, operationalSummary, o
 
   return (
     <section className="panel advisor advisor-connected">
-      <AdvisorIdentity
-        mode={mode}
-        timestamp={missionState.asOf || missionState.exercise?.localIncidentTime || 'Local incident time'}
-        message={advisorText}
-      />
+      <section className="advisor-identity">
+        <div className="advisor-identity-head">
+          <div>
+            <span className="eyebrow">LT COL EDWARDS</span>
+            <h3>Senior Remote Sensing Advisor</h3>
+          </div>
+          <span className={`chip ${mode==='connected'?'teal':'amber'}`}>{mode==='connected'?'CONNECTED':'LOCAL'}</span>
+        </div>
+        <button type="button" className="secondary-button advisor-open-button" onClick={onOpenAdvisor}>OPEN ADVISOR</button>
+        <p className="advisor-identity-message">{advisorText}</p>
+        <small>{missionState.asOf || missionState.exercise?.localIncidentTime || 'Local incident time'}</small>
+      </section>
 
       <details className="advisor-history advisor-history-visible">
         <summary>View Advisor History{history.length ? ` (${Math.min(history.length,12)})` : ''}</summary>

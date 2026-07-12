@@ -44,6 +44,7 @@ export const AUTHORITY = {
       'What must be protected',
       'What must be reported to the Coordinator',
       'Crew-confirmed feasibility and the cost of any proposed extension',
+      'Sequence extension advice as crew feasibility, execution impact, then RS Coordinator recommendation',
     ],
   },
   collection_manager: {
