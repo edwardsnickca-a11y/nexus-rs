@@ -30,6 +30,76 @@ import { INITIAL_MISSION_STATE } from './data/missionState.js'
 import { INITIAL_MATRIX } from './data/syncMatrix.js'
 import { initializeScenario, selectRole as controllerSelectRole, startExercise, advanceTurn, beginTransition, approveTransition, endExercise, resetExercise, isWorkspaceReadOnly } from './engine/exerciseController.js'
 
+
+const RS_MANAGER_INCIDENTS = [
+  { id:'Pine Ridge', code:'PR', description:'Pine Ridge incident remote-sensing execution' },
+  { id:'Bear Creek', code:'BC', description:'Bear Creek incident remote-sensing execution' },
+  { id:'Eagle Peak', code:'EP', description:'Eagle Peak incident remote-sensing execution' },
+]
+
+function IncidentAssignment({selectedIncident,onSelect,onConfirm}){
+ return <section className="panel" style={{maxWidth:980,margin:'38px auto',padding:24}}>
+  <span className="eyebrow">REMOTE SENSING MANAGER ASSIGNMENT</span>
+  <h2 style={{margin:'8px 0 4px'}}>Select Your Incident</h2>
+  <p style={{margin:'0 0 18px',color:'#8fa7b3'}}>Your workspace, customers, missions, products, and Edwards advisor context will be scoped to this incident.</p>
+  <div style={{display:'grid',gridTemplateColumns:'repeat(3,minmax(0,1fr))',gap:12}}>
+   {RS_MANAGER_INCIDENTS.map(incident=><button
+    key={incident.id}
+    type="button"
+    onClick={()=>onSelect(incident.id)}
+    style={{
+     minHeight:135,
+     padding:16,
+     textAlign:'left',
+     border:selectedIncident===incident.id?'2px solid #58d9e6':'1px solid #28556b',
+     background:selectedIncident===incident.id?'#123f55':'#0a2130',
+     color:'#e8f2f5',
+     cursor:'pointer',
+    }}
+   >
+    <strong style={{display:'block',fontSize:20,color:'#65e2ed'}}>{incident.code}</strong>
+    <b style={{display:'block',fontSize:15,marginTop:7}}>{incident.id}</b>
+    <span style={{display:'block',marginTop:7,fontSize:11,color:'#9eb2bc'}}>{incident.description}</span>
+   </button>)}
+  </div>
+  <div style={{display:'flex',justifyContent:'flex-end',marginTop:18}}>
+   <button type="button" disabled={!selectedIncident} onClick={onConfirm} style={{padding:'10px 18px',border:'1px solid #42c9d8',background:'#0d5968',color:'#eaffff',cursor:selectedIncident?'pointer':'not-allowed',opacity:selectedIncident?1:.45}}>CONFIRM INCIDENT ASSIGNMENT</button>
+  </div>
+ </section>
+}
+
+function scopeMissionStateForRole(state,role){
+ if(role!=='remote_sensing_manager') return state
+ const incident=state.exercise?.assignedIncident
+ if(!incident) return state
+
+ const missions=(state.currentOps?.missions||[]).filter(item=>(item.fire||item.incident)===incident)
+ const missionIds=new Set(missions.map(item=>item.id))
+ const requirementIds=new Set(missions.map(item=>item.requirementId).filter(Boolean))
+ ;(state.requirements?.items||[]).forEach(item=>{
+  if((item.fire||item.incident)===incident) requirementIds.add(item.id)
+ })
+
+ const requirements=(state.requirements?.items||[]).filter(item=>requirementIds.has(item.id)||(item.fire||item.incident)===incident)
+ const deliveries=(state.dissemination?.deliveries||[]).filter(item=>
+  requirementIds.has(item.requirementId) || missionIds.has(item.missionId) || (item.fire||item.incident)===incident
+ )
+ const assets=(state.assetControl?.assets||[]).filter(item=>
+  missionIds.has(item.missionId) || item.assignment===incident || item.status==='reserve' || item.status==='available'
+ )
+ const deadlines=(state.currentOps?.deadlines||[]).filter(item=>String(item.label||'').includes(incident))
+ const tomorrowRequirements=(state.tomorrowPlan?.requirements||[]).filter(item=>(item.fire||item.incident)===incident||requirementIds.has(item.id))
+
+ return {
+  ...state,
+  currentOps:{...(state.currentOps||{}),missions,deadlines},
+  requirements:{...(state.requirements||{}),items:requirements},
+  dissemination:{...(state.dissemination||{}),deliveries},
+  assetControl:{...(state.assetControl||{}),assets},
+  tomorrowPlan:{...(state.tomorrowPlan||{}),requirements:tomorrowRequirements},
+ }
+}
+
 function Placeholder({title}){return <section className="panel placeholder"><span className="eyebrow">NEXUS RS v0.1</span><h3>{title}</h3><p>This workspace shell is ready for state-driven data, role permissions, and AI integration in the next development pass.</p></section>}
 
 export default function App(){
@@ -41,9 +111,11 @@ export default function App(){
  const [advisorPending,setAdvisorPending]=useState(null)
  const [advisorBusy,setAdvisorBusy]=useState(false)
  const [advisorMode,setAdvisorMode]=useState('local')
+ const [pendingIncident,setPendingIncident]=useState('')
 
 
  const currentRole=missionState.exercise?.selectedRole || role || 'remote_sensing_coordinator'
+ const workspaceMissionState=scopeMissionStateForRole(missionState,currentRole)
  const updateMission=(updater)=>setMissionState(prev=>typeof updater==='function'?updater(prev):updater)
  const applyPortalScenario=(state,scenario)=>{
   if(!scenario) return state
@@ -57,7 +129,23 @@ export default function App(){
  const selectPortalScenario=(scenario)=>setMissionState(prev=>applyPortalScenario(prev,scenario))
  const openScenarioBrief=(scenario)=>{setMissionState(prev=>applyPortalScenario(prev,scenario));setActive('brief')}
  const openRoleSelection=()=>{setMissionState(prev=>({...prev,exercise:{...(prev.exercise||{}),status:'role_selection',currentPhase:'Role Selection'}}));setActive('roles')}
- const confirmRoleSelection=(selectedRole)=>{setRole(selectedRole);setMissionState(prev=>controllerSelectRole(prev,selectedRole))}
+ const confirmRoleSelection=(selectedRole)=>{
+  setRole(selectedRole)
+  setMissionState(prev=>controllerSelectRole(prev,selectedRole))
+  if(selectedRole==='remote_sensing_manager'){
+   setPendingIncident('')
+   setActive('incident')
+  }
+ }
+ const confirmIncidentAssignment=()=>{
+  if(!pendingIncident) return
+  setMissionState(prev=>({
+   ...prev,
+   exercise:{...(prev.exercise||{}),assignedIncident:pendingIncident,currentPhase:'STARTEX Ready'},
+   activeIncident:pendingIncident,
+  }))
+  setActive('portal')
+ }
  const confirmStartEx=(scenario, setup={})=>{setMissionState(prev=>{
   const initialized=applyPortalScenario(prev,scenario)
   const configured={...initialized,exercise:{...(initialized.exercise||{}),participantName:(setup.participantName||initialized.exercise?.participantName||'').trim(),operationalContext:setup.operationalContext||initialized.exercise?.operationalContext||'',exerciseFocus:setup.exerciseFocus||initialized.exercise?.exerciseFocus||'Full Mission Cycle'}}
@@ -67,7 +155,7 @@ export default function App(){
  const reviewTransition=()=>{setMissionState(prev=>beginTransition(prev));setActive('transition')}
  const approveLifecycleTransition=()=>{setMissionState(prev=>approveTransition(prev));setActive('current')}
  const confirmEndEx=(reason)=>{setMissionState(prev=>endExercise(prev,reason));setShowEndEx(false);setActive('aar')}
- const resetActiveExercise=()=>{if(window.confirm('Reset Exercise? This clears the active mission state and returns to the Mission Portal.')){setMissionState(resetExercise(INITIAL_MISSION_STATE));setSyncMatrix(INITIAL_MATRIX);setRole(null);setActive('portal')}}
+ const resetActiveExercise=()=>{if(window.confirm('Reset Exercise? This clears the active mission state and returns to the Mission Portal.')){setMissionState(resetExercise(INITIAL_MISSION_STATE));setSyncMatrix(INITIAL_MATRIX);setRole(null);setPendingIncident('');setActive('portal')}}
  const readOnly=isWorkspaceReadOnly(missionState,active)
 
  const recordDecision=(type,detail)=>setMissionState(prev=>({...prev,decisions:[...prev.decisions,{id:`decision-${prev.decisions.length+1}`,type,detail,asOf:prev.asOf,role:currentRole}]}))
@@ -185,17 +273,18 @@ export default function App(){
   'portal-resources':<Placeholder title="Mission Portal Resources"/>,
   portal:<MissionPortal missionState={missionState} selectedRole={missionState.exercise?.selectedRole || role} onSelectRole={confirmRoleSelection} onSelectScenario={selectPortalScenario} onOpenBrief={openScenarioBrief} onStart={confirmStartEx} onResume={()=>setActive('current')} onReviewAar={()=>setActive('aar')}/>,
   brief:<ScenarioBrief missionState={missionState} onContinue={openRoleSelection}/>,
-  roles:<RoleSelection selectedRole={role} onSelectRole={confirmRoleSelection} onStart={()=>setActive('portal')}/>,
+  roles:<RoleSelection selectedRole={role} onSelectRole={confirmRoleSelection} onStart={()=>currentRole==='remote_sensing_manager'&&!missionState.exercise?.assignedIncident?setActive('incident'):setActive('portal')}/>,
+  incident:<IncidentAssignment selectedIncident={pendingIncident} onSelect={setPendingIncident} onConfirm={confirmIncidentAssignment}/>,
   mission:<Overview role={currentRole}/>,
-  current:<CurrentOperationsRouter role={currentRole} missionState={missionState} readOnly={readOnly} onNavigate={setActive} onToggleProtection={toggleProtection} onReleaseAsset={releaseAsset} onUpdateMission={updateCurrentMission} onUpdateRequirement={updateRequirement} onValidateRequirement={validateRequirement} onSendRequirementForward={sendRequirementForward} onUpdateDelivery={updateDelivery} advisorProps={{role:currentRole,missionState,operationalSummary:deriveOperationalSummary(missionState),onSubmitDecision:submitFreeTextDecision,pending:advisorPending,busy:advisorBusy,mode:advisorMode,onConfirm:confirmAdvisorAction,onCancel:cancelAdvisorAction}} onEndExercise={()=>setShowEndEx(true)}/>,
-  tomorrow:<TomorrowPlan role={currentRole} missionState={missionState} readOnly={readOnly} onMarkTaskable={markTaskable} onAssignUpad={assignUpad} onApprovePlan={approvePlan} onOpenCurrent={()=>setActive('current')}/>,
+  current:<CurrentOperationsRouter role={currentRole} missionState={workspaceMissionState} readOnly={readOnly} onNavigate={setActive} onToggleProtection={toggleProtection} onReleaseAsset={releaseAsset} onUpdateMission={updateCurrentMission} onUpdateRequirement={updateRequirement} onValidateRequirement={validateRequirement} onSendRequirementForward={sendRequirementForward} onUpdateDelivery={updateDelivery} advisorProps={{role:currentRole,missionState,operationalSummary:deriveOperationalSummary(missionState),onSubmitDecision:submitFreeTextDecision,pending:advisorPending,busy:advisorBusy,mode:advisorMode,onConfirm:confirmAdvisorAction,onCancel:cancelAdvisorAction}} onEndExercise={()=>setShowEndEx(true)}/>,
+  tomorrow:<TomorrowPlan role={currentRole} missionState={workspaceMissionState} readOnly={readOnly} onMarkTaskable={markTaskable} onAssignUpad={assignUpad} onApprovePlan={approvePlan} onOpenCurrent={()=>setActive('current')}/>,
   sync:<SyncMatrix role={currentRole} matrix={syncMatrix} readOnly={readOnly} onUpdateSortie={updateSortie} onResolveNeed={resolveNeed} onResolveGap={resolveGap} onApprove={approveMatrix} onAddLeadershipNote={addLeadershipNote}/>,
-  requirements:<Requirements role={currentRole} missionState={missionState} readOnly={readOnly} onUpdateRequirement={updateRequirement} onValidateRequirement={validateRequirement} onSendForward={sendRequirementForward} onAddRequirement={addRequirement}/>,
+  requirements:<Requirements role={currentRole} missionState={workspaceMissionState} readOnly={readOnly} onUpdateRequirement={updateRequirement} onValidateRequirement={validateRequirement} onSendForward={sendRequirementForward} onAddRequirement={addRequirement}/>,
   platforms:<Platforms role={currentRole} missionState={missionState}/>,
-  upad:<Dissemination role={currentRole} missionState={missionState} readOnly={readOnly} onUpdateDelivery={updateDelivery} onVerifyReceipt={verifyReceipt} onRecordFeedback={recordCustomerFeedback}/>,
+  upad:<Dissemination role={currentRole} missionState={workspaceMissionState} readOnly={readOnly} onUpdateDelivery={updateDelivery} onVerifyReceipt={verifyReceipt} onRecordFeedback={recordCustomerFeedback}/>,
   airspace:<Placeholder title="Airspace / TFR"/>,
-  resources:<ResourceDesk role={currentRole} missionState={missionState} readOnly={readOnly} onRecordUse={recordResourceUse}/>,
-  oversight:<IntelligenceOversight role={currentRole} missionState={missionState} readOnly={readOnly} onUpdateCase={updateOversightCase} onAddCase={addOversightCase}/>,
+  resources:<ResourceDesk role={currentRole} missionState={workspaceMissionState} readOnly={readOnly} onRecordUse={recordResourceUse}/>,
+  oversight:<IntelligenceOversight role={currentRole} missionState={workspaceMissionState} readOnly={readOnly} onUpdateCase={updateOversightCase} onAddCase={addOversightCase}/>,
   transition:<OperationalTransition role={currentRole} missionState={missionState} onTransition={approveLifecycleTransition}/>,
   aar:<AfterActionReview role={currentRole} missionState={missionState} syncMatrix={syncMatrix}/>,
   updates:<MissionUpdates missionState={missionState}/>,
@@ -208,7 +297,7 @@ export default function App(){
   return <>
    <CurrentOperationsRouter
     role={currentRole}
-    missionState={missionState}
+    missionState={workspaceMissionState}
     readOnly={readOnly}
     onNavigate={setActive}
     onToggleProtection={toggleProtection}

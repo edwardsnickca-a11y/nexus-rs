@@ -4,6 +4,7 @@ export const INITIAL_MISSION_STATE = {
     scenarioId: null,
     scenarioName: '',
     selectedRole: null,
+    assignedIncident: null,
     participantName: '',
     operationalContext: '',
     exerciseFocus: 'Full Mission Cycle',

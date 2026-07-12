@@ -21,6 +21,7 @@ export const DEFAULT_EXERCISE = {
   scenarioId: null,
   scenarioName: '',
   selectedRole: null,
+  assignedIncident: null,
   startedAtLocal: null,
   endedAtLocal: null,
   activeOperationalPeriod: null,
@@ -133,7 +134,8 @@ export function selectRole(state, selectedRole) {
     ...(state.exercise || DEFAULT_EXERCISE),
     status: EXERCISE_STATUS.READY,
     selectedRole,
-    currentPhase: 'STARTEX Ready',
+    assignedIncident: selectedRole === 'remote_sensing_manager' ? (exercise.assignedIncident || null) : null,
+    currentPhase: selectedRole === 'remote_sensing_manager' && !exercise.assignedIncident ? 'Incident Assignment' : 'STARTEX Ready',
   }
   return {
     ...state,
@@ -146,6 +148,7 @@ export function selectRole(state, selectedRole) {
 export function startExercise(state) {
   const previous = state.exercise || DEFAULT_EXERCISE
   if (!previous.selectedRole) return state
+  if (previous.selectedRole === 'remote_sensing_manager' && !previous.assignedIncident) return state
   const exercise = {
     ...previous,
     status: EXERCISE_STATUS.ACTIVE_OP1,

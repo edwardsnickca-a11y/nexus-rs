@@ -103,17 +103,30 @@ function referencedByText(exactText, item) {
   return Boolean(candidate && exactText.toLowerCase().includes(candidate))
 }
 
+function incidentForRole(state,activeRole){
+  return activeRole==='remote_sensing_manager' ? state.exercise?.assignedIncident || state.activeIncident || null : null
+}
+
+function belongsToIncident(item,incident){
+  if(!incident) return true
+  return (item?.fire||item?.incident||item?.primaryIncident||item?.assignment)===incident
+}
+
 export function buildAdvisorContext(state, activeRole, exactText = '') {
   const referenced = (item) => referencedByText(exactText, item)
+  const assignedIncident = incidentForRole(state,activeRole)
 
   const requirements = list(state.requirements?.items)
+    .filter((item)=>belongsToIncident(item,assignedIncident))
     .filter((item) =>
       referenced(item) ||
       ['taskable', 'sent_forward', 'needs_clarification', 'approved_for_collection']
         .includes(item.status)
     )
 
+  const incidentMissionIds = new Set(list(state.currentOps?.missions).filter((item)=>belongsToIncident(item,assignedIncident)).map((item)=>item.id))
   const assets = list(state.assetControl?.assets)
+    .filter((item)=>!assignedIncident || belongsToIncident(item,assignedIncident) || incidentMissionIds.has(item.missionId) || ['available','reserve'].includes(item.status))
     .filter((item) =>
       referenced(item) ||
       ['available', 'reserve', 'assigned', 'recalled', 'unavailable']
@@ -121,19 +134,26 @@ export function buildAdvisorContext(state, activeRole, exactText = '') {
     )
 
   const missions = list(state.currentOps?.missions)
+    .filter((item)=>belongsToIncident(item,assignedIncident))
     .filter((item) =>
       referenced(item) ||
       ['active', 'at_risk', 'planned', 'tasked', 'executing', 'collecting']
         .includes(item.status)
     )
 
+  const incidentRequirementIds = new Set(requirements.map((item)=>item.id))
   const products = list(state.dissemination?.deliveries)
+    .filter((item)=>!assignedIncident || belongsToIncident(item,assignedIncident) || incidentRequirementIds.has(item.requirementId) || incidentMissionIds.has(item.missionId))
     .filter((item) => referenced(item) || item.receiptStatus !== 'verified')
 
   return {
     scenario: state.exercise?.scenarioName || state.scenario?.name || 'NEXUS RS exercise',
     participantName: state.exercise?.participantName || '',
     role: activeRole,
+    assignedIncident,
+    scopeInstruction: assignedIncident
+      ? `Keep the Remote Sensing Manager focused on ${assignedIncident}. Mention another incident only when it creates a direct asset-sharing, retasking, priority, customer, or coordination consequence for ${assignedIncident}.`
+      : '',
     authority: AUTHORITY[activeRole] || AUTHORITY.remote_sensing_coordinator,
     exerciseStatus: state.exercise?.status,
     operationalPeriod: state.exercise?.activeOperationalPeriod || state.operationalPeriod,
