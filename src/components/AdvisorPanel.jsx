@@ -31,27 +31,41 @@ export default function AdvisorPanel({ role, missionState, operationalSummary, o
 
   return (
     <section className="panel advisor advisor-connected">
-      <section className="advisor-identity">
-        <div className="advisor-identity-head">
+      <section className="advisor-identity" style={{padding:'14px 14px 12px'}}>
+        <div style={{display:'grid',gridTemplateColumns:'92px 1fr',gap:14,alignItems:'start'}}>
+          <img
+            src="/images/lt-col-edwards.png"
+            alt="Lt Col Edwards"
+            style={{width:92,height:92,objectFit:'cover',border:'1px solid #2b6178',background:'#0a1d2a'}}
+          />
           <div>
-            <span className="eyebrow">LT COL EDWARDS</span>
-            <h3>Senior Remote Sensing Advisor</h3>
+            <span className="eyebrow" style={{fontSize:12,letterSpacing:'.12em'}}>LT COL EDWARDS</span>
+            <h3 style={{margin:'5px 0 12px',fontSize:20,lineHeight:1.18}}>Senior Remote Sensing Advisor</h3>
+            <button
+              type="button"
+              onClick={onOpenAdvisor}
+              style={{
+                width:'100%',
+                minHeight:44,
+                border:'1px solid #67e3ef',
+                borderRadius:5,
+                background:'linear-gradient(180deg,#0f8ca0,#0b6476)',
+                color:'#efffff',
+                fontWeight:800,
+                letterSpacing:'.04em',
+                cursor:'pointer',
+                boxShadow:'0 6px 18px rgba(0,196,220,.22)',
+              }}
+            >
+              OPEN ADVISOR →
+            </button>
           </div>
-          <span className={`chip ${mode==='connected'?'teal':'amber'}`}>{mode==='connected'?'CONNECTED':'LOCAL'}</span>
         </div>
-        <button type="button" className="secondary-button advisor-open-button" onClick={onOpenAdvisor}>OPEN ADVISOR</button>
-        <p className="advisor-identity-message">{advisorText}</p>
-        <small>{missionState.asOf || missionState.exercise?.localIncidentTime || 'Local incident time'}</small>
+        <div style={{marginTop:14,padding:'14px 16px',border:'1px solid #2b5368',background:'#102d47',lineHeight:1.55}}>
+          <p className="advisor-identity-message" style={{margin:0}}>{advisorText}</p>
+        </div>
+        <small style={{display:'block',marginTop:8}}>{missionState.asOf || missionState.exercise?.localIncidentTime || 'Local incident time'}</small>
       </section>
-
-      <details className="advisor-history advisor-history-visible">
-        <summary>View Advisor History{history.length ? ` (${Math.min(history.length,12)})` : ''}</summary>
-        <div>{history.length ? history.slice(-6).map((item)=><article key={item.id}>
-          <small>{item.time} · Advisor response</small>
-          <strong>Trainee</strong><p>{item.traineeText}</p>
-          <strong>Lt Col Edwards</strong><p>{item.advisorMessage}</p>
-        </article>) : <p className="advisor-history-empty">No prior advisor exchanges recorded for this exercise.</p>}</div>
-      </details>
 
       <section className="advisor-scratchpad">
         <div className="advisor-scratchpad-head">
