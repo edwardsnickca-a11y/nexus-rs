@@ -45,24 +45,29 @@ export default function AdvisorPanel({ role, missionState, operationalSummary, o
               type="button"
               onClick={onOpenAdvisor}
               style={{
-                width:'100%',
-                minHeight:44,
+                display:'inline-flex',
+                alignItems:'center',
+                justifyContent:'center',
+                width:'auto',
+                minWidth:156,
+                minHeight:40,
+                padding:'0 16px',
                 border:'1px solid #67e3ef',
                 borderRadius:5,
-                background:'linear-gradient(180deg,#0f8ca0,#0b6476)',
+                background:'linear-gradient(180deg,#11869a,#0b6476)',
                 color:'#efffff',
-                fontWeight:800,
-                letterSpacing:'.04em',
+                fontWeight:750,
+                letterSpacing:'.03em',
                 cursor:'pointer',
-                boxShadow:'0 6px 18px rgba(0,196,220,.22)',
+                boxShadow:'0 3px 10px rgba(0,196,220,.15)',
               }}
             >
               OPEN ADVISOR →
             </button>
           </div>
         </div>
-        <div style={{marginTop:14,padding:'14px 16px',border:'1px solid #2b5368',background:'#102d47',lineHeight:1.55}}>
-          <p className="advisor-identity-message" style={{margin:0}}>{advisorText}</p>
+        <div style={{marginTop:14,padding:'14px 16px',border:'1px solid #2b5368',background:'#102d47',lineHeight:1.58}}>
+          <p className="advisor-identity-message" style={{margin:0,fontWeight:400,color:'#c8d7df',fontSize:'0.98rem',letterSpacing:0}}>{advisorText}</p>
         </div>
         <small style={{display:'block',marginTop:8}}>{missionState.asOf || missionState.exercise?.localIncidentTime || 'Local incident time'}</small>
       </section>
