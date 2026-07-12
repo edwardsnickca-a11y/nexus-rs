@@ -16,7 +16,7 @@ export default function AdvisorIdentity({
       </div>
       <div className="advisor-identity-copy">
         <strong>LT COL EDWARDS</strong>
-        <span>Senior Remote Sensing Mission Advisor</span>
+        <span>Senior Remote Sensing Advisor</span>
       </div>
     </div>
     {(message || timestamp) && <div className="advisor-identity-message">
