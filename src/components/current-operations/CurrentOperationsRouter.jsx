@@ -1220,12 +1220,23 @@ function UPADView(props){
 
 export default function CurrentOperationsRouter({
  role,missionState,onNavigate,onToggleProtection,onReleaseAsset,onUpdateMission,onUpdateRequirement,onValidateRequirement,onSendRequirementForward,onUpdateDelivery,
- advisorProps,onAdvanceExercise,onEndExercise
+ advisorProps,onAdvanceExercise,onEndExercise,embedded=false
 }){
  const common={role,missionState,onNavigate,onToggleProtection,onReleaseAsset,onUpdateMission,onUpdateRequirement,onValidateRequirement,onSendRequirementForward,onUpdateDelivery}
  const View=role==='remote_sensing_manager'?ManagerView:role==='collection_manager'?CollectionView:role==='upad_lno'?UPADView:CoordinatorView
  const [sidebarWidth,setSidebarWidth]=useStoredSize('nexus-rs-sidebar-width',152,118,250)
  const resizeSidebar=(delta)=>setSidebarWidth(v=>Math.max(118,Math.min(250,v+delta.dx)))
+
+ if(embedded){
+  return <div className="rx-current-embedded">
+   <LiveHeader role={role} missionState={missionState} onAdvance={onAdvanceExercise} onEnd={onEndExercise}/>
+   <div className="rx-current-embedded-body">
+    <main className="rx-main"><View {...common}/></main>
+    <AdvisorColumn {...advisorProps}/>
+   </div>
+  </div>
+ }
+
  return <div className="rx-shell rx-shell-resizable" style={{'--rx-sidebar-width':`${sidebarWidth}px`}}>
   <LiveHeader role={role} missionState={missionState} onAdvance={onAdvanceExercise} onEnd={onEndExercise}/>
   <Sidebar role={role} active="current" onNavigate={onNavigate}/>

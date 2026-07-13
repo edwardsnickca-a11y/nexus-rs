@@ -450,46 +450,50 @@ export default function App(){
  const portalMode=active==='portal' || active==='portal-resources' || active==='portal-help'
 
  if(active==='current'){
-  return <>
-   <CurrentOperationsRouter
-    role={currentRole}
-    missionState={workspaceMissionState}
-    readOnly={readOnly}
-    onNavigate={setActive}
-    onToggleProtection={toggleProtection}
-    onReleaseAsset={releaseAsset}
-    onUpdateMission={updateCurrentMission}
-    onUpdateRequirement={updateRequirement}
-    onValidateRequirement={validateRequirement}
-    onSendRequirementForward={sendRequirementForward}
-    onUpdateDelivery={updateDelivery}
-    advisorProps={{role:currentRole,missionState,operationalSummary:deriveOperationalSummary(missionState),onSubmitDecision:submitFreeTextDecision,pending:advisorPending,busy:advisorBusy,mode:advisorMode,onConfirm:confirmAdvisorAction,onCancel:cancelAdvisorAction,onOpenAdvisor:()=>setActive('advisor')}}
-    onAdvanceExercise={requestAdvanceExercise}
-    onEndExercise={()=>setShowEndEx(true)}
-   />
+  return <div className="app-shell live-app-shell">
+   <Sidebar active={active} setActive={setActive} role={currentRole} missionState={missionState}/>
+   <div className="main-shell live-main-shell">
+    <CurrentOperationsRouter
+     embedded
+     role={currentRole}
+     missionState={workspaceMissionState}
+     readOnly={readOnly}
+     onNavigate={setActive}
+     onToggleProtection={toggleProtection}
+     onReleaseAsset={releaseAsset}
+     onUpdateMission={updateCurrentMission}
+     onUpdateRequirement={updateRequirement}
+     onValidateRequirement={validateRequirement}
+     onSendRequirementForward={sendRequirementForward}
+     onUpdateDelivery={updateDelivery}
+     advisorProps={{role:currentRole,missionState,operationalSummary:deriveOperationalSummary(missionState),onSubmitDecision:submitFreeTextDecision,pending:advisorPending,busy:advisorBusy,mode:advisorMode,onConfirm:confirmAdvisorAction,onCancel:cancelAdvisorAction,onOpenAdvisor:()=>setActive('advisor')}}
+     onAdvanceExercise={requestAdvanceExercise}
+     onEndExercise={()=>setShowEndEx(true)}
+    />
 
-   {showAdvanceTurn&&<div style={{position:'fixed',inset:0,zIndex:10020,display:'flex',alignItems:'center',justifyContent:'center',padding:24,background:'rgba(0,8,15,.86)'}}>
-    <section style={{width:'min(92vw,560px)',border:'1px solid #34758a',background:'#081d2b',boxShadow:'0 24px 70px rgba(0,0,0,.65)'}}>
-     <header style={{padding:'16px 18px',borderBottom:'1px solid #285467'}}>
-      <span style={{fontSize:10,letterSpacing:'.12em',color:'#68e2ed'}}>ADVANCE EXERCISE</span>
-      <h2 style={{margin:'5px 0 0'}}>Advance to the next decision point?</h2>
-     </header>
-     <div style={{padding:'16px 18px'}}>
-      <p style={{marginTop:0,color:'#b9ccd5'}}>The AI Scenario Controller will evaluate the work completed during this decision period, advance simulated time to a plausible next decision point, and apply any resulting developments or consequences.</p>
-      <strong style={{display:'block',marginBottom:8,color:'#e9f3f6'}}>Open items</strong>
-      {unresolvedTurnItems().length
-       ? <ul style={{margin:'0 0 4px',paddingLeft:20,color:'#cbdbe2'}}>{unresolvedTurnItems().map(item=><li key={item} style={{margin:'6px 0'}}>{item}</li>)}</ul>
-       : <p style={{color:'#8fa7b3'}}>No unresolved items were detected.</p>}
-     </div>
-     <footer style={{display:'flex',justifyContent:'flex-end',gap:8,padding:'13px 18px',borderTop:'1px solid #285467'}}>
-      <button type="button" onClick={()=>setShowAdvanceTurn(false)} style={{minHeight:36,padding:'0 14px',border:'1px solid #365b6c',background:'#102a38',color:'#d6e4ea',cursor:'pointer'}}>CANCEL</button>
-      <button type="button" disabled={scenarioBusy} onClick={confirmAdvanceExercise} style={{minHeight:36,padding:'0 14px',border:'1px solid #69dce7',background:'#0d6979',color:'#efffff',fontWeight:800,cursor:scenarioBusy?'wait':'pointer',opacity:scenarioBusy?.65:1}}>{scenarioBusy?'EVOLVING…':'ADVANCE TURN'}</button>
-     </footer>
-    </section>
-   </div>}
+    {showAdvanceTurn&&<div style={{position:'fixed',inset:0,zIndex:10020,display:'flex',alignItems:'center',justifyContent:'center',padding:24,background:'rgba(0,8,15,.86)'}}>
+     <section style={{width:'min(92vw,560px)',border:'1px solid #34758a',background:'#081d2b',boxShadow:'0 24px 70px rgba(0,0,0,.65)'}}>
+      <header style={{padding:'16px 18px',borderBottom:'1px solid #285467'}}>
+       <span style={{fontSize:10,letterSpacing:'.12em',color:'#68e2ed'}}>ADVANCE EXERCISE</span>
+       <h2 style={{margin:'5px 0 0'}}>Advance to the next decision point?</h2>
+      </header>
+      <div style={{padding:'16px 18px'}}>
+       <p style={{marginTop:0,color:'#b9ccd5'}}>The AI Scenario Controller will evaluate the work completed during this decision period, advance simulated time to a plausible next decision point, and apply any resulting developments or consequences.</p>
+       <strong style={{display:'block',marginBottom:8,color:'#e9f3f6'}}>Open items</strong>
+       {unresolvedTurnItems().length
+        ? <ul style={{margin:'0 0 4px',paddingLeft:20,color:'#cbdbe2'}}>{unresolvedTurnItems().map(item=><li key={item} style={{margin:'6px 0'}}>{item}</li>)}</ul>
+        : <p style={{color:'#8fa7b3'}}>No unresolved items were detected.</p>}
+      </div>
+      <footer style={{display:'flex',justifyContent:'flex-end',gap:8,padding:'13px 18px',borderTop:'1px solid #285467'}}>
+       <button type="button" onClick={()=>setShowAdvanceTurn(false)} style={{minHeight:36,padding:'0 14px',border:'1px solid #365b6c',background:'#102a38',color:'#d6e4ea',cursor:'pointer'}}>CANCEL</button>
+       <button type="button" disabled={scenarioBusy} onClick={confirmAdvanceExercise} style={{minHeight:36,padding:'0 14px',border:'1px solid #69dce7',background:'#0d6979',color:'#efffff',fontWeight:800,cursor:scenarioBusy?'wait':'pointer',opacity:scenarioBusy?.65:1}}>{scenarioBusy?'EVOLVING…':'ADVANCE TURN'}</button>
+      </footer>
+     </section>
+    </div>}
 
-   {showEndEx && <EndExModal missionState={missionState} onCancel={()=>setShowEndEx(false)} onConfirm={confirmEndEx}/>}
-  </>
+    {showEndEx && <EndExModal missionState={missionState} onCancel={()=>setShowEndEx(false)} onConfirm={confirmEndEx}/>} 
+   </div>
+  </div>
  }
 
  return <div className={`app-shell ${portalMode?'portal-app-shell portal-app-shell-full':''}`}>

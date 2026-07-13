@@ -21,15 +21,17 @@ const PORTAL_ITEMS = [['portal','Mission Portal'],['portal-resources','Resources
 export default function Sidebar({ active, setActive, role, missionState, portalMode = false }) {
   const selected = ROLES.find((item)=>item.id===role)
   const items = portalMode ? PORTAL_ITEMS : ITEMS
-  return <aside className={`sidebar ${portalMode?'portal-sidebar':''}`}>
-    <div className="brand"><div className="brand-mark">N</div><div><strong>NEXUS RS</strong><span>{portalMode?'REMOTE SENSING OPERATIONS':'MISSION WORKSPACE'}</span></div></div>
+  return <aside className={`sidebar ${portalMode?'portal-sidebar':'live-sidebar'}`}>
+    {portalMode
+      ? <div className="brand"><div className="brand-mark">N</div><div><strong>NEXUS RS</strong><span>REMOTE SENSING OPERATIONS</span></div></div>
+      : <div className="live-sidebar-brand"><img src="/images/brand/nexus-rs-header-logo.png" alt="NEXUS RS — Remote Sensing Simulation Platform"/></div>}
     <nav>{items.map(([id,label,icon]) => {
       const allowed = portalMode || id === 'situation' ? true : canAccessWorkspace(missionState || {}, id)
       return <button key={id} className={`${active===id?'active':''} ${!allowed?'restricted':''}`} onClick={()=>allowed && setActive(id)} title={!allowed?'Available after STARTEX or through exercise history.':''}>{icon && <Icon name={icon} size={22}/>}<span>{label}</span></button>
     })}</nav>
     {portalMode
       ? <div className="portal-sidebar-note"><span className="eyebrow">Pre-Exercise</span><p>Select a scenario and role, review readiness, then begin STARTEX.</p></div>
-      : <div className="role-guide-card"><span className="eyebrow">Your Role</span><strong>{selected?.shortName || 'Not selected'}</strong><p>{selected?.emphasis || 'Select a role before STARTEX.'}</p><small>{selected?.authorityLabel || 'Role authority pending'}</small></div>}
-    <div className="sidebar-foot"><strong>UNCLASSIFIED</strong><span>Local Incident Time</span></div>
+      : null}
+    {portalMode && <div className="sidebar-foot"><strong>UNCLASSIFIED</strong><span>Local Incident Time</span></div>}
   </aside>
 }
