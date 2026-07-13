@@ -413,31 +413,6 @@ export default function App(){
     onEndExercise={()=>setShowEndEx(true)}
    />
 
-   <button
-    type="button"
-    onClick={requestAdvanceExercise}
-    disabled={!String(missionState.exercise?.status||'').startsWith('active')}
-    style={{
-     position:'fixed',
-     top:58,
-     left:'50%',
-     transform:'translateX(-50%)',
-     zIndex:9997,
-     minHeight:38,
-     padding:'0 17px',
-     border:'1px solid #71e5ef',
-     borderRadius:5,
-     background:'linear-gradient(180deg,#116f82,#0b4f60)',
-     color:'#efffff',
-     fontWeight:800,
-     letterSpacing:'.04em',
-     cursor:'pointer',
-     boxShadow:'0 5px 18px rgba(0,0,0,.35)',
-    }}
-   >
-    {missionState.exercise?.localIncidentTime||missionState.asOf||'CURRENT TIME'} &nbsp; · &nbsp; NEXT TURN →
-   </button>
-
    {showAdvanceTurn&&<div style={{position:'fixed',inset:0,zIndex:10020,display:'flex',alignItems:'center',justifyContent:'center',padding:24,background:'rgba(0,8,15,.86)'}}>
     <section style={{width:'min(92vw,560px)',border:'1px solid #34758a',background:'#081d2b',boxShadow:'0 24px 70px rgba(0,0,0,.65)'}}>
      <header style={{padding:'16px 18px',borderBottom:'1px solid #285467'}}>

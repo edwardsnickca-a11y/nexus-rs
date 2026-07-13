@@ -18,7 +18,7 @@ export default function ExerciseStatusBar({ missionState, onStart, onAdvance, on
     <div><span>Local time</span><strong>{status.localIncidentTime}</strong></div>
     <div className="status-actions">
       {canStart && <button className="primary small" onClick={onStart}>STARTEX</button>}
-      {canAdvance && <button className="ghost" onClick={onAdvance}>Advance Exercise</button>}
+      {canAdvance && <button className="primary small" onClick={onAdvance}>NEXT TURN →</button>}
       {canTransition && <button className="ghost" onClick={onTransition}>Review Transition</button>}
       {canEnd && <button className="ghost danger" onClick={onEnd}>End Exercise</button>}
       {canAar && <button className="primary small" onClick={onAar}>Review AAR</button>}
