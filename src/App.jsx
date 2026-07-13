@@ -410,6 +410,7 @@ export default function App(){
     onSendRequirementForward={sendRequirementForward}
     onUpdateDelivery={updateDelivery}
     advisorProps={{role:currentRole,missionState,operationalSummary:deriveOperationalSummary(missionState),onSubmitDecision:submitFreeTextDecision,pending:advisorPending,busy:advisorBusy,mode:advisorMode,onConfirm:confirmAdvisorAction,onCancel:cancelAdvisorAction,onOpenAdvisor:()=>setActive('advisor')}}
+    onAdvanceExercise={requestAdvanceExercise}
     onEndExercise={()=>setShowEndEx(true)}
    />
 
