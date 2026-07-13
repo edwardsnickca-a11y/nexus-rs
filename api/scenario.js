@@ -1,323 +1,303 @@
-const MAX_BODY_BYTES = 350_000
-const DEFAULT_MODEL = process.env.OPENAI_SCENARIO_MODEL || process.env.OPENAI_MODEL || 'gpt-5-mini'
+import crypto from 'node:crypto'
 
-const ROLE_IDS = [
-  'remote_sensing_coordinator',
-  'remote_sensing_manager',
-  'collection_manager',
-  'upad_lno',
-  'all',
-]
+const MODEL=process.env.OPENAI_SCENARIO_MODEL||process.env.OPENAI_MODEL||'gpt-5-mini'
+const MAX_BODY_BYTES=450_000
 
-const COLLECTIONS = [
-  'requirements',
-  'missions',
-  'assets',
-  'deliveries',
-  'oversight',
-  'exercise',
-]
+const SEVERITIES=['low','medium','high','critical']
+const ROLES=['remote_sensing_coordinator','remote_sensing_manager','collection_manager','upad_lno','all']
 
-const SEVERITIES = ['low', 'medium', 'high', 'critical']
-const PATCH_OPERATIONS = ['merge', 'append']
-
-const responseSchema = {
-  type: 'object',
-  additionalProperties: false,
-  required: [
-    'nextIncidentTime',
-    'nextDecisionReason',
-    'scenarioSummary',
-    'hiddenWorldJson',
-    'visibleFacts',
-    'injects',
-    'patches',
-    'consequences',
-    'advisorVisibleFacts',
-    'aarObservations',
+const initializationSchema={
+  type:'object',
+  additionalProperties:false,
+  required:[
+    'worldJson','hiddenWorldJson','advisorVisibleFacts',
+    'initialInjects','initialDecisionPressure','aarObservations',
   ],
-  properties: {
-    nextIncidentTime: { type: 'string' },
-    nextDecisionReason: { type: 'string' },
-    scenarioSummary: { type: 'string' },
-    hiddenWorldJson: {
-      type: 'string',
-      description: 'Compact JSON string containing continuity facts known only to the simulation controller.',
-    },
-    visibleFacts: {
-      type: 'array',
-      items: {
-        type: 'object',
-        additionalProperties: false,
-        required: ['audienceRole', 'incident', 'severity', 'text'],
-        properties: {
-          audienceRole: { type: 'string', enum: ROLE_IDS },
-          incident: { type: 'string' },
-          severity: { type: 'string', enum: SEVERITIES },
-          text: { type: 'string' },
+  properties:{
+    worldJson:{type:'string',description:'Complete generated visible-world JSON encoded as a compact string.'},
+    hiddenWorldJson:{type:'string',description:'Hidden continuity state JSON encoded as a compact string.'},
+    advisorVisibleFacts:{type:'array',items:{type:'string'}},
+    initialInjects:{
+      type:'array',
+      items:{
+        type:'object',
+        additionalProperties:false,
+        required:['title','text','priority','relatedRole','relatedIncident'],
+        properties:{
+          title:{type:'string'},
+          text:{type:'string'},
+          priority:{type:'string',enum:SEVERITIES},
+          relatedRole:{type:'string',enum:ROLES},
+          relatedIncident:{type:'string'},
         },
       },
     },
-    injects: {
-      type: 'array',
-      items: {
-        type: 'object',
-        additionalProperties: false,
-        required: ['title', 'text', 'priority', 'relatedRole', 'relatedIncident'],
-        properties: {
-          title: { type: 'string' },
-          text: { type: 'string' },
-          priority: { type: 'string', enum: SEVERITIES },
-          relatedRole: { type: 'string', enum: ROLE_IDS },
-          relatedIncident: { type: 'string' },
-        },
-      },
-    },
-    patches: {
-      type: 'array',
-      items: {
-        type: 'object',
-        additionalProperties: false,
-        required: ['collection', 'operation', 'id', 'changesJson', 'reason'],
-        properties: {
-          collection: { type: 'string', enum: COLLECTIONS },
-          operation: { type: 'string', enum: PATCH_OPERATIONS },
-          id: { type: 'string' },
-          changesJson: {
-            type: 'string',
-            description: 'Compact JSON object encoded as a string.',
-          },
-          reason: { type: 'string' },
-        },
-      },
-    },
-    consequences: {
-      type: 'array',
-      items: {
-        type: 'object',
-        additionalProperties: false,
-        required: ['severity', 'incident', 'text', 'causedBy'],
-        properties: {
-          severity: { type: 'string', enum: SEVERITIES },
-          incident: { type: 'string' },
-          text: { type: 'string' },
-          causedBy: { type: 'string' },
-        },
-      },
-    },
-    advisorVisibleFacts: {
-      type: 'array',
-      items: { type: 'string' },
-    },
-    aarObservations: {
-      type: 'array',
-      items: { type: 'string' },
-    },
+    initialDecisionPressure:{type:'string'},
+    aarObservations:{type:'array',items:{type:'string'}},
   },
 }
 
-const DIFFICULTY_GUIDANCE = {
-  Introductory: `
-Use clearer signals, slower tempo, fewer simultaneous pressures, responsive customers,
-and generous recovery opportunities. Consequences should teach without removing agency.`,
-  Standard: `
-Use normal operational ambiguity, competing requirements, realistic delays, resource friction,
-and consequences that are recoverable when the trainee coordinates effectively.`,
-  Advanced: `
-Use fragmented information, concurrent issues, tighter decision windows, changing resource
-availability, and stronger production or coordination pressure. Do not become arbitrary.`,
-  Expert: `
-Use high tempo, subtle indicators, cascading but logical consequences, interagency friction,
-changing customer needs, and limited recovery time. Remain fair and professionally realistic.`,
-  Adaptive: `
-Infer demonstrated trainee performance from the action record. Increase or decrease ambiguity,
-tempo, concurrency, and consequence sensitivity without manufacturing random punishment.`,
+const advanceSchema={
+  type:'object',
+  additionalProperties:false,
+  required:[
+    'nextIncidentTime','nextDecisionReason','scenarioSummary','hiddenWorldJson',
+    'visibleFacts','injects','patches','consequences','advisorVisibleFacts','aarObservations',
+  ],
+  properties:{
+    nextIncidentTime:{type:'string'},
+    nextDecisionReason:{type:'string'},
+    scenarioSummary:{type:'string'},
+    hiddenWorldJson:{type:'string'},
+    visibleFacts:{
+      type:'array',
+      items:{
+        type:'object',
+        additionalProperties:false,
+        required:['audienceRole','incident','severity','text'],
+        properties:{
+          audienceRole:{type:'string',enum:ROLES},
+          incident:{type:'string'},
+          severity:{type:'string',enum:SEVERITIES},
+          text:{type:'string'},
+        },
+      },
+    },
+    injects:{
+      type:'array',
+      items:{
+        type:'object',
+        additionalProperties:false,
+        required:['title','text','priority','relatedRole','relatedIncident'],
+        properties:{
+          title:{type:'string'},
+          text:{type:'string'},
+          priority:{type:'string',enum:SEVERITIES},
+          relatedRole:{type:'string',enum:ROLES},
+          relatedIncident:{type:'string'},
+        },
+      },
+    },
+    patches:{
+      type:'array',
+      items:{
+        type:'object',
+        additionalProperties:false,
+        required:['collection','operation','id','changesJson','reason'],
+        properties:{
+          collection:{type:'string',enum:['requirements','missions','assets','deliveries','oversight','exercise']},
+          operation:{type:'string',enum:['merge','append']},
+          id:{type:'string'},
+          changesJson:{type:'string'},
+          reason:{type:'string'},
+        },
+      },
+    },
+    consequences:{
+      type:'array',
+      items:{
+        type:'object',
+        additionalProperties:false,
+        required:['severity','incident','text','causedBy'],
+        properties:{
+          severity:{type:'string',enum:SEVERITIES},
+          incident:{type:'string'},
+          text:{type:'string'},
+          causedBy:{type:'string'},
+        },
+      },
+    },
+    advisorVisibleFacts:{type:'array',items:{type:'string'}},
+    aarObservations:{type:'array',items:{type:'string'}},
+  },
 }
 
-function buildInstructions(mode, difficulty) {
-  return `You are the NEXUS RS Simulation Controller.
+const difficultyRules={
+  Introductory:'Use clearer signals, slower tempo, fewer concurrent problems, more complete requirements, responsive customers, and generous recovery opportunities.',
+  Standard:'Use normal ambiguity, competing requirements, realistic delays, moderate resource friction, and recoverable consequences.',
+  Advanced:'Use fragmented information, concurrent issues, tighter decision windows, stronger production and coordination pressure, and reduced recovery time.',
+  Expert:'Use high tempo, subtle indicators, logical cascading consequences, interagency friction, changing customer needs, and limited recovery opportunities while remaining fair.',
+  Adaptive:'Infer demonstrated performance and adjust ambiguity, tempo, concurrency, customer responsiveness, and consequence sensitivity without arbitrary punishment.',
+}
 
-You operate a dynamic remote-sensing coordination exercise. You are not Lt Col Edwards and you
-do not speak directly to the trainee. You own hidden scenario truth, continuity, elapsed simulated
-time, inject generation, and logical consequences.
+function instructions(mode,difficulty){
+  return `You are the NEXUS RS Scenario Controller, not Lt Col Edwards.
 
-SCENARIO SEED:
-Generate and evolve an original Northern California multi-fire operating environment informed by
-recurring patterns from historical wildfire operations in that region. Use realistic pressures such
-as rapid fire growth, wind changes, smoke obscuration, evacuation-route concerns, isolated
-communities, utility and infrastructure impacts, airspace restrictions, temporary flight restrictions,
-competition for aviation resources, incomplete customer requirements, partner coordination,
-sensor limitations, collection geometry, UPAD capacity, processing burden, dissemination delays,
-and changing customer priorities.
+Operate an unclassified domestic remote-sensing leadership exercise for Northern California wildfire
+operations. Maintain hidden truth, continuity, simulated time, injects, consequences, customer
+behavior, resource availability, airspace conditions, fire behavior, production pressure, and AAR
+observations.
 
-Do not recreate a named historical fire unless the supplied scenario explicitly requires it.
-Do not use a fixed turn count, fixed operational-period count, predetermined timeline, or single
-correct solution. No two runs should be identical. Maintain continuity with hiddenWorldJson and
-the current mission state.
+${mode==='initialize'?`
+INITIALIZATION MODE:
+Generate an entirely fresh world with 2–5 simultaneous incidents. Replace every static incident,
+customer, requirement, mission, asset assignment, product, delivery, UPAD condition, airspace issue,
+and hidden condition. Do not preserve Pine Ridge, Bear Creek, Eagle Peak, or any demo storyline.
+Use real Northern California cities, counties, and recognized operational areas. Do not invent
+counties, cities, tribal jurisdictions, or geographic features. Do not recreate a named historical fire.
+No two runs should be identical. The supplied randomization nonce must materially affect the world.
 
-MODE: ${mode}
-- initialize: establish an original hidden world and vary the starting pressures while preserving
-  the supplied application entities and role authority.
-- advance: evaluate every recorded action since the last scenario evaluation, including what the
-  trainee addressed, ignored, delayed, misunderstood, or coordinated effectively. Advance to a
-  plausible next decision point; elapsed time may vary.
+The worldJson must encode an object containing:
+mode="initialize", generationSeed, scenarioTitle, scenarioTime formatted HHMM PT,
+localTimeZone="America/Los_Angeles", difficulty, selectedRole, incidentCount,
+incidents, customers, requirements, missions, assets, sorties, collectionDecks, upads,
+products, deliveries, airspace, oversightIssues, deadlines, visibleOpeningState.
+Each incident-specific entity needs a stable unique ID and valid references.
+
+Create 2–5 incidents. Use only approved platform types MQ-9, UH-72, and CAP.
+Use callsigns GARGOYLE, BEAR, and CAP. Do not invent exact endurance, range, resolution,
+weather thresholds, or other unsupported specifications. Requirements should vary in quality.
+Some may need clarification. Include realistic current-operations and future-planning pressure.
+`:`
+ADVANCE MODE:
+Evaluate every recorded action since the prior scenario evaluation, including what the trainee
+completed, ignored, delayed, misunderstood, or coordinated effectively. Advance simulated time
+to the next plausible decision point; elapsed time may vary. Developments must logically follow
+hidden truth, visible state, elapsed time, difficulty, and trainee action. Do not create random chaos.
+Allow multiple professionally reasonable approaches. Preserve entity IDs.
+`}
 
 DIFFICULTY:
-${DIFFICULTY_GUIDANCE[difficulty] || DIFFICULTY_GUIDANCE.Standard}
+${difficultyRules[difficulty]||difficultyRules.Standard}
 
-RULES:
-- Developments must follow logically from hidden truth, elapsed time, current conditions, and
-  trainee actions. Do not create random failures merely to increase difficulty.
-- Allow multiple professionally reasonable approaches.
-- Preserve role authority. State J3 controls allocation or recall of state-controlled assets.
-- The RS Coordinator manages regional priorities, approved asset allocation, partner support,
-  unmet needs, and collection-plan approval.
-- The RS Manager manages execution for the assigned incident and its tasked assets. Other
-  incidents matter only when they create a direct asset, priority, customer, or coordination impact.
-- The Collection Manager develops requirements, EEIs, taskability, collection options, sortie decks,
-  and collection-result evaluation.
-- The UPAD LNO assigns whole sortie decks by default, manages specialty exceptions, shifts,
-  production capacity, dissemination, delivery, and customer verification.
-- Hidden truth must never be placed in visibleFacts, injects, advisorVisibleFacts, or scenarioSummary
-  until the trainee has a plausible way to know it.
-- Use GARGOYLE for MQ-9 callsign references, BEAR for UH-72 callsign references, and CAP for CAP.
-- Do not leak raw application IDs in trainee-visible text unless operational ambiguity requires one.
-- Patches may only modify supplied entities or append a new entity when logically necessary.
-- changesJson must always encode a JSON object.
-- Return only the required structured JSON.`
+AUTHORITY:
+State J3 controls allocation or recall of state-controlled assets.
+The RS Coordinator owns regional priority and approved allocation.
+The RS Manager owns execution for one assigned incident and coordinates crew feasibility before
+recommending regional changes.
+The Collection Manager owns requirement development, EEIs, taskability, collection options, and decks.
+The UPAD LNO owns sortie-to-UPAD production assignment, specialties, shifts, delivery, and receipt.
+
+VISIBILITY:
+Hidden truth must remain hidden until the trainee has a plausible way to learn it.
+Edwards receives only advisorVisibleFacts and role-visible state.
+Use operational names and callsigns in visible text. Do not expose raw IDs unless ambiguity requires it.
+Use local incident time only; no trainee-facing Zulu time.
+Return only the required structured JSON.`
 }
 
-function extractOutputText(data) {
-  if (typeof data?.output_text === 'string' && data.output_text.trim()) return data.output_text
-  for (const item of data?.output || []) {
-    for (const content of item?.content || []) {
-      if (content?.type === 'output_text' && typeof content.text === 'string') return content.text
+function extractText(data){
+  if(typeof data?.output_text==='string'&&data.output_text.trim()) return data.output_text
+  for(const item of data?.output||[]){
+    for(const content of item?.content||[]){
+      if(content?.type==='output_text'&&typeof content.text==='string') return content.text
     }
   }
   return ''
 }
 
-function sendJson(response, status, body) {
-  response.status(status)
-  response.setHeader('Content-Type', 'application/json')
-  response.setHeader('Cache-Control', 'no-store')
-  response.send(JSON.stringify(body))
+function parseObject(text,fallback={}){
+  try{
+    const value=JSON.parse(text||'{}')
+    return value&&typeof value==='object'&&!Array.isArray(value)?value:fallback
+  }catch{
+    return fallback
+  }
 }
 
-export default async function handler(request, response) {
-  if (request.method !== 'POST') {
-    response.setHeader('Allow', 'POST')
-    return sendJson(response, 405, { error: 'Method not allowed', code: 'method_not_allowed' })
+function send(res,status,body){
+  res.status(status)
+  res.setHeader('Content-Type','application/json')
+  res.setHeader('Cache-Control','no-store')
+  res.send(JSON.stringify(body))
+}
+
+export default async function handler(req,res){
+  if(req.method!=='POST'){
+    res.setHeader('Allow','POST')
+    return send(res,405,{error:'Method not allowed',code:'method_not_allowed'})
+  }
+  if(!process.env.OPENAI_API_KEY){
+    return send(res,503,{error:'OPENAI_API_KEY is not configured',code:'missing_openai_key'})
+  }
+  if(Number(req.headers['content-length']||0)>MAX_BODY_BYTES){
+    return send(res,413,{error:'Request too large',code:'request_too_large'})
   }
 
-  if (!process.env.OPENAI_API_KEY) {
-    return sendJson(response, 503, { error: 'OPENAI_API_KEY is not configured', code: 'missing_openai_key' })
+  const mode=req.body?.mode==='initialize'?'initialize':'advance'
+  const context=req.body?.context
+  if(!context||typeof context!=='object'){
+    return send(res,400,{error:'context is required',code:'missing_context'})
   }
+  const difficulty=context.difficulty||'Standard'
+  const nonce=context.randomizationNonce||crypto.randomUUID()
+  const controller=new AbortController()
+  const timeout=setTimeout(()=>controller.abort(),70_000)
 
-  const contentLength = Number(request.headers['content-length'] || 0)
-  if (contentLength > MAX_BODY_BYTES) {
-    return sendJson(response, 413, { error: 'Request too large', code: 'request_too_large' })
-  }
-
-  const body = request.body && typeof request.body === 'object' ? request.body : {}
-  const mode = body.mode === 'initialize' ? 'initialize' : 'advance'
-  const difficulty = typeof body.difficulty === 'string' ? body.difficulty : 'Standard'
-  const context = body.context && typeof body.context === 'object' ? body.context : null
-
-  if (!context) {
-    return sendJson(response, 400, { error: 'context is required', code: 'missing_context' })
-  }
-
-  const controller = new AbortController()
-  const timeout = setTimeout(() => controller.abort(), 55_000)
-
-  try {
-    const openAIResponse = await fetch('https://api.openai.com/v1/responses', {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
-        'Content-Type': 'application/json',
+  try{
+    const response=await fetch('https://api.openai.com/v1/responses',{
+      method:'POST',
+      headers:{
+        Authorization:`Bearer ${process.env.OPENAI_API_KEY}`,
+        'Content-Type':'application/json',
       },
-      signal: controller.signal,
-      body: JSON.stringify({
-        model: DEFAULT_MODEL,
-        instructions: buildInstructions(mode, difficulty),
-        input: [{
-          role: 'user',
-          content: [{
-            type: 'input_text',
-            text: `CONTROLLED EXERCISE CONTEXT
+      signal:controller.signal,
+      body:JSON.stringify({
+        model:MODEL,
+        instructions:instructions(mode,difficulty),
+        input:[{
+          role:'user',
+          content:[{
+            type:'input_text',
+            text:`RANDOMIZATION NONCE: ${nonce}
+
+CONTROLLED EXERCISE CONTEXT
 ${JSON.stringify(context)}
 
-Create the next valid simulation-controller state. Preserve continuity and role scope.`,
+Generate the next authoritative Scenario Controller state.`,
           }],
         }],
-        text: {
-          format: {
-            type: 'json_schema',
-            name: 'nexus_rs_scenario_controller',
-            strict: true,
-            schema: responseSchema,
+        text:{
+          format:{
+            type:'json_schema',
+            name:mode==='initialize'?'nexus_rs_initial_world':'nexus_rs_scenario_advance',
+            strict:true,
+            schema:mode==='initialize'?initializationSchema:advanceSchema,
           },
         },
       }),
     })
 
-    const data = await openAIResponse.json().catch(() => ({}))
-
-    if (!openAIResponse.ok) {
-      return sendJson(response, openAIResponse.status, {
-        error: data?.error?.message || 'OpenAI scenario request failed',
-        code: data?.error?.code || 'openai_scenario_failed',
-      })
+    const data=await response.json().catch(()=>({}))
+    if(!response.ok){
+      return send(res,response.status,{error:data?.error?.message||'OpenAI Scenario Controller failed',code:data?.error?.code||'openai_scenario_failed'})
     }
-
-    const outputText = extractOutputText(data)
-    if (!outputText) {
-      return sendJson(response, 502, { error: 'OpenAI returned no scenario output', code: 'empty_scenario_response' })
-    }
+    const output=extractText(data)
+    if(!output) return send(res,502,{error:'OpenAI returned no scenario output',code:'empty_scenario_response'})
 
     let parsed
-    try {
-      parsed = JSON.parse(outputText)
-    } catch {
-      return sendJson(response, 502, { error: 'OpenAI returned invalid scenario JSON', code: 'invalid_scenario_json' })
-    }
+    try{ parsed=JSON.parse(output) }
+    catch{ return send(res,502,{error:'OpenAI returned invalid scenario JSON',code:'invalid_scenario_json'}) }
 
-    const normalizedPatches = (parsed.patches || []).map((patch) => {
-      let changes = {}
-      try {
-        const candidate = JSON.parse(patch.changesJson || '{}')
-        if (candidate && typeof candidate === 'object' && !Array.isArray(candidate)) changes = candidate
-      } catch {
-        changes = {}
-      }
-      return { ...patch, changes }
-    })
-
-    let hiddenWorld = {}
-    try {
-      const candidate = JSON.parse(parsed.hiddenWorldJson || '{}')
-      if (candidate && typeof candidate === 'object' && !Array.isArray(candidate)) hiddenWorld = candidate
-    } catch {
-      hiddenWorld = {}
-    }
-
-    return sendJson(response, 200, {
-      result: {
-        ...parsed,
+    if(mode==='initialize'){
+      const world=parseObject(parsed.worldJson,{})
+      const hiddenWorld=parseObject(parsed.hiddenWorldJson,{})
+      const result={
+        ...world,
+        mode:'initialize',
         hiddenWorld,
-        patches: normalizedPatches,
-      },
-      model: data.model || DEFAULT_MODEL,
-      requestId: data.id || null,
-    })
-  } catch (error) {
-    if (error?.name === 'AbortError') {
-      return sendJson(response, 504, { error: 'Scenario request timed out', code: 'scenario_timeout' })
+        advisorVisibleFacts:parsed.advisorVisibleFacts||[],
+        initialInjects:parsed.initialInjects||[],
+        initialDecisionPressure:parsed.initialDecisionPressure||'',
+        aarObservations:parsed.aarObservations||[],
+      }
+      return send(res,200,{result,model:data.model||MODEL,requestId:data.id||null})
     }
-    return sendJson(response, 500, { error: 'Scenario service failed', code: 'scenario_internal_error' })
-  } finally {
+
+    const patches=(parsed.patches||[]).map(patch=>({
+      ...patch,
+      changes:parseObject(patch.changesJson,{}),
+    }))
+    const result={
+      ...parsed,
+      hiddenWorld:parseObject(parsed.hiddenWorldJson,{}),
+      patches,
+    }
+    return send(res,200,{result,model:data.model||MODEL,requestId:data.id||null})
+  }catch(error){
+    if(error?.name==='AbortError') return send(res,504,{error:'Scenario request timed out',code:'scenario_timeout'})
+    return send(res,500,{error:'Scenario service failed',code:'scenario_internal_error'})
+  }finally{
     clearTimeout(timeout)
   }
 }

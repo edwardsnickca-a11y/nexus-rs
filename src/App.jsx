@@ -25,43 +25,41 @@ import { evaluateMissionDecision } from './engine/missionAdvisor.js'
 import { buildAdvisorContext } from './engine/advisorPromptBuilder.js'
 import { validateAdvisorResponse, deterministicFallback } from './engine/advisorResponseValidator.js'
 import { requestAdvisorInterpretation } from './services/advisorApi.js'
-import { requestScenarioEvolution } from './services/scenarioApi.js'
-import { applyScenarioResult, buildScenarioContext, markScenarioDirectorStatus } from './engine/scenarioPromptBuilder.js'
+import { requestScenarioController } from './services/scenarioApi.js'
+import { buildInitializationContext, buildAdvanceContext } from './engine/scenarioPromptBuilder.js'
+import { validateInitialWorld, validateAdvanceResult } from './engine/scenarioStateValidator.js'
+import { applyInitialWorld, applyAdvanceResult, markScenarioStatus } from './engine/scenarioStateApplier.js'
+import { generateFallbackWorld, generateFallbackAdvance } from './engine/scenarioFallbackGenerator.js'
 import { applyIntegratedAction, deriveOperationalSummary, verifyCustomerReceipt, recordCustomerFeedback as integrateCustomerFeedback } from './engine/integrationEngine.js'
 import { INITIAL_MISSION_STATE } from './data/missionState.js'
 import { INITIAL_MATRIX } from './data/syncMatrix.js'
-import { initializeScenario, selectRole as controllerSelectRole, startExercise, advanceTurn, beginTransition, approveTransition, endExercise, resetExercise, isWorkspaceReadOnly } from './engine/exerciseController.js'
+import { initializeScenario, selectRole as controllerSelectRole, startExercise, beginTransition, approveTransition, endExercise, resetExercise, isWorkspaceReadOnly } from './engine/exerciseController.js'
 
 
-const RS_MANAGER_INCIDENTS = [
-  { id:'Pine Ridge', code:'PR', description:'Pine Ridge incident remote-sensing execution' },
-  { id:'Bear Creek', code:'BC', description:'Bear Creek incident remote-sensing execution' },
-  { id:'Eagle Peak', code:'EP', description:'Eagle Peak incident remote-sensing execution' },
-]
-
-function IncidentAssignment({selectedIncident,onSelect,onConfirm}){
- return <section className="panel" style={{maxWidth:980,margin:'38px auto',padding:24}}>
+function IncidentAssignment({incidents=[],selectedIncident,onSelect,onConfirm}){
+ return <section className="panel" style={{maxWidth:1100,margin:'38px auto',padding:24}}>
   <span className="eyebrow">REMOTE SENSING MANAGER ASSIGNMENT</span>
   <h2 style={{margin:'8px 0 4px'}}>Select Your Incident</h2>
-  <p style={{margin:'0 0 18px',color:'#8fa7b3'}}>Your workspace, customers, missions, products, and Edwards advisor context will be scoped to this incident.</p>
-  <div style={{display:'grid',gridTemplateColumns:'repeat(3,minmax(0,1fr))',gap:12}}>
-   {RS_MANAGER_INCIDENTS.map(incident=><button
+  <p style={{margin:'0 0 18px',color:'#8fa7b3'}}>The Scenario Controller generated these active incidents for this exercise. Your workspace and advisor context will be scoped to the incident you select.</p>
+  <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(220px,1fr))',gap:12}}>
+   {incidents.map(incident=><button
     key={incident.id}
     type="button"
-    onClick={()=>onSelect(incident.id)}
+    onClick={()=>onSelect(incident.name)}
     style={{
-     minHeight:135,
+     minHeight:145,
      padding:16,
      textAlign:'left',
-     border:selectedIncident===incident.id?'2px solid #58d9e6':'1px solid #28556b',
-     background:selectedIncident===incident.id?'#123f55':'#0a2130',
+     border:selectedIncident===incident.name?'2px solid #58d9e6':'1px solid #28556b',
+     background:selectedIncident===incident.name?'#123f55':'#0a2130',
      color:'#e8f2f5',
      cursor:'pointer',
     }}
    >
-    <strong style={{display:'block',fontSize:20,color:'#65e2ed'}}>{incident.code}</strong>
-    <b style={{display:'block',fontSize:15,marginTop:7}}>{incident.id}</b>
-    <span style={{display:'block',marginTop:7,fontSize:11,color:'#9eb2bc'}}>{incident.description}</span>
+    <strong style={{display:'block',fontSize:20,color:'#65e2ed'}}>{incident.code||incident.name?.slice(0,3).toUpperCase()}</strong>
+    <b style={{display:'block',fontSize:15,marginTop:7}}>{incident.name}</b>
+    <span style={{display:'block',marginTop:7,fontSize:11,color:'#9eb2bc'}}>{incident.location||`${incident.city||''}${incident.county?`, ${incident.county}`:''}`}</span>
+    <span style={{display:'block',marginTop:8,fontSize:10,color:'#c3d4dc'}}>{incident.behavior||incident.lifeSafety||'Active wildfire incident'}</span>
    </button>)}
   </div>
   <div style={{display:'flex',justifyContent:'flex-end',marginTop:18}}>
@@ -203,50 +201,85 @@ export default function App(){
   setMissionState(prev=>controllerSelectRole(prev,selectedRole))
   if(selectedRole!=='remote_sensing_manager') setPendingIncident('')
  }
- const runScenarioController=async(startState,mode='advance')=>{
-  const difficulty=startState.exercise?.difficulty||startState.exercise?.selectedDifficulty||startState.scenario?.difficulty||'Standard'
-  const context=buildScenarioContext(startState,mode)
+ const runScenarioController=async(baseState,mode='advance')=>{
   setScenarioBusy(true)
-  setMissionState(markScenarioDirectorStatus(startState,mode==='initialize'?'initializing':'advancing'))
+  setMissionState(markScenarioStatus(baseState,mode==='initialize'?'initializing':'advancing'))
   try{
-   const result=await requestScenarioEvolution({mode,difficulty,context})
-   const updated=applyScenarioResult(startState,result,mode)
-   setMissionState(updated)
-   return updated
+   const context=mode==='initialize'?buildInitializationContext(baseState):buildAdvanceContext(baseState)
+   let result
+   try{
+    result=await requestScenarioController({mode,context})
+   }catch(error){
+    result=mode==='initialize'
+      ? generateFallbackWorld({role:baseState.exercise?.selectedRole,difficulty:context.difficulty})
+      : generateFallbackAdvance(baseState)
+   }
+
+   if(mode==='initialize'){
+    let validation=validateInitialWorld(result)
+    if(!validation.ok){
+     result=generateFallbackWorld({role:baseState.exercise?.selectedRole,difficulty:context.difficulty})
+     validation=validateInitialWorld(result)
+    }
+    if(!validation.ok) throw new Error(validation.errors.join(' '))
+    const generated=applyInitialWorld(baseState,validation.value)
+    setMissionState(generated)
+    return generated
+   }
+
+   let validation=validateAdvanceResult(result,baseState)
+   if(!validation.ok){
+    result=generateFallbackAdvance(baseState)
+    validation=validateAdvanceResult(result,baseState)
+   }
+   if(!validation.ok) throw new Error(validation.errors.join(' '))
+   const advanced=applyAdvanceResult(baseState,validation.value)
+   setMissionState(advanced)
+   return advanced
   }catch(error){
-   const fallback=mode==='advance' ? advanceTurn(startState) : startState
-   setMissionState(markScenarioDirectorStatus(fallback,'fallback',error?.message||'Scenario service unavailable'))
-   return fallback
+   const failed=markScenarioStatus(baseState,'error',error?.message||'Scenario Controller failed')
+   setMissionState(failed)
+   return failed
   }finally{
    setScenarioBusy(false)
   }
  }
 
  const confirmIncidentAssignment=()=>{
-  if(!pendingIncident||!pendingStart) return
-  const configured={
-   ...pendingStart.configured,
-   exercise:{...(pendingStart.configured.exercise||{}),assignedIncident:pendingIncident,currentPhase:'STARTEX Ready'},
+  const generated=pendingStart?.generatedState
+  if(!pendingIncident||!generated) return
+  const assigned={
+   ...generated,
+   exercise:{...(generated.exercise||{}),assignedIncident:pendingIncident,currentPhase:'Current Operations'},
    activeIncident:pendingIncident,
   }
-  const started=startExercise(configured)
+  setMissionState(assigned)
   setPendingStart(null)
   setActive('current')
-  runScenarioController(started,'initialize')
  }
- const confirmStartEx=(scenario, setup={})=>{
+ const confirmStartEx=async(scenario, setup={})=>{
   const initialized=applyPortalScenario(missionState,scenario)
-  const configured={...initialized,exercise:{...(initialized.exercise||{}),participantName:(setup.participantName||initialized.exercise?.participantName||'').trim(),operationalContext:setup.operationalContext||initialized.exercise?.operationalContext||'',exerciseFocus:setup.exerciseFocus||initialized.exercise?.exerciseFocus||'Full Mission Cycle'}}
-  const selectedRole=configured.exercise?.selectedRole||role
-  if(selectedRole==='remote_sensing_manager'&&!configured.exercise?.assignedIncident){
-   setPendingIncident('')
-   setPendingStart({configured})
-   setActive('incident')
-   return
+  const configured={
+   ...initialized,
+   exercise:{
+    ...(initialized.exercise||{}),
+    participantName:(setup.participantName||initialized.exercise?.participantName||'').trim(),
+    operationalContext:setup.operationalContext||initialized.exercise?.operationalContext||'',
+    exerciseFocus:setup.exerciseFocus||initialized.exercise?.exerciseFocus||'Full Mission Cycle',
+    difficulty:setup.difficulty||scenario?.difficulty||initialized.exercise?.difficulty||'Standard',
+    assignedIncident:null,
+   },
   }
   const started=startExercise(configured)
-  setActive('current')
-  runScenarioController(started,'initialize')
+  setActive('scenario-loading')
+  const generated=await runScenarioController(started,'initialize')
+  if((generated.exercise?.selectedRole||role)==='remote_sensing_manager'){
+   setPendingIncident('')
+   setPendingStart({generatedState:generated})
+   setActive('incident')
+  }else{
+   setActive('current')
+  }
  }
  const unresolvedTurnItems=()=>{
   const items=[]
@@ -262,7 +295,6 @@ export default function App(){
   if(openWindows.length) items.push(`${openWindows.length} decision window${openWindows.length===1?' remains':'s remain'} open`)
   return items.slice(0,5)
  }
- const nextTurnTime=()=>missionState.simulation?.scenarioDirector?.nextDecisionReason||'the next decision point' 
  const requestAdvanceExercise=()=>setShowAdvanceTurn(true)
  const confirmAdvanceExercise=()=>{
   if(scenarioBusy) return
@@ -392,7 +424,8 @@ export default function App(){
   portal:<MissionPortal missionState={missionState} selectedRole={missionState.exercise?.selectedRole || role} onSelectRole={confirmRoleSelection} onSelectScenario={selectPortalScenario} onOpenBrief={openScenarioBrief} onStart={confirmStartEx} onResume={()=>setActive('current')} onReviewAar={()=>setActive('aar')}/>,
   brief:<ScenarioBrief missionState={missionState} onContinue={openRoleSelection}/>,
   roles:<RoleSelection selectedRole={role} onSelectRole={confirmRoleSelection} onStart={()=>setActive('portal')}/>,
-  incident:<IncidentAssignment selectedIncident={pendingIncident} onSelect={setPendingIncident} onConfirm={confirmIncidentAssignment}/>,
+  incident:<IncidentAssignment incidents={pendingStart?.generatedState?.incidents||missionState.incidents||[]} selectedIncident={pendingIncident} onSelect={setPendingIncident} onConfirm={confirmIncidentAssignment}/>,
+  'scenario-loading':<section className="panel" style={{maxWidth:760,margin:'70px auto',padding:28,textAlign:'center'}}><span className="eyebrow">SCENARIO CONTROLLER</span><h2>Generating a fresh Northern California exercise…</h2><p style={{color:'#8fa7b3'}}>Building incidents, customers, requirements, missions, resources, UPAD conditions, airspace, and hidden scenario truth.</p></section>,
   advisor:<AdvisorConversation role={currentRole} missionState={missionState} operationalSummary={deriveOperationalSummary(missionState)} onSubmitDecision={submitFreeTextDecision} pending={advisorPending} busy={advisorBusy} mode={advisorMode} onConfirm={confirmAdvisorAction} onCancel={cancelAdvisorAction} onClose={()=>setActive('current')}/>,
   mission:<Overview role={currentRole}/>,
   current:<CurrentOperationsRouter role={currentRole} missionState={workspaceMissionState} readOnly={readOnly} onNavigate={setActive} onToggleProtection={toggleProtection} onReleaseAsset={releaseAsset} onUpdateMission={updateCurrentMission} onUpdateRequirement={updateRequirement} onValidateRequirement={validateRequirement} onSendRequirementForward={sendRequirementForward} onUpdateDelivery={updateDelivery} advisorProps={{role:currentRole,missionState,operationalSummary:deriveOperationalSummary(missionState),onSubmitDecision:submitFreeTextDecision,pending:advisorPending,busy:advisorBusy,mode:advisorMode,onConfirm:confirmAdvisorAction,onCancel:cancelAdvisorAction,onOpenAdvisor:()=>setActive('advisor')}} onEndExercise={()=>setShowEndEx(true)}/>,

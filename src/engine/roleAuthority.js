@@ -1,0 +1,76 @@
+export const ROLE_AUTHORITY = {
+  remote_sensing_coordinator: {
+    displayName: 'Remote Sensing Coordinator',
+    owns: [
+      'Regional priorities',
+      'Allocation of already-approved assets',
+      'Protected missions',
+      'Collection-plan approval',
+      'Partner coordination',
+      'Unmet needs',
+      'Escalation to State J3',
+      'Cross-incident trade-offs',
+    ],
+    limits: [
+      'Does not directly fly aircraft',
+      'Does not sequence aircraft task-by-task',
+      'Does not build individual collection requirements',
+      'Does not manage individual UPAD task assignments',
+    ],
+  },
+  remote_sensing_manager: {
+    displayName: 'Remote Sensing Manager',
+    owns: [
+      'Execution of approved missions for the assigned incident',
+      'Assigned aircraft',
+      'Sortie timing',
+      'Crew coordination',
+      'Operational retasking recommendations',
+      'Gain-loss assessment',
+      'Mission impacts',
+      'Customer products for the assigned incident',
+    ],
+    limits: [
+      'Does not own the regional picture',
+      'Cannot independently allocate regional or state-controlled assets',
+      'Major regional changes require RS Coordinator approval',
+    ],
+  },
+  collection_manager: {
+    displayName: 'Collection Manager',
+    owns: [
+      'Incoming customer requests',
+      'Requirement development',
+      'Decision to support',
+      'NAIs, timing, LTIOVs, and EEIs',
+      'Taskability',
+      'Collection options',
+      'Sortie assignment recommendations',
+      'Collection-deck sequencing',
+      'Tomorrow-plan requirements',
+      'Collection-result evaluation',
+    ],
+    limits: [
+      'Does not command aircraft',
+      'Does not allocate regional assets',
+      'Does not approve the regional collection plan',
+    ],
+  },
+  upad_lno: {
+    displayName: 'UPAD LNO',
+    owns: [
+      'Whole-sortie UPAD assignment by default',
+      'Specialty-driven task exceptions',
+      'UPAD shifts and availability',
+      'Workload and manning',
+      'Processing and production',
+      'Delivery and customer receipt',
+      'Escalation of unmet production needs',
+    ],
+    limits: [
+      'Does not command or retask aircraft',
+      'Does not change regional collection priority',
+      'Does not allocate assets',
+    ],
+  },
+}
