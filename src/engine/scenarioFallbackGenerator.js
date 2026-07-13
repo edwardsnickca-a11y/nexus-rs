@@ -1,61 +1,39 @@
 import { callsignForPlatform } from './capabilityLibrary.js'
 
 const LOCATIONS = [
-  { city:'Redding', county:'Shasta County', zone:'northern Sacramento Valley', tz:'America/Los_Angeles' },
-  { city:'Red Bluff', county:'Tehama County', zone:'western foothills', tz:'America/Los_Angeles' },
-  { city:'Chico', county:'Butte County', zone:'Sierra foothills', tz:'America/Los_Angeles' },
-  { city:'Paradise', county:'Butte County', zone:'ridge communities', tz:'America/Los_Angeles' },
-  { city:'Oroville', county:'Butte County', zone:'Feather River corridor', tz:'America/Los_Angeles' },
-  { city:'Quincy', county:'Plumas County', zone:'American Valley', tz:'America/Los_Angeles' },
-  { city:'Susanville', county:'Lassen County', zone:'Honey Lake region', tz:'America/Los_Angeles' },
-  { city:'Weaverville', county:'Trinity County', zone:'Trinity Alps foothills', tz:'America/Los_Angeles' },
-  { city:'Ukiah', county:'Mendocino County', zone:'Russian River valley', tz:'America/Los_Angeles' },
-  { city:'Willits', county:'Mendocino County', zone:'redwood interior', tz:'America/Los_Angeles' },
-  { city:'Yreka', county:'Siskiyou County', zone:'Shasta Valley', tz:'America/Los_Angeles' },
-  { city:'Alturas', county:'Modoc County', zone:'Modoc Plateau', tz:'America/Los_Angeles' },
+  { city:'Redding', county:'Shasta County', zone:'northern Sacramento Valley', gacc:'North Ops', tz:'America/Los_Angeles' },
+  { city:'Red Bluff', county:'Tehama County', zone:'western foothills', gacc:'North Ops', tz:'America/Los_Angeles' },
+  { city:'Chico', county:'Butte County', zone:'Sierra foothills', gacc:'North Ops', tz:'America/Los_Angeles' },
+  { city:'Quincy', county:'Plumas County', zone:'American Valley', gacc:'North Ops', tz:'America/Los_Angeles' },
+  { city:'Susanville', county:'Lassen County', zone:'Honey Lake region', gacc:'North Ops', tz:'America/Los_Angeles' },
+  { city:'Weaverville', county:'Trinity County', zone:'Trinity Alps foothills', gacc:'North Ops', tz:'America/Los_Angeles' },
+  { city:'Ukiah', county:'Mendocino County', zone:'Russian River valley', gacc:'North Ops', tz:'America/Los_Angeles' },
+  { city:'Yreka', county:'Siskiyou County', zone:'Shasta Valley', gacc:'North Ops', tz:'America/Los_Angeles' },
+  { city:'Alturas', county:'Modoc County', zone:'Modoc Plateau', gacc:'North Ops', tz:'America/Los_Angeles' },
+  { city:'Truckee', county:'Nevada County', zone:'Sierra crest and Interstate 80 corridor', gacc:'North Ops', tz:'America/Los_Angeles' },
+  { city:'Auburn', county:'Placer County', zone:'western Sierra foothills', gacc:'North Ops', tz:'America/Los_Angeles' },
+  { city:'Sonora', county:'Tuolumne County', zone:'central Sierra foothills', gacc:'North Ops', tz:'America/Los_Angeles' },
+  { city:'Santa Rosa', county:'Sonoma County', zone:'North Bay wildland-urban interface', gacc:'North Ops', tz:'America/Los_Angeles' },
+  { city:'Napa', county:'Napa County', zone:'wine-country foothills', gacc:'North Ops', tz:'America/Los_Angeles' },
+  { city:'Monterey', county:'Monterey County', zone:'central coast ranges', gacc:'North Ops', tz:'America/Los_Angeles' },
+  { city:'Fresno', county:'Fresno County', zone:'southern Sierra foothills', gacc:'South Ops', tz:'America/Los_Angeles' },
+  { city:'Mariposa', county:'Mariposa County', zone:'central Sierra foothills', gacc:'South Ops', tz:'America/Los_Angeles' },
+  { city:'Bakersfield', county:'Kern County', zone:'southern Sierra and Tehachapi foothills', gacc:'South Ops', tz:'America/Los_Angeles' },
+  { city:'Tehachapi', county:'Kern County', zone:'Tehachapi Mountains', gacc:'South Ops', tz:'America/Los_Angeles' },
+  { city:'San Luis Obispo', county:'San Luis Obispo County', zone:'central coast ranges', gacc:'South Ops', tz:'America/Los_Angeles' },
+  { city:'Santa Barbara', county:'Santa Barbara County', zone:'south coast mountains', gacc:'South Ops', tz:'America/Los_Angeles' },
+  { city:'Ojai', county:'Ventura County', zone:'Topatopa foothills', gacc:'South Ops', tz:'America/Los_Angeles' },
+  { city:'Santa Clarita', county:'Los Angeles County', zone:'northern Los Angeles County wildland-urban interface', gacc:'South Ops', tz:'America/Los_Angeles' },
+  { city:'San Bernardino', county:'San Bernardino County', zone:'San Bernardino Mountains foothills', gacc:'South Ops', tz:'America/Los_Angeles' },
+  { city:'Idyllwild', county:'Riverside County', zone:'San Jacinto Mountains', gacc:'South Ops', tz:'America/Los_Angeles' },
+  { city:'Temecula', county:'Riverside County', zone:'inland valleys and foothills', gacc:'South Ops', tz:'America/Los_Angeles' },
+  { city:'Julian', county:'San Diego County', zone:'Peninsular Ranges', gacc:'South Ops', tz:'America/Los_Angeles' },
+  { city:'Ramona', county:'San Diego County', zone:'San Diego backcountry', gacc:'South Ops', tz:'America/Los_Angeles' },
+  { city:'El Centro', county:'Imperial County', zone:'desert and agricultural interface', gacc:'South Ops', tz:'America/Los_Angeles' },
+  { city:'Bishop', county:'Inyo County', zone:'eastern Sierra and Owens Valley', gacc:'South Ops', tz:'America/Los_Angeles' },
 ]
 
 const INCIDENT_SUFFIXES = ['North', 'East', 'Ridge', 'Creek', 'Foothill', 'Valley', 'Pass', 'Bench']
-const SIGNIFICANT_EVENTS = [
-  'Fire growth continued along the active flank, prompting additional route and perimeter monitoring.',
-  'Spotting across a control feature increased uncertainty near threatened communities.',
-  'Suppression progress improved on one flank while smoke limited aerial observation elsewhere.',
-  'A shift in fire behavior increased concern for transportation and utility corridors.',
-]
-const LIFE_SAFETY = [
-  'Evacuation warnings remain in effect for exposed communities; route status is under active review.',
-  'No new evacuation orders are reported, but access for an isolated community remains a concern.',
-  'Evacuation operations are in progress in the most exposed area, with traffic control points established.',
-  'Repopulation planning has begun in one sector while restrictions remain elsewhere.',
-]
-const WEATHER_CONCERNS = [
-  'Afternoon winds and low relative humidity may increase spread and reduce collection quality through smoke.',
-  'Terrain-driven winds are expected to become gusty after midday, with variable smoke in drainages.',
-  'A dry and unstable air mass may support increased plume development during the operational period.',
-  'Morning inversion conditions will trap smoke before improving visibility later in the day.',
-]
-const PROJECTED_ACTIVITY = [
-  'Continued growth is expected on the active flank during the next operational period, with spotting possible beyond current lines.',
-  'Fire activity is expected to remain moderate until afternoon winds increase spread potential.',
-  'Limited perimeter growth is expected overnight, followed by renewed activity after inversion breakup.',
-  'Movement toward the transportation corridor remains possible if current wind alignment persists.',
-]
-const THREAT_SUMMARIES = [
-  'Primary threats are evacuation-route reliability, scattered residences, utility infrastructure, and responder access.',
-  'Communities along the wildland-urban interface and critical transportation links remain at risk.',
-  'The incident threatens isolated residences, communications infrastructure, and natural-resource values.',
-  'Potential cascading impacts include road closures, power interruption, and delayed public-warning operations.',
-]
-const STRATEGIC_OBJECTIVES = [
-  'Protect life, maintain viable evacuation routes, limit growth toward communities, and preserve critical infrastructure.',
-  'Provide for public and responder safety, hold established control features, and support timely community decision-making.',
-  'Keep the incident from crossing the primary transportation corridor while protecting exposed communities and infrastructure.',
-]
-const PLANNED_ACTIONS = [
-  'Continue perimeter control, improve situational awareness on the active flank, validate evacuation routes, and reassess priorities after the next weather update.',
-  'Strengthen control lines, coordinate aviation and airspace, monitor threatened infrastructure, and update public-safety decision support.',
-  'Conduct focused reconnaissance, support structure protection, and prepare contingency actions for forecast wind changes.',
-]
 const CONDITIONS = [
   'Wind-driven spread is pressing toward a transportation corridor.',
   'Heavy smoke is reducing visual collection quality during part of the day.',
@@ -138,20 +116,13 @@ export function generateFallbackWorld({ role='remote_sensing_coordinator', diffi
       county:location.county,
       location:`${location.city}, ${location.county}`,
       zone:location.zone,
-      incidentNumber:`CA-${location.county.replace(/\s+County$/,'').slice(0,3).toUpperCase()}-${String(1000+Math.floor(random()*8999))}`,
-      startDateTime:`Day ${1+Math.floor(random()*3)}, ${timeAt(Math.max(0,startMinutes-(180+Math.floor(random()*720))))}`,
+      gacc:location.gacc,
       sizeAcres:acres,
       containmentPercent:Math.floor(random()*24),
       behavior:choose(random,CONDITIONS),
-      significantEvents:choose(random,SIGNIFICANT_EVENTS),
       smoke:choose(random,['Light morning smoke','Moderate smoke with afternoon degradation','Dense smoke in portions of the incident','Variable smoke by drainage']),
       wind:choose(random,['Southwest winds increasing after 1300','Light morning winds with gusty afternoon outflow','North winds creating alignment concerns','Terrain-driven winds with uncertain timing']),
-      lifeSafety:choose(random,LIFE_SAFETY),
-      weatherConcerns:choose(random,WEATHER_CONCERNS),
-      projectedActivity:choose(random,PROJECTED_ACTIVITY),
-      threatSummary:choose(random,THREAT_SUMMARIES),
-      strategicObjectives:choose(random,STRATEGIC_OBJECTIVES),
-      plannedActions:choose(random,PLANNED_ACTIONS),
+      lifeSafety:choose(random,['Evacuation warning area under review','Isolated community access is a concern','No immediate evacuation expansion, but route monitoring is required','Critical infrastructure protection decision pending']),
       status:'active',
     }
   })
@@ -356,7 +327,7 @@ export function generateFallbackWorld({ role='remote_sensing_coordinator', diffi
   return {
     mode:'initialize',
     generationSeed:String(seed),
-    scenarioTitle:'Northern California Multi-Fire Remote Sensing Operations',
+    scenarioTitle:'California GACC Multi-Fire Remote Sensing Operations',
     scenarioTime:timeAt(startMinutes),
     localTimeZone:'America/Los_Angeles',
     difficulty,
@@ -384,7 +355,7 @@ export function generateFallbackWorld({ role='remote_sensing_coordinator', diffi
       })),
     },
     visibleOpeningState:{
-      summary:`${incidentCount} active Northern California wildfire incidents require regional remote-sensing coordination.`,
+      summary:`${incidentCount} active California wildfire incidents across ${[...new Set(incidents.map(item=>item.gacc))].join(' and ')} require regional remote-sensing coordination.`,
     },
     advisorVisibleFacts:[
       `${incidentCount} incidents are active and competing for collection and production capacity.`,
@@ -406,8 +377,6 @@ export function generateFallbackAdvance(state) {
   const delta=choose(random,[15,30,45,60,90,120])
   const incidents=state.incidents||[]
   const incident=choose(random,incidents)||{name:'Regional picture',id:''}
-  const growth=Math.max(50,Math.round((150+random()*1800)/50)*50)
-  const containmentGain=Math.floor(random()*4)
   const development=choose(random,[
     'Field reporting changed one customer decision window.',
     'Smoke and airspace conditions changed collection feasibility.',
@@ -424,19 +393,7 @@ export function generateFallbackAdvance(state) {
     hiddenWorld:{...(director.hiddenWorld||{}),seed},
     visibleFacts:[{audienceRole:'all',incident:incident.name||'',severity:'medium',text:development}],
     injects:[{title:`${incident.name||'Regional'} update`,text:development,priority:'medium',relatedRole:'all',relatedIncident:incident.name||''}],
-    patches:incident.id?[{
-      collection:'incidents',
-      operation:'merge',
-      id:incident.id,
-      changes:{
-        sizeAcres:Number(incident.sizeAcres||0)+growth,
-        containmentPercent:Math.min(100,Number(incident.containmentPercent||0)+containmentGain),
-        significantEvents:development,
-        projectedActivity:choose(random,PROJECTED_ACTIVITY),
-        weatherConcerns:choose(random,WEATHER_CONCERNS),
-        plannedActions:choose(random,PLANNED_ACTIONS),
-      },
-    }]:[],
+    patches:[],
     consequences:[],
     advisorVisibleFacts:[development],
     aarObservations:['The exercise advanced using the local fallback controller.'],
