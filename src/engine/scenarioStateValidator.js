@@ -24,6 +24,8 @@ export function validateInitialWorld(world) {
   if(world.mode!=='initialize') errors.push('Initialization response mode must be initialize.')
   if(!Number.isInteger(world.incidentCount)||world.incidentCount<2||world.incidentCount>5) errors.push('Incident count must be 2–5.')
   if(list(world.incidents).length!==world.incidentCount) errors.push('Incident array does not match incident count.')
+  const prohibitedDemoNames=new Set(['Pine Ridge','Bear Creek','Eagle Peak'])
+  if(list(world.incidents).some(item=>prohibitedDemoNames.has(item.name))) errors.push('Generated world reused static demo incidents.')
   if(!validLocalTime(world.scenarioTime)) errors.push('Scenario time must use local incident time.')
   for(const key of REQUIRED_WORLD_ARRAYS){
     if(!Array.isArray(world[key])) errors.push(`${key} must be an array.`)
@@ -85,4 +87,128 @@ export function validateAdvanceResult(result,state) {
   }
 
   return {ok:errors.length===0,errors,value:result}
+}
+
+
+function incidentCode(name='INC') {
+  const initials=String(name).trim().split(/\s+/).filter(Boolean).map(word=>word[0]).join('').toUpperCase()
+  return (initials||'INC').slice(0,4)
+}
+
+function cleanCallsign(value='ASSET') {
+  return String(value).replace(/[^A-Z0-9]/gi,'').toUpperCase()||'ASSET'
+}
+
+export function normalizeInitialWorld(world) {
+  const copy=structuredClone(world)
+  const incidentByOldId=new Map()
+  const requirementByOldId=new Map()
+  const missionByOldId=new Map()
+  const assetByOldId=new Map()
+
+  copy.incidents=(copy.incidents||[]).map((incident,index)=>{
+    const code=incident.code||incidentCode(incident.name)
+    const id=`INC-${code}-${String(index+1).padStart(2,'0')}`
+    incidentByOldId.set(incident.id,id)
+    return {...incident,id,code}
+  })
+
+  const incidentById=new Map(copy.incidents.map(item=>[item.id,item]))
+  copy.requirements=(copy.requirements||[]).map((item,index)=>{
+    const incidentId=incidentByOldId.get(item.incidentId)||item.incidentId
+    const incident=incidentById.get(incidentId)
+    const id=`${incident?.code||'REG'}-REQ-${String(index+1).padStart(3,'0')}`
+    requirementByOldId.set(item.id,id)
+    return {...item,id,incidentId,incident:item.incident||item.fire||incident?.name,fire:item.fire||item.incident||incident?.name}
+  })
+
+  copy.assets=(copy.assets||[]).map((item,index)=>{
+    const callsign=cleanCallsign(item.callsign||callsignForPlatform(item.type))
+    const id=`${callsign}-${String(index+1).padStart(2,'0')}`
+    assetByOldId.set(item.id,id)
+    return {...item,id,callsign,identifier:item.identifier||id}
+  })
+
+  copy.missions=(copy.missions||[]).map((item,index)=>{
+    const incidentId=incidentByOldId.get(item.incidentId)||item.incidentId
+    const incident=incidentById.get(incidentId)
+    const assetId=assetByOldId.get(item.assetId)||item.assetId
+    const asset=copy.assets.find(candidate=>candidate.id===assetId)
+    const callsign=cleanCallsign(item.callsign||asset?.callsign||item.platform)
+    const id=`${incident?.code||'REG'}-${callsign}-${String(index+1).padStart(2,'0')}`
+    missionByOldId.set(item.id,id)
+    return {
+      ...item,
+      id,
+      incidentId,
+      requirementId:requirementByOldId.get(item.requirementId)||item.requirementId,
+      assetId,
+      callsign,
+      incident:item.incident||item.fire||incident?.name,
+      fire:item.fire||item.incident||incident?.name,
+    }
+  })
+
+  copy.assets=copy.assets.map(item=>({
+    ...item,
+    missionId:missionByOldId.get(item.missionId)||item.missionId||null,
+  }))
+
+  copy.deliveries=(copy.deliveries||[]).map((item,index)=>{
+    const incidentId=incidentByOldId.get(item.incidentId)||item.incidentId
+    const incident=incidentById.get(incidentId)
+    return {
+      ...item,
+      id:`${incident?.code||'REG'}-PROD-${String(index+1).padStart(3,'0')}`,
+      incidentId,
+      requirementId:requirementByOldId.get(item.requirementId)||item.requirementId,
+      missionId:missionByOldId.get(item.missionId)||item.missionId,
+      incident:item.incident||item.fire||incident?.name,
+      fire:item.fire||item.incident||incident?.name,
+    }
+  })
+
+  copy.products=(copy.products||[]).map((item,index)=>{
+    const incidentId=incidentByOldId.get(item.incidentId)||item.incidentId
+    const incident=incidentById.get(incidentId)
+    return {
+      ...item,
+      id:`${incident?.code||'REG'}-PRODUCT-${String(index+1).padStart(3,'0')}`,
+      incidentId,
+      requirementId:requirementByOldId.get(item.requirementId)||item.requirementId,
+      missionId:missionByOldId.get(item.missionId)||item.missionId,
+    }
+  })
+
+  copy.sorties=(copy.sorties||[]).map((item,index)=>{
+    const missionId=missionByOldId.get(item.missionId)||item.missionId
+    const mission=copy.missions.find(candidate=>candidate.id===missionId)
+    return {
+      ...item,
+      id:mission?.id||`SORTIE-${String(index+1).padStart(2,'0')}`,
+      missionId,
+      incident:mission?.incident||item.incident,
+      callsign:mission?.callsign||item.callsign,
+    }
+  })
+
+  copy.collectionDecks=(copy.collectionDecks||[]).map((item,index)=>{
+    const missionId=missionByOldId.get(item.missionId)||item.missionId
+    const mission=copy.missions.find(candidate=>candidate.id===missionId)
+    return {
+      ...item,
+      id:mission?.id||`DECK-${String(index+1).padStart(2,'0')}`,
+      missionId,
+      incidentId:mission?.incidentId||item.incidentId,
+      incident:mission?.incident||item.incident,
+      callsign:mission?.callsign||item.callsign,
+    }
+  })
+
+  copy.oversightIssues=(copy.oversightIssues||[]).map(item=>({
+    ...item,
+    requirementId:requirementByOldId.get(item.requirementId)||item.requirementId,
+  }))
+
+  return copy
 }

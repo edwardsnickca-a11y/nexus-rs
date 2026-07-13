@@ -1,5 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
-import { getInitialAdvisorMessage } from '../engine/missionAdvisor.js'
+import { useEffect, useState } from 'react'
 
 const label = (value='') => value.replaceAll('_',' ')
 
@@ -8,10 +7,9 @@ export default function AdvisorPanel({ role, missionState, operationalSummary, o
   const [lastSentAt,setLastSentAt]=useState(0)
   const scratchpadKey = `nexus-rs-advisor-scratchpad:${missionState.exercise?.scenarioId || 'exercise'}:${role || 'role'}`
   const [scratchpad,setScratchpad]=useState(()=>localStorage.getItem(scratchpadKey) || '')
-  const initial = useMemo(() => getInitialAdvisorMessage(role), [role])
   const history = missionState.simulation?.advisorHistory || []
   const latest = history[history.length-1]
-  const advisorText = latest?.advisorMessage || missionState.lastAdvisorUpdate?.text || initial
+  const advisorText = latest?.advisorMessage || missionState.lastAdvisorUpdate?.text || ''
 
   useEffect(() => setText(''), [role])
   useEffect(() => {
@@ -71,9 +69,9 @@ export default function AdvisorPanel({ role, missionState, operationalSummary, o
         </button>
 
         <div style={{marginTop:14,height:210,overflowY:'auto',padding:'14px 16px',border:'1px solid #2b5368',background:'#102d47',lineHeight:1.5}}>
-          <p className="advisor-identity-message" style={{margin:0,fontWeight:400,color:'#c8d7df',fontSize:'0.9rem',letterSpacing:0}}>
-            {advisorText}
-          </p>
+          {advisorText
+            ? <p className="advisor-identity-message" style={{margin:0,fontWeight:400,color:'#c8d7df',fontSize:'0.9rem',letterSpacing:0}}>{advisorText}</p>
+            : <p style={{margin:0,fontWeight:400,color:'#7f98a5',fontSize:'0.9rem'}}>Ask Edwards a question when you want his perspective.</p>}
         </div>
         <small style={{display:'block',marginTop:8}}>{missionState.asOf || missionState.exercise?.localIncidentTime || 'Local incident time'}</small>
       </section>

@@ -27,12 +27,13 @@ import { validateAdvisorResponse, deterministicFallback } from './engine/advisor
 import { requestAdvisorInterpretation } from './services/advisorApi.js'
 import { requestScenarioController } from './services/scenarioApi.js'
 import { buildInitializationContext, buildAdvanceContext } from './engine/scenarioPromptBuilder.js'
-import { validateInitialWorld, validateAdvanceResult } from './engine/scenarioStateValidator.js'
+import { normalizeInitialWorld, validateInitialWorld, validateAdvanceResult } from './engine/scenarioStateValidator.js'
 import { applyInitialWorld, applyAdvanceResult, markScenarioStatus } from './engine/scenarioStateApplier.js'
 import { generateFallbackWorld, generateFallbackAdvance } from './engine/scenarioFallbackGenerator.js'
 import { applyIntegratedAction, deriveOperationalSummary, verifyCustomerReceipt, recordCustomerFeedback as integrateCustomerFeedback } from './engine/integrationEngine.js'
 import { INITIAL_MISSION_STATE } from './data/missionState.js'
 import { INITIAL_MATRIX } from './data/syncMatrix.js'
+import { buildSyncMatrixFromState } from './engine/syncMatrixBuilder.js'
 import { initializeScenario, selectRole as controllerSelectRole, startExercise, beginTransition, approveTransition, endExercise, resetExercise, isWorkspaceReadOnly } from './engine/exerciseController.js'
 
 
@@ -216,14 +217,16 @@ export default function App(){
    }
 
    if(mode==='initialize'){
+    result=normalizeInitialWorld(result)
     let validation=validateInitialWorld(result)
     if(!validation.ok){
-     result=generateFallbackWorld({role:baseState.exercise?.selectedRole,difficulty:context.difficulty})
+     result=normalizeInitialWorld(generateFallbackWorld({role:baseState.exercise?.selectedRole,difficulty:context.difficulty}))
      validation=validateInitialWorld(result)
     }
     if(!validation.ok) throw new Error(validation.errors.join(' '))
     const generated=applyInitialWorld(baseState,validation.value)
     setMissionState(generated)
+    setSyncMatrix(buildSyncMatrixFromState(generated))
     return generated
    }
 
@@ -235,6 +238,7 @@ export default function App(){
    if(!validation.ok) throw new Error(validation.errors.join(' '))
    const advanced=applyAdvanceResult(baseState,validation.value)
    setMissionState(advanced)
+   setSyncMatrix(buildSyncMatrixFromState(advanced))
    return advanced
   }catch(error){
    const failed=markScenarioStatus(baseState,'error',error?.message||'Scenario Controller failed')

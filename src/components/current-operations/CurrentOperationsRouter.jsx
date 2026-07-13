@@ -28,7 +28,7 @@ const tone = (value='') => String(value).toLowerCase().replaceAll(' ','-').repla
 const Panel = ({title,accent='cyan',children,className=''}) => <section className={`rx-panel ${accent} ${className}`}><div className="rx-panel-title">{title}</div>{children}</section>
 const Button = ({children,onClick,disabled=false}) => <button className="rx-outline-button" onClick={onClick} disabled={disabled}>{children}</button>
 
-function LiveHeader({role,missionState,onAdvance,onEnd}){
+function LiveHeader({role,missionState,onEnd}){
  const meta=ROLES.find(r=>r.id===role)
  const participant=missionState.exercise?.participantName?.trim()
  const identity=participant || meta?.name || 'Role not selected'
@@ -38,7 +38,6 @@ function LiveHeader({role,missionState,onAdvance,onEnd}){
   <div className="rx-head-block"><span>SCENARIO</span><strong>{missionState.exercise?.scenarioName||missionState.scenario?.name||'Western Region Multi-Fire'}</strong></div>
   <div className="rx-head-block"><span>OPERATIONAL PERIOD</span><div className="rx-op-toggle"><b>OP {missionState.exercise?.activeOperationalPeriod||missionState.operationalPeriod||1}</b><span>OP 2</span></div></div>
   <div className="rx-head-block"><span>LOCAL INCIDENT TIME</span><strong>{missionState.exercise?.localIncidentTime||missionState.asOf||'1732L'}</strong><small>Period remains active</small></div>
-  {onAdvance&&<div className="rx-head-block"><button type="button" className="rx-end" onClick={onAdvance}>NEXT TURN →</button></div>}
   <div className="rx-header-actions"><button>☰<small>MENU</small></button>{onEnd&&<button className="rx-end" onClick={onEnd}>END EXERCISE</button>}</div>
  </header>
 }
@@ -157,16 +156,26 @@ function OperationalMap({missionState}){
   }
  }
 
- const incidents=[
-  {id:'pine-ridge',name:'Pine Ridge',lat:40.15,lng:-121.75,tone:'red'},
-  {id:'bear-creek',name:'Bear Creek',lat:39.55,lng:-121.25,tone:'orange'},
-  {id:'eagle-peak',name:'Eagle Peak',lat:38.95,lng:-121.82,tone:'amber'},
+ const mapDefaults=[
+  {lat:40.58,lng:-122.39,tone:'red'},
+  {lat:40.17,lng:-122.24,tone:'orange'},
+  {lat:39.73,lng:-121.84,tone:'amber'},
+  {lat:40.42,lng:-120.65,tone:'red'},
+  {lat:41.73,lng:-122.64,tone:'orange'},
  ]
- const missionDefaults=[
-  {label:'MQ-9-01',lat:39.95,lng:-122.05},
-  {label:'UH-72-01',lat:39.35,lng:-121.32},
-  {label:'CAP-01',lat:38.82,lng:-122.18},
- ]
+ const incidents=(missionState.incidents||[]).slice(0,5).map((incident,index)=>({
+  ...incident,
+  id:incident.id||`incident-${index+1}`,
+  name:incident.name||`Incident ${index+1}`,
+  lat:Number(incident.lat)||mapDefaults[index%mapDefaults.length].lat,
+  lng:Number(incident.lng)||mapDefaults[index%mapDefaults.length].lng,
+  tone:mapDefaults[index%mapDefaults.length].tone,
+ }))
+ const missionDefaults=(missionState.currentOps?.missions||[]).slice(0,5).map((mission,index)=>({
+  label:mission.callsign||mission.platform||`Asset ${index+1}`,
+  lat:(incidents[index%Math.max(1,incidents.length)]?.lat||40)-.18,
+  lng:(incidents[index%Math.max(1,incidents.length)]?.lng||-122)-.22,
+ }))
  const missions=(missionState.currentOps?.missions||[]).slice(0,3)
  const markerPosition=(lat,lng)=>{
   const point=projectLatLng(lat,lng,view.zoom)
@@ -216,7 +225,7 @@ function OperationalMap({missionState}){
     return <circle key={item.id} cx={p.left} cy={p.top} r="43" className={`rx-tfr-ring ${item.tone}`}/>
    })}
   </svg>
-  <div className="rx-legend"><strong>LEGEND</strong><span>🔴 Pine Ridge</span><span>🟠 Bear Creek</span><span>🟡 Eagle Peak</span><span>✈ Airborne Platform</span><span>◯ TFR / Airspace</span></div>
+  <div className="rx-legend"><strong>LEGEND</strong>{incidents.map((item,index)=><span key={item.id}>{['🔴','🟠','🟡'][index%3]} {item.name}</span>)}<span>✈ Airborne Platform</span><span>◯ TFR / Airspace</span></div>
   {incidents.map(item=>{
    const p=markerPosition(item.lat,item.lng)
    return <button key={item.id} type="button" className={`rx-map-fire ${item.tone}`} style={{left:p.left,top:p.top}} title={item.name}>
@@ -474,7 +483,7 @@ function Taskability({
  const requirement=selectedRequirement||{}
  const requirementId=requirement.id
  const incident=String(requirement.fire||requirement.incident||requirement.location||'').trim()
- const incidentCode=incident==='Pine Ridge'?'PR':incident==='Bear Creek'?'BC':incident==='Eagle Peak'?'EP':'TK'
+ const incidentCode=(incident.split(/\s+/).filter(Boolean).map(word=>word[0]).join('').toUpperCase()||'TK').slice(0,4)
  const numericId=String(requirement.id||'').match(/\d+/)?.[0]||String((deckItems||[]).findIndex(item=>item.id===requirement.id)+1||1).padStart(3,'0')
  const taskId=`${incidentCode}-${String(numericId).padStart(3,'0')}`
  const taskTitle=String(requirement.title||requirement.what||requirement.customerNeed||'Collection Requirement').replace(/^REQ[-\s\w]*[:–—-]\s*/i,'').slice(0,54)
@@ -497,7 +506,7 @@ function Taskability({
   const timeMatch=!ltiov||sortie.end<=ltiov
   const assignedCount=(deckItems||[]).filter(item=>item.assignedSortieId===sortie.id).length
   const incidentMatch=String(sortie.primaryIncident||'').toLowerCase()===incident.toLowerCase()
-  const airspaceWarning=incidentMatch&&['Pine Ridge','Bear Creek','Eagle Peak'].includes(incident)?`TFR ACTIVE — ${incident.toUpperCase()}`:null
+  const airspaceWarning=incidentMatch&&incident?`AIRSPACE COORDINATION — ${incident.toUpperCase()}`:null
   const fitScore=(capabilityMatch?4:0)+(timeMatch?3:0)+(incidentMatch?2:0)-Math.min(assignedCount,4)
   const fit=fitScore>=7?'GOOD FIT':fitScore>=3?'MODERATE FIT':'LIMITED FIT'
   const warnings=[
@@ -840,39 +849,30 @@ function CollectionView(props){
  const requirements=missionState.requirements?.items||[]
  const todaySyncItems=missionState.currentOps?.missions||[]
  const plannedSorties=useMemo(()=>{
-  const incidentNames=['Pine Ridge','Bear Creek','Eagle Peak']
-  const incidentCodes={'Pine Ridge':'PR','Bear Creek':'BC','Eagle Peak':'EP'}
-  const aircraftCodes={'MQ-9':'GARGOYLE','UH-72':'UH72','UH-72':'UH72','CAP':'CAP','DoD Partner Asset':'DOD','Satellite Source':'SAT'}
+  const incidentNames=(missionState.incidents||[]).map(item=>item.name)
   const source=missionState.currentOps?.missions||[]
-  const mapped=source.slice(0,12).map((mission,index)=>{
-   const primaryIncident=mission.fire||mission.incident||mission.area||incidentNames[index%incidentNames.length]
-   const assetType=String(mission.platform||mission.assetId||mission.asset||['MQ-9','UH-72','CAP'][index%3]).replaceAll('UH-72','UH-72')
-   const callsign=assetType.includes('MQ-9')?'GARGOYLE':assetType.includes('UH-72')?'UH-72':assetType.includes('CAP')?'CAP':assetType
-   const incidentCode=incidentCodes[primaryIncident]||String(primaryIncident).split(/\s+/).map(word=>word[0]).join('').slice(0,3).toUpperCase()
-   const aircraftCode=aircraftCodes[assetType]||String(callsign).replace(/[^A-Za-z0-9]/g,'').slice(0,8).toUpperCase()
+  return source.slice(0,12).map((mission,index)=>{
+   const primaryIncident=mission.fire||mission.incident||mission.area||incidentNames[index%Math.max(1,incidentNames.length)]||'Regional'
+   const incidentCode=(primaryIncident.split(/\s+/).filter(Boolean).map(word=>word[0]).join('').toUpperCase()||'INC').slice(0,4)
+   const callsign=mission.callsign||(/MQ-9/i.test(mission.platform||'')?'GARGOYLE':/UH-72/i.test(mission.platform||'')?'BEAR':/CAP/i.test(mission.platform||'')?'CAP':mission.platform||'ASSET')
    const sequence=String(index+1).padStart(2,'0')
+   const windowParts=String(mission.window||'').match(/\d{4}/g)||[]
+   const start=windowParts[0]?Number(windowParts[0].slice(0,2)):9
+   const end=windowParts[1]?Number(windowParts[1].slice(0,2)):12
    return {
-    id:mission.id||`${incidentCode}-${aircraftCode}-${sequence}`,
-    label:`${incidentCode}-${aircraftCode}-${sequence}`,
+    id:mission.id,
+    label:`${incidentCode}-${String(callsign).replace(/[^A-Z0-9]/gi,'').toUpperCase()}-${sequence}`,
     primaryIncident,
     asset:callsign,
-    assetType,
+    assetType:mission.platform||callsign,
     callsign,
-    start:Number(String(mission.start||mission.plannedStart||[9,11,13,15][index%4]).replace(/[^\d]/g,'').slice(0,2))||[9,11,13,15][index%4],
-    end:Number(String(mission.end||mission.plannedEnd||[12,14,16,18][index%4]).replace(/[^\d]/g,'').slice(0,2))||[12,14,16,18][index%4],
-    capability:mission.capability||mission.product||'EO/IR',
-    window:`${mission.start||mission.plannedStart||'0900L'}–${mission.end||mission.plannedEnd||'1200L'}`,
+    start,
+    end,
+    capability:mission.capability||mission.product||mission.objective||'EO/IR',
+    window:mission.window||`${String(start).padStart(2,'0')}00L–${String(end).padStart(2,'0')}00L`,
    }
   })
-  return mapped.length?mapped:[
-   {id:'PR-GARGOYLE-01',label:'PR-GARGOYLE-01',primaryIncident:'Pine Ridge',asset:'GARGOYLE',assetType:'MQ-9',callsign:'GARGOYLE',start:9,end:14,capability:'EO/IR',window:'0900L–1400L'},
-   {id:'BC-UH72-01',label:'BC-UH72-01',primaryIncident:'Bear Creek',asset:'UH-72',assetType:'UH-72',callsign:'UH-72',start:11,end:16,capability:'EO / Still Imagery',window:'1100L–1600L'},
-   {id:'EP-CAP-01',label:'EP-CAP-01',primaryIncident:'Eagle Peak',asset:'CAP',assetType:'CAP',callsign:'CAP',start:13,end:18,capability:'Wide Area EO',window:'1300L–1800L'},
-   {id:'PR-GARGOYLE-02',label:'PR-GARGOYLE-02',primaryIncident:'Pine Ridge',asset:'GARGOYLE',assetType:'MQ-9',callsign:'GARGOYLE',start:15,end:20,capability:'EO/IR',window:'1500L–2000L'},
-   {id:'BC-CAP-02',label:'BC-CAP-02',primaryIncident:'Bear Creek',asset:'CAP',assetType:'CAP',callsign:'CAP',start:8,end:12,capability:'Wide Area EO',window:'0800L–1200L'},
-   {id:'EP-UH72-02',label:'EP-UH72-02',primaryIncident:'Eagle Peak',asset:'UH-72',assetType:'UH-72',callsign:'UH-72',start:10,end:14,capability:'EO / Still Imagery',window:'1000L–1400L'},
-  ]
- },[missionState.currentOps?.missions])
+ },[missionState.currentOps?.missions,missionState.incidents])
 
  const [selectedRequirementId,setSelectedRequirementId]=useState(requirements[0]?.id)
  const selectedRequirement=requirements.find(requirement=>requirement.id===selectedRequirementId)||requirements[0]||{}
@@ -1217,14 +1217,14 @@ function UPADView(props){
 
 export default function CurrentOperationsRouter({
  role,missionState,onNavigate,onToggleProtection,onReleaseAsset,onUpdateMission,onUpdateRequirement,onValidateRequirement,onSendRequirementForward,onUpdateDelivery,
- advisorProps,onAdvanceExercise,onEndExercise
+ advisorProps,onEndExercise
 }){
  const common={role,missionState,onNavigate,onToggleProtection,onReleaseAsset,onUpdateMission,onUpdateRequirement,onValidateRequirement,onSendRequirementForward,onUpdateDelivery}
  const View=role==='remote_sensing_manager'?ManagerView:role==='collection_manager'?CollectionView:role==='upad_lno'?UPADView:CoordinatorView
  const [sidebarWidth,setSidebarWidth]=useStoredSize('nexus-rs-sidebar-width',152,118,250)
  const resizeSidebar=(delta)=>setSidebarWidth(v=>Math.max(118,Math.min(250,v+delta.dx)))
  return <div className="rx-shell rx-shell-resizable" style={{'--rx-sidebar-width':`${sidebarWidth}px`}}>
-  <LiveHeader role={role} missionState={missionState} onAdvance={onAdvanceExercise} onEnd={onEndExercise}/>
+  <LiveHeader role={role} missionState={missionState} onEnd={onEndExercise}/>
   <Sidebar role={role} active={role==='collection_manager'?'requirements':role==='upad_lno'?'upad':'mission'} onNavigate={onNavigate}/>
   <DragHandle className="shell-left" onDrag={resizeSidebar}/>
   <main className="rx-main"><View {...common}/></main>
