@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import Sidebar from './components/Sidebar.jsx'
 import Header from './components/Header.jsx'
 import AdvisorPanel from './components/AdvisorPanel.jsx'
@@ -35,6 +35,7 @@ import { INITIAL_MISSION_STATE } from './data/missionState.js'
 import { INITIAL_MATRIX } from './data/syncMatrix.js'
 import { buildSyncMatrixFromState } from './engine/syncMatrixBuilder.js'
 import { initializeScenario, selectRole as controllerSelectRole, startExercise, beginTransition, approveTransition, endExercise, resetExercise, isWorkspaceReadOnly } from './engine/exerciseController.js'
+import { buildTomorrowPlanReviews } from './engine/tomorrowPlanReview.js'
 
 
 function IncidentAssignment({incidents=[],selectedIncident,onSelect,onConfirm}){
@@ -181,6 +182,25 @@ export default function App(){
  const [showAdvanceTurn,setShowAdvanceTurn]=useState(false)
  const [scenarioBusy,setScenarioBusy]=useState(false)
 
+ const navigate=(next,{replace=false}={})=>{
+  if(next===active) return
+  const method=replace?'replaceState':'pushState'
+  window.history[method]({nexusRsPage:next},'',`#${next}`)
+  setActive(next)
+ }
+
+ useEffect(()=>{
+  const initial=window.history.state?.nexusRsPage
+  if(initial&&initial!==active) setActive(initial)
+  else window.history.replaceState({nexusRsPage:active},'',`#${active}`)
+  const handlePop=(event)=>{
+   const next=event.state?.nexusRsPage
+   if(next) setActive(next)
+  }
+  window.addEventListener('popstate',handlePop)
+  return ()=>window.removeEventListener('popstate',handlePop)
+ },[])
+
 
  const currentRole=missionState.exercise?.selectedRole || role || 'remote_sensing_coordinator'
  const workspaceMissionState=scopeMissionStateForRole(missionState,currentRole)
@@ -313,12 +333,33 @@ export default function App(){
  const readOnly=isWorkspaceReadOnly(missionState,active)
 
  const recordDecision=(type,detail)=>setMissionState(prev=>({...prev,decisions:[...prev.decisions,{id:`decision-${prev.decisions.length+1}`,type,detail,asOf:prev.asOf,role:currentRole}]}))
- const toggleProtection=(missionId)=>setMissionState(prev=>({...prev,currentOps:{...prev.currentOps,missions:prev.currentOps.missions.map(m=>m.id===missionId?{...m,protected:!m.protected}:m)},crossPeriodImpacts:[...prev.crossPeriodImpacts,{id:`x-${Date.now()}`,source:'Current Ops',target:"Tomorrow's Plan",impact:`Mission protection changed for ${missionId}; OP 2 availability must be rechecked.`}]}))
+ const toggleProtection=(missionId)=>setMissionState(prev=>({...prev,currentOps:{...prev.currentOps,missions:prev.currentOps.missions.map(m=>m.id===missionId?{...m,protected:!m.protected}:m)},crossPeriodImpacts:[...prev.crossPeriodImpacts,{id:`x-${Date.now()}`,source:'Current Ops',target:"Tomorrow's Plan",impact:`Mission protection changed for ${missionId}; OP ${Number(prev.exercise?.activeOperationalPeriod || prev.operationalPeriod || 1) + 1} availability must be rechecked.`}]}))
  const notifyCoordinator=(missionId)=>{setMissionState(prev=>({...prev,currentOps:{...prev.currentOps,missions:prev.currentOps.missions.map(m=>m.id===missionId?{...m,coordinatorNotified:true}:m)}}));recordDecision('coordination',`Coordinator notified of ${missionId} impact`)}
  const updateCurrentMission=(missionId,changes)=>setMissionState(prev=>({...prev,currentOps:{...prev.currentOps,missions:(prev.currentOps?.missions||[]).map(m=>m.id===missionId?{...m,...changes}:m)},decisions:[...(prev.decisions||[]),{id:`decision-${Date.now()}`,type:'mission_execution_update',detail:`Updated ${missionId}: ${Object.keys(changes).join(', ')}`,asOf:prev.exercise?.localIncidentTime||prev.asOf||'CURRENT LOCAL',role:currentRole}]}))
  const markTaskable=(reqId)=>setMissionState(prev=>{const reqs=prev.tomorrowPlan.requirements.map(r=>r.id===reqId?{...r,taskable:true,status:r.upad==='Unassigned'?'draft':'ready'}:r);const blockers=prev.tomorrowPlan.blockers.filter(b=>!b.includes('Fire Bravo EEIs'));return {...prev,tomorrowPlan:{...prev.tomorrowPlan,requirements:reqs,blockers,readiness:Math.min(100,prev.tomorrowPlan.readiness+12)}}})
  const assignUpad=(reqId)=>setMissionState(prev=>{const reqs=prev.tomorrowPlan.requirements.map(r=>r.id===reqId?{...r,upad:'UPAD-NW',status:r.taskable?'ready':'draft'}:r);const blockers=prev.tomorrowPlan.blockers.filter(b=>!b.includes('UPAD support'));return {...prev,tomorrowPlan:{...prev.tomorrowPlan,requirements:reqs,blockers,readiness:Math.min(100,prev.tomorrowPlan.readiness+10)}}})
  const approvePlan=()=>setMissionState(prev=>({...prev,tomorrowPlan:{...prev.tomorrowPlan,approved:true,status:'approved',readiness:100}}))
+ const submitTomorrowPlanForReview=()=>setMissionState(prev=>{
+  const reviews=buildTomorrowPlanReviews(prev,currentRole)
+  const hasRevision=reviews.some(item=>['REVISION REQUIRED','RETURNED FOR REVISION','APPROVED WITH CONDITIONS'].includes(item.outcome))
+  return {
+   ...prev,
+   tomorrowPlan:{
+    ...(prev.tomorrowPlan||{}),
+    status:hasRevision?'revision_required':'coordinated',
+    reviews,
+    lastSubmittedAt:prev.exercise?.localIncidentTime||prev.asOf||'CURRENT LOCAL',
+    submittedBy:currentRole,
+   },
+   decisions:[...(prev.decisions||[]),{
+    id:`decision-${Date.now()}`,
+    type:'tomorrow_plan_coordination',
+    detail:`Submitted OP ${(prev.exercise?.activeOperationalPeriod||prev.operationalPeriod||1)+1} plan for simulated staff coordination.`,
+    asOf:prev.exercise?.localIncidentTime||prev.asOf||'CURRENT LOCAL',
+    role:currentRole,
+   }],
+  }
+ })
 
  const releaseAsset=(assetId)=>setMissionState(prev=>{const asset=prev.assetControl.assets.find(a=>a.id===assetId);if(!asset||asset.status==='released') return prev;const affectedMission=asset.missionId;return {...prev,assetControl:{...prev.assetControl,assets:prev.assetControl.assets.map(a=>a.id===assetId?{...a,status:'released',assignment:'Returned to State',missionId:null}:a),history:[...prev.assetControl.history,{id:`asset-history-${Date.now()}`,time:'CURRENT LOCAL',actor:'Remote Sensing Coordinator',action:`Released ${asset.identifier} back to State J3 control.`}]},currentOps:{...prev.currentOps,missions:prev.currentOps.missions.map(m=>m.id===affectedMission?{...m,status:'asset_released',risk:'Assigned platform released to state control'}:m)},crossPeriodImpacts:[...prev.crossPeriodImpacts,{id:`x-${Date.now()}`,source:'Asset Allocation',target:"Tomorrow's Plan",impact:`${asset.identifier} was released to state control; current and next-period coverage must be revalidated.`}],decisions:[...prev.decisions,{id:`decision-${prev.decisions.length+1}`,type:'asset_release',detail:`Released ${asset.identifier} to State J3`,asOf:'CURRENT LOCAL',role:currentRole}]}})
  const submitAssetRequest=(request)=>setMissionState(prev=>({...prev,assetControl:{...prev.assetControl,requests:[...prev.assetControl.requests,{...request,id:`asset-request-${Date.now()}`,status:'PENDING STATE J3',submittedAt:'CURRENT LOCAL',submittedBy:'Remote Sensing Coordinator'}],history:[...prev.assetControl.history,{id:`asset-history-${Date.now()}`,time:'CURRENT LOCAL',actor:'Remote Sensing Coordinator',action:`Submitted ${request.quantity} × ${request.requestType} request to State J3.`}]},decisions:[...prev.decisions,{id:`decision-${prev.decisions.length+1}`,type:'asset_request',detail:`Requested ${request.quantity} × ${request.requestType} from State J3`,asOf:'CURRENT LOCAL',role:currentRole}]}))
@@ -432,8 +473,8 @@ export default function App(){
   'scenario-loading':<section className="panel" style={{maxWidth:760,margin:'70px auto',padding:28,textAlign:'center'}}><span className="eyebrow">SCENARIO CONTROLLER</span><h2>Generating a fresh Northern California exercise…</h2><p style={{color:'#8fa7b3'}}>Building incidents, customers, requirements, missions, resources, UPAD conditions, airspace, and hidden scenario truth.</p></section>,
   advisor:<AdvisorConversation role={currentRole} missionState={missionState} operationalSummary={deriveOperationalSummary(missionState)} onSubmitDecision={submitFreeTextDecision} pending={advisorPending} busy={advisorBusy} mode={advisorMode} onConfirm={confirmAdvisorAction} onCancel={cancelAdvisorAction} onClose={()=>setActive('current')}/>,
   situation:<Situation missionState={workspaceMissionState}/>,
-  current:<CurrentOperationsRouter role={currentRole} missionState={workspaceMissionState} readOnly={readOnly} onNavigate={setActive} onToggleProtection={toggleProtection} onReleaseAsset={releaseAsset} onUpdateMission={updateCurrentMission} onUpdateRequirement={updateRequirement} onValidateRequirement={validateRequirement} onSendRequirementForward={sendRequirementForward} onUpdateDelivery={updateDelivery} advisorProps={{role:currentRole,missionState,operationalSummary:deriveOperationalSummary(missionState),onSubmitDecision:submitFreeTextDecision,pending:advisorPending,busy:advisorBusy,mode:advisorMode,onConfirm:confirmAdvisorAction,onCancel:cancelAdvisorAction,onOpenAdvisor:()=>setActive('advisor')}} onEndExercise={()=>setShowEndEx(true)}/>,
-  tomorrow:<TomorrowPlan role={currentRole} missionState={workspaceMissionState} readOnly={readOnly} onMarkTaskable={markTaskable} onAssignUpad={assignUpad} onApprovePlan={approvePlan} onOpenCurrent={()=>setActive('current')}/>,
+  current:<CurrentOperationsRouter role={currentRole} missionState={workspaceMissionState} readOnly={readOnly} onNavigate={navigate} onToggleProtection={toggleProtection} onReleaseAsset={releaseAsset} onUpdateMission={updateCurrentMission} onUpdateRequirement={updateRequirement} onValidateRequirement={validateRequirement} onSendRequirementForward={sendRequirementForward} onUpdateDelivery={updateDelivery} advisorProps={{role:currentRole,missionState,operationalSummary:deriveOperationalSummary(missionState),onSubmitDecision:submitFreeTextDecision,pending:advisorPending,busy:advisorBusy,mode:advisorMode,onConfirm:confirmAdvisorAction,onCancel:cancelAdvisorAction,onOpenAdvisor:()=>setActive('advisor')}} onEndExercise={()=>setShowEndEx(true)}/>,
+  tomorrow:<TomorrowPlan role={currentRole} missionState={workspaceMissionState} readOnly={readOnly} onMarkTaskable={markTaskable} onAssignUpad={assignUpad} onApprovePlan={approvePlan} onSubmitForReview={submitTomorrowPlanForReview} onOpenCurrent={()=>navigate('current')}/>,
   sync:<SyncMatrix role={currentRole} matrix={syncMatrix} readOnly={readOnly} onUpdateSortie={updateSortie} onResolveNeed={resolveNeed} onResolveGap={resolveGap} onApprove={approveMatrix} onAddLeadershipNote={addLeadershipNote}/>,
   requirements:<Requirements role={currentRole} missionState={workspaceMissionState} readOnly={readOnly} onUpdateRequirement={updateRequirement} onValidateRequirement={validateRequirement} onSendForward={sendRequirementForward} onAddRequirement={addRequirement}/>,
   platforms:<Platforms role={currentRole} missionState={missionState}/>,
@@ -451,14 +492,14 @@ export default function App(){
 
  if(active==='current'){
   return <div className="app-shell live-app-shell">
-   <Sidebar active={active} setActive={setActive} role={currentRole} missionState={missionState}/>
+   <Sidebar active={active} setActive={navigate} role={currentRole} missionState={missionState}/>
    <div className="main-shell live-main-shell">
     <CurrentOperationsRouter
      embedded
      role={currentRole}
      missionState={workspaceMissionState}
      readOnly={readOnly}
-     onNavigate={setActive}
+     onNavigate={navigate}
      onToggleProtection={toggleProtection}
      onReleaseAsset={releaseAsset}
      onUpdateMission={updateCurrentMission}
@@ -497,7 +538,7 @@ export default function App(){
  }
 
  return <div className={`app-shell ${portalMode?'portal-app-shell portal-app-shell-full':''}`}>
-   {!portalMode && <Sidebar active={active} setActive={setActive} role={currentRole} missionState={missionState} portalMode={portalMode}/>}
+   {!portalMode && <Sidebar active={active} setActive={navigate} role={currentRole} missionState={missionState} portalMode={portalMode}/>}
    <div className="main-shell">
      <Header role={currentRole} missionState={missionState} onReset={resetActiveExercise} portalMode={portalMode}/>
      {!portalMode && <ExerciseStatusBar missionState={missionState} onStart={confirmStartEx} onAdvance={advanceExercise} onTransition={reviewTransition} onEnd={()=>setShowEndEx(true)} onAar={()=>setActive('aar')}/>}
