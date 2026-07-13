@@ -1709,3 +1709,13 @@
   .rx-current-embedded-body>.rx-main{overflow:visible}
   .rx-current-embedded-body>.rx-advisor-column{border-left:0;border-top:1px solid #24506a}
 }
+
+/* Fix: embedded Current Ops must not retain standalone rx-shell grid placement */
+.rx-current-embedded-body > .rx-main{
+  grid-column:1 !important;
+  grid-row:1 !important;
+}
+.rx-current-embedded-body > .rx-advisor-column{
+  grid-column:2 !important;
+  grid-row:1 !important;
+}
