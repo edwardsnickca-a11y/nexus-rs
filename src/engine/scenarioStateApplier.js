@@ -70,7 +70,8 @@ export function applyInitialWorld(baseState,world) {
     scenario:{
       ...(baseState.scenario||{}),
       name:world.scenarioTitle,
-      location:'Northern California',
+      location:(baseState.exercise?.gaccRegion||baseState.scenario?.gaccRegion)==='South Ops'?'Southern California':'Northern California',
+      gaccRegion:baseState.exercise?.gaccRegion||baseState.scenario?.gaccRegion||world.gaccRegion||'North Ops',
       localTimeZone:world.localTimeZone,
       generated:true,
       generationSeed:world.generationSeed||'',

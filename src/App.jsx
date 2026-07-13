@@ -38,6 +38,23 @@ import { initializeScenario, selectRole as controllerSelectRole, startExercise, 
 import { buildTomorrowPlanReviews } from './engine/tomorrowPlanReview.js'
 
 
+
+const GACC_HISTORY_KEY='nexus-rs-gacc-history-v1'
+
+function selectExerciseGacc(){
+ try{
+  const history=JSON.parse(localStorage.getItem(GACC_HISTORY_KEY)||'[]')
+  const recent=Array.isArray(history)?history.slice(-2):[]
+  let selected
+  if(recent.length===2 && recent[0]===recent[1]) selected=recent[0]==='North Ops'?'South Ops':'North Ops'
+  else selected=Math.random()<.5?'North Ops':'South Ops'
+  localStorage.setItem(GACC_HISTORY_KEY,JSON.stringify([...recent,selected].slice(-6)))
+  return selected
+ }catch{
+  return Math.random()<.5?'North Ops':'South Ops'
+ }
+}
+
 function IncidentAssignment({incidents=[],selectedIncident,onSelect,onConfirm}){
  return <section className="panel" style={{maxWidth:1100,margin:'38px auto',padding:24}}>
   <span className="eyebrow">REMOTE SENSING MANAGER ASSIGNMENT</span>
@@ -232,7 +249,7 @@ export default function App(){
     result=await requestScenarioController({mode,context})
    }catch(error){
     result=mode==='initialize'
-      ? generateFallbackWorld({role:baseState.exercise?.selectedRole,difficulty:context.difficulty})
+      ? generateFallbackWorld({role:baseState.exercise?.selectedRole,difficulty:context.difficulty,gaccRegion:context.gaccRegion})
       : generateFallbackAdvance(baseState)
    }
 
@@ -240,7 +257,7 @@ export default function App(){
     result=normalizeInitialWorld(result)
     let validation=validateInitialWorld(result)
     if(!validation.ok){
-     result=normalizeInitialWorld(generateFallbackWorld({role:baseState.exercise?.selectedRole,difficulty:context.difficulty}))
+     result=normalizeInitialWorld(generateFallbackWorld({role:baseState.exercise?.selectedRole,difficulty:context.difficulty,gaccRegion:context.gaccRegion}))
      validation=validateInitialWorld(result)
     }
     if(!validation.ok) throw new Error(validation.errors.join(' '))
@@ -283,10 +300,13 @@ export default function App(){
  }
  const confirmStartEx=async(scenario, setup={})=>{
   const initialized=applyPortalScenario(missionState,scenario)
+  const gaccRegion=selectExerciseGacc()
   const configured={
    ...initialized,
+   scenario:{...(initialized.scenario||{}),gaccRegion},
    exercise:{
     ...(initialized.exercise||{}),
+    gaccRegion,
     participantName:(setup.participantName||initialized.exercise?.participantName||'').trim(),
     operationalContext:setup.operationalContext||initialized.exercise?.operationalContext||'',
     exerciseFocus:setup.exerciseFocus||initialized.exercise?.exerciseFocus||'Full Mission Cycle',
@@ -470,7 +490,7 @@ export default function App(){
   brief:<ScenarioBrief missionState={missionState} onContinue={openRoleSelection}/>,
   roles:<RoleSelection selectedRole={role} onSelectRole={confirmRoleSelection} onStart={()=>setActive('portal')}/>,
   incident:<IncidentAssignment incidents={pendingStart?.generatedState?.incidents||missionState.incidents||[]} selectedIncident={pendingIncident} onSelect={setPendingIncident} onConfirm={confirmIncidentAssignment}/>,
-  'scenario-loading':<section className="panel" style={{maxWidth:760,margin:'70px auto',padding:28,textAlign:'center'}}><span className="eyebrow">SCENARIO CONTROLLER</span><h2>Generating a fresh Northern California exercise…</h2><p style={{color:'#8fa7b3'}}>Building incidents, customers, requirements, missions, resources, UPAD conditions, airspace, and hidden scenario truth.</p></section>,
+  'scenario-loading':<section className="panel" style={{maxWidth:760,margin:'70px auto',padding:28,textAlign:'center'}}><span className="eyebrow">SCENARIO CONTROLLER</span><h2>Generating a fresh {missionState.exercise?.gaccRegion==='South Ops'?'Southern':'Northern'} California exercise…</h2><p style={{color:'#8fa7b3'}}>Building incidents, customers, requirements, missions, resources, UPAD conditions, airspace, and hidden scenario truth.</p></section>,
   advisor:<AdvisorConversation role={currentRole} missionState={missionState} operationalSummary={deriveOperationalSummary(missionState)} onSubmitDecision={submitFreeTextDecision} pending={advisorPending} busy={advisorBusy} mode={advisorMode} onConfirm={confirmAdvisorAction} onCancel={cancelAdvisorAction} onClose={()=>setActive('current')}/>,
   situation:<Situation missionState={workspaceMissionState}/>,
   current:<CurrentOperationsRouter role={currentRole} missionState={workspaceMissionState} readOnly={readOnly} onNavigate={navigate} onToggleProtection={toggleProtection} onReleaseAsset={releaseAsset} onUpdateMission={updateCurrentMission} onUpdateRequirement={updateRequirement} onValidateRequirement={validateRequirement} onSendRequirementForward={sendRequirementForward} onUpdateDelivery={updateDelivery} advisorProps={{role:currentRole,missionState,operationalSummary:deriveOperationalSummary(missionState),onSubmitDecision:submitFreeTextDecision,pending:advisorPending,busy:advisorBusy,mode:advisorMode,onConfirm:confirmAdvisorAction,onCancel:cancelAdvisorAction,onOpenAdvisor:()=>setActive('advisor')}} onEndExercise={()=>setShowEndEx(true)}/>,

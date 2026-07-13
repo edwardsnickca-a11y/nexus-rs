@@ -131,11 +131,11 @@ function makeId(prefix,index) {
   return `${prefix}-${String(index+1).padStart(3,'0')}`
 }
 
-export function generateFallbackWorld({ role='remote_sensing_coordinator', difficulty='Standard' }={}) {
+export function generateFallbackWorld({ role='remote_sensing_coordinator', difficulty='Standard', gaccRegion='North Ops' }={}) {
   const seed=randomSeed()
   const random=rng(seed)
   const incidentCount=2+Math.floor(random()*4)
-  const selectedGacc=choose(random,['North Ops','South Ops'])
+  const selectedGacc=gaccRegion==='South Ops'?'South Ops':'North Ops'
   const locations=shuffled(random,LOCATIONS.filter(item=>item.gacc===selectedGacc)).slice(0,incidentCount)
   const startMinutes=360+[0,15,30,45][Math.floor(random()*4)]
   const platformCycle=['MQ-9','UH-72','CAP','CAP','UH-72']
