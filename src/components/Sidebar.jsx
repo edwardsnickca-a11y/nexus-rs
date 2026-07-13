@@ -14,7 +14,9 @@ const ITEMS = [
   ['oversight','Intelligence Oversight','intel-oversight'],
   ['updates','Deadlines','deadlines'],
   ['log','Decision Log','decision-log'],
-]const PORTAL_ITEMS = [['portal','Mission Portal'],['portal-resources','Resources'],['portal-help','Help & Support']]
+]
+
+const PORTAL_ITEMS = [['portal','Mission Portal'],['portal-resources','Resources'],['portal-help','Help & Support']]
 
 export default function Sidebar({ active, setActive, role, missionState, portalMode = false }) {
   const selected = ROLES.find((item)=>item.id===role)
