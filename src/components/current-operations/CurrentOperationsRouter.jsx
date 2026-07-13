@@ -28,7 +28,7 @@ const tone = (value='') => String(value).toLowerCase().replaceAll(' ','-').repla
 const Panel = ({title,accent='cyan',children,className=''}) => <section className={`rx-panel ${accent} ${className}`}><div className="rx-panel-title">{title}</div>{children}</section>
 const Button = ({children,onClick,disabled=false}) => <button className="rx-outline-button" onClick={onClick} disabled={disabled}>{children}</button>
 
-function LiveHeader({role,missionState,onEnd}){
+function LiveHeader({role,missionState,onAdvance,onEnd}){
  const meta=ROLES.find(r=>r.id===role)
  const participant=missionState.exercise?.participantName?.trim()
  const identity=participant || meta?.name || 'Role not selected'
@@ -38,6 +38,7 @@ function LiveHeader({role,missionState,onEnd}){
   <div className="rx-head-block"><span>SCENARIO</span><strong>{missionState.exercise?.scenarioName||missionState.scenario?.name||'Western Region Multi-Fire'}</strong></div>
   <div className="rx-head-block"><span>OPERATIONAL PERIOD</span><div className="rx-op-toggle"><b>OP {missionState.exercise?.activeOperationalPeriod||missionState.operationalPeriod||1}</b><span>OP 2</span></div></div>
   <div className="rx-head-block"><span>LOCAL INCIDENT TIME</span><strong>{missionState.exercise?.localIncidentTime||missionState.asOf||'1732L'}</strong><small>Period remains active</small></div>
+  {onAdvance&&<div className="rx-head-block"><button type="button" className="rx-end" onClick={onAdvance}>NEXT TURN →</button></div>}
   <div className="rx-header-actions"><button>☰<small>MENU</small></button>{onEnd&&<button className="rx-end" onClick={onEnd}>END EXERCISE</button>}</div>
  </header>
 }
@@ -738,7 +739,7 @@ function ActiveCollectionDeck({
   </div>
   <div className="rx-deck-assignment-table">
    <div className="head"><span>TASK ID</span><span>PRI</span><span>INCIDENT / LOCATION</span><span>LTIOV</span><span>ASSIGNED SORTIE</span><span>ACTION</span></div>
-   {items.slice(0,10).map((item,index)=>{
+   {items.map((item,index)=>{
     const row=buildDeckRow(item,index)
     return <div className="row" key={row.id}>
      <strong>{row.id}</strong>
@@ -1031,6 +1032,8 @@ function CollectionView(props){
    .rx-active-deck>.rx-outline-button{margin-top:auto}
    .rx-active-deck-meta{display:flex;gap:18px;padding:9px 11px;border-bottom:1px solid rgba(127,232,244,.15);color:#9eb2bf}
    .rx-active-deck-meta b{color:#7fe8f4;font-size:16px;margin-right:4px}
+   .rx-deck-assignment-table{flex:1;min-height:0;overflow-y:auto;overflow-x:auto;scrollbar-gutter:stable}
+   .rx-deck-assignment-table .head{position:sticky;top:0;z-index:2;background:#0b2332}
    .rx-deck-assignment-table .head,.rx-deck-assignment-table .row{display:grid;grid-template-columns:78px 48px 1.35fr 66px minmax(145px,1.2fr) 84px;gap:8px;align-items:center}
    .rx-deck-assignment-table .head{padding:8px 9px;color:#8ba3af;font-size:9px;border-bottom:1px solid rgba(127,232,244,.18)}
    .rx-deck-assignment-table .row{padding:8px 9px;border-bottom:1px solid rgba(127,232,244,.12)}
@@ -1217,14 +1220,14 @@ function UPADView(props){
 
 export default function CurrentOperationsRouter({
  role,missionState,onNavigate,onToggleProtection,onReleaseAsset,onUpdateMission,onUpdateRequirement,onValidateRequirement,onSendRequirementForward,onUpdateDelivery,
- advisorProps,onEndExercise
+ advisorProps,onAdvanceExercise,onEndExercise
 }){
  const common={role,missionState,onNavigate,onToggleProtection,onReleaseAsset,onUpdateMission,onUpdateRequirement,onValidateRequirement,onSendRequirementForward,onUpdateDelivery}
  const View=role==='remote_sensing_manager'?ManagerView:role==='collection_manager'?CollectionView:role==='upad_lno'?UPADView:CoordinatorView
  const [sidebarWidth,setSidebarWidth]=useStoredSize('nexus-rs-sidebar-width',152,118,250)
  const resizeSidebar=(delta)=>setSidebarWidth(v=>Math.max(118,Math.min(250,v+delta.dx)))
  return <div className="rx-shell rx-shell-resizable" style={{'--rx-sidebar-width':`${sidebarWidth}px`}}>
-  <LiveHeader role={role} missionState={missionState} onEnd={onEndExercise}/>
+  <LiveHeader role={role} missionState={missionState} onAdvance={onAdvanceExercise} onEnd={onEndExercise}/>
   <Sidebar role={role} active={role==='collection_manager'?'requirements':role==='upad_lno'?'upad':'mission'} onNavigate={onNavigate}/>
   <DragHandle className="shell-left" onDrag={resizeSidebar}/>
   <main className="rx-main"><View {...common}/></main>
