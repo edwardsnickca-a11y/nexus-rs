@@ -14,13 +14,23 @@ export function buildInitializationContext(state) {
     difficulty:state.exercise?.difficulty||state.exercise?.selectedDifficulty||state.scenario?.difficulty||'Standard',
     operationalContext:state.exercise?.operationalContext||'',
     exerciseFocus:state.exercise?.exerciseFocus||'Full Mission Cycle',
-    geographicConstraint:'Use 2–5 wildfire incidents anywhere in California, distributed across the North Ops (ONCC) and South Ops (OSCC) Geographic Area Coordination Center operating areas. Use real California cities, counties, tribal jurisdictions, national forests, mountain ranges, valleys, or recognized operational areas. Do not invent geographic names. Vary the geography between exercises and avoid repeatedly selecting the same cities or counties.',
+    geographicConstraint:'Use 2–5 wildfire incidents in one California Geographic Area Coordination Center operating area: either North Ops (ONCC) or South Ops (OSCC). Use real California cities, counties, tribal jurisdictions, national forests, mountain ranges, valleys, or recognized operational areas. Do not invent geographic names. Vary the geography between exercises and avoid repeatedly selecting the same cities or counties.',
     timeStandard:'Use local Pacific incident time in all trainee-facing fields. Format HHMM PT.',
     platformCapabilities:CAPABILITY_LIBRARY,
     roleAuthority:ROLE_AUTHORITY[role],
-    locationDiversityRequirement:'Choose a fresh mix of California incident locations for each exercise. Consider both North Ops and South Ops, coastal, valley, foothill, mountain, desert, and wildland-urban interface settings. Do not default repeatedly to Redding, Chico, Ukiah, Quincy, or the same small cluster of Northern California locations.',
-    gaccPerspective:'The Remote Sensing Coordinator operates from a California GACC-style regional coordination perspective and may coordinate across either North Ops or South Ops.',
+    gaccSelectionRequirement:'Choose one operating area for the exercise: North Ops or South Ops. Keep all generated incidents geographically consistent with that selected GACC. North Ops scenarios should be described as Northern California; South Ops scenarios should be described as Southern California.',
+    locationDiversityRequirement:'Choose a fresh mix of real incident locations for each exercise. Consider coastal, valley, foothill, mountain, desert, and wildland-urban interface settings appropriate to the selected GACC. Avoid repeatedly defaulting to the same small cluster of locations.',
+    gaccPerspective:'The Remote Sensing Coordinator operates from a California GACC-style regional coordination perspective.',
     outputPurpose:'Return a complete fresh world. Do not preserve Pine Ridge, Bear Creek, Eagle Peak, or other static demo entities.',
+    incidentSituationRequirements:{
+      requiredForEveryIncident:true,
+      fields:[
+        'incidentNumber','startDateTime','sizeAcres','containmentPercent','significantEvents',
+        'lifeSafety','weatherConcerns','projectedActivity','threatSummary',
+        'strategicObjectives','plannedActions'
+      ],
+      guidance:'Populate every field with concise, operationally useful incident information at STARTEX. Use real Northern California geography and local Pacific time. Do not use generic placeholders such as Not reported. If a detail is intentionally unavailable, use Pending incident update sparingly and only for optional details.',
+    },
   }
 }
 
@@ -48,6 +58,9 @@ export function buildAdvanceContext(state) {
     currentIncidentTime:state.exercise?.localIncidentTime||state.asOf||'',
     currentTurn:Number(state.exercise?.turnNumber||0),
     roleAuthority:ROLE_AUTHORITY[role],
+    gaccSelectionRequirement:'Choose one operating area for the exercise: North Ops or South Ops. Keep all generated incidents geographically consistent with that selected GACC. North Ops scenarios should be described as Northern California; South Ops scenarios should be described as Southern California.',
+    locationDiversityRequirement:'Choose a fresh mix of real incident locations for each exercise. Consider coastal, valley, foothill, mountain, desert, and wildland-urban interface settings appropriate to the selected GACC. Avoid repeatedly defaulting to the same small cluster of locations.',
+    gaccPerspective:'The Remote Sensing Coordinator operates from a California GACC-style regional coordination perspective.',
     platformCapabilities:CAPABILITY_LIBRARY,
     hiddenWorld:director.hiddenWorld||{},
     priorScenarioSummary:director.lastScenarioSummary||'',
@@ -60,6 +73,7 @@ export function buildAdvanceContext(state) {
       traineeText:item.traineeText,
       advisorMessage:item.advisorMessage,
     })),
+    incidentUpdateRequirement:'When conditions materially change, update the affected incident through an incidents merge patch. Keep size, containment, significant events, life safety, weather, projected activity, threats, objectives, and planned actions current and causally consistent.',
     visibleState:{
       incidents:list(state.incidents),
       customers:list(state.customers),
