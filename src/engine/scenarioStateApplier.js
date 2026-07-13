@@ -162,6 +162,15 @@ function applyPatch(state,patch) {
   const append=patch.operation==='append'
   const id=patch.id
 
+  const rootCollections={incidents:'incidents'}
+  if(rootCollections[patch.collection]){
+    const key=rootCollections[patch.collection]
+    const current=list(state[key])
+    if(append) return {...state,[key]:[...current,{id,...changes}]}
+    const merged=mergeById(current,id,changes)
+    return merged.found?{...state,[key]:merged.items}:state
+  }
+
   const configs={
     requirements:{path:['requirements','items']},
     missions:{path:['currentOps','missions']},

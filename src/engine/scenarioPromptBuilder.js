@@ -19,6 +19,15 @@ export function buildInitializationContext(state) {
     platformCapabilities:CAPABILITY_LIBRARY,
     roleAuthority:ROLE_AUTHORITY[role],
     outputPurpose:'Return a complete fresh world. Do not preserve Pine Ridge, Bear Creek, Eagle Peak, or other static demo entities.',
+    incidentSituationRequirements:{
+      requiredForEveryIncident:true,
+      fields:[
+        'incidentNumber','startDateTime','sizeAcres','containmentPercent','significantEvents',
+        'lifeSafety','weatherConcerns','projectedActivity','threatSummary',
+        'strategicObjectives','plannedActions'
+      ],
+      guidance:'Populate every field with concise, operationally useful incident information at STARTEX. Use real Northern California geography and local Pacific time. Do not use generic placeholders such as Not reported. If a detail is intentionally unavailable, use Pending incident update sparingly and only for optional details.',
+    },
   }
 }
 
@@ -58,6 +67,7 @@ export function buildAdvanceContext(state) {
       traineeText:item.traineeText,
       advisorMessage:item.advisorMessage,
     })),
+    incidentUpdateRequirement:'When conditions materially change, update the affected incident through an incidents merge patch. Keep size, containment, significant events, life safety, weather, projected activity, threats, objectives, and planned actions current and causally consistent.',
     visibleState:{
       incidents:list(state.incidents),
       customers:list(state.customers),

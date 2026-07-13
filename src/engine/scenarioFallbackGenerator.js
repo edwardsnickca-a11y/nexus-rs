@@ -16,6 +16,46 @@ const LOCATIONS = [
 ]
 
 const INCIDENT_SUFFIXES = ['North', 'East', 'Ridge', 'Creek', 'Foothill', 'Valley', 'Pass', 'Bench']
+const SIGNIFICANT_EVENTS = [
+  'Fire growth continued along the active flank, prompting additional route and perimeter monitoring.',
+  'Spotting across a control feature increased uncertainty near threatened communities.',
+  'Suppression progress improved on one flank while smoke limited aerial observation elsewhere.',
+  'A shift in fire behavior increased concern for transportation and utility corridors.',
+]
+const LIFE_SAFETY = [
+  'Evacuation warnings remain in effect for exposed communities; route status is under active review.',
+  'No new evacuation orders are reported, but access for an isolated community remains a concern.',
+  'Evacuation operations are in progress in the most exposed area, with traffic control points established.',
+  'Repopulation planning has begun in one sector while restrictions remain elsewhere.',
+]
+const WEATHER_CONCERNS = [
+  'Afternoon winds and low relative humidity may increase spread and reduce collection quality through smoke.',
+  'Terrain-driven winds are expected to become gusty after midday, with variable smoke in drainages.',
+  'A dry and unstable air mass may support increased plume development during the operational period.',
+  'Morning inversion conditions will trap smoke before improving visibility later in the day.',
+]
+const PROJECTED_ACTIVITY = [
+  'Continued growth is expected on the active flank during the next operational period, with spotting possible beyond current lines.',
+  'Fire activity is expected to remain moderate until afternoon winds increase spread potential.',
+  'Limited perimeter growth is expected overnight, followed by renewed activity after inversion breakup.',
+  'Movement toward the transportation corridor remains possible if current wind alignment persists.',
+]
+const THREAT_SUMMARIES = [
+  'Primary threats are evacuation-route reliability, scattered residences, utility infrastructure, and responder access.',
+  'Communities along the wildland-urban interface and critical transportation links remain at risk.',
+  'The incident threatens isolated residences, communications infrastructure, and natural-resource values.',
+  'Potential cascading impacts include road closures, power interruption, and delayed public-warning operations.',
+]
+const STRATEGIC_OBJECTIVES = [
+  'Protect life, maintain viable evacuation routes, limit growth toward communities, and preserve critical infrastructure.',
+  'Provide for public and responder safety, hold established control features, and support timely community decision-making.',
+  'Keep the incident from crossing the primary transportation corridor while protecting exposed communities and infrastructure.',
+]
+const PLANNED_ACTIONS = [
+  'Continue perimeter control, improve situational awareness on the active flank, validate evacuation routes, and reassess priorities after the next weather update.',
+  'Strengthen control lines, coordinate aviation and airspace, monitor threatened infrastructure, and update public-safety decision support.',
+  'Conduct focused reconnaissance, support structure protection, and prepare contingency actions for forecast wind changes.',
+]
 const CONDITIONS = [
   'Wind-driven spread is pressing toward a transportation corridor.',
   'Heavy smoke is reducing visual collection quality during part of the day.',
@@ -98,12 +138,20 @@ export function generateFallbackWorld({ role='remote_sensing_coordinator', diffi
       county:location.county,
       location:`${location.city}, ${location.county}`,
       zone:location.zone,
+      incidentNumber:`CA-${location.county.replace(/\s+County$/,'').slice(0,3).toUpperCase()}-${String(1000+Math.floor(random()*8999))}`,
+      startDateTime:`Day ${1+Math.floor(random()*3)}, ${timeAt(Math.max(0,startMinutes-(180+Math.floor(random()*720))))}`,
       sizeAcres:acres,
       containmentPercent:Math.floor(random()*24),
       behavior:choose(random,CONDITIONS),
+      significantEvents:choose(random,SIGNIFICANT_EVENTS),
       smoke:choose(random,['Light morning smoke','Moderate smoke with afternoon degradation','Dense smoke in portions of the incident','Variable smoke by drainage']),
       wind:choose(random,['Southwest winds increasing after 1300','Light morning winds with gusty afternoon outflow','North winds creating alignment concerns','Terrain-driven winds with uncertain timing']),
-      lifeSafety:choose(random,['Evacuation warning area under review','Isolated community access is a concern','No immediate evacuation expansion, but route monitoring is required','Critical infrastructure protection decision pending']),
+      lifeSafety:choose(random,LIFE_SAFETY),
+      weatherConcerns:choose(random,WEATHER_CONCERNS),
+      projectedActivity:choose(random,PROJECTED_ACTIVITY),
+      threatSummary:choose(random,THREAT_SUMMARIES),
+      strategicObjectives:choose(random,STRATEGIC_OBJECTIVES),
+      plannedActions:choose(random,PLANNED_ACTIONS),
       status:'active',
     }
   })
@@ -358,6 +406,8 @@ export function generateFallbackAdvance(state) {
   const delta=choose(random,[15,30,45,60,90,120])
   const incidents=state.incidents||[]
   const incident=choose(random,incidents)||{name:'Regional picture',id:''}
+  const growth=Math.max(50,Math.round((150+random()*1800)/50)*50)
+  const containmentGain=Math.floor(random()*4)
   const development=choose(random,[
     'Field reporting changed one customer decision window.',
     'Smoke and airspace conditions changed collection feasibility.',
@@ -374,7 +424,19 @@ export function generateFallbackAdvance(state) {
     hiddenWorld:{...(director.hiddenWorld||{}),seed},
     visibleFacts:[{audienceRole:'all',incident:incident.name||'',severity:'medium',text:development}],
     injects:[{title:`${incident.name||'Regional'} update`,text:development,priority:'medium',relatedRole:'all',relatedIncident:incident.name||''}],
-    patches:[],
+    patches:incident.id?[{
+      collection:'incidents',
+      operation:'merge',
+      id:incident.id,
+      changes:{
+        sizeAcres:Number(incident.sizeAcres||0)+growth,
+        containmentPercent:Math.min(100,Number(incident.containmentPercent||0)+containmentGain),
+        significantEvents:development,
+        projectedActivity:choose(random,PROJECTED_ACTIVITY),
+        weatherConcerns:choose(random,WEATHER_CONCERNS),
+        plannedActions:choose(random,PLANNED_ACTIONS),
+      },
+    }]:[],
     consequences:[],
     advisorVisibleFacts:[development],
     aarObservations:['The exercise advanced using the local fallback controller.'],

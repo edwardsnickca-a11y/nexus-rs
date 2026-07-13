@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react'
 
-const text = (value, fallback = 'Not reported') => {
+const text = (value, fallback = 'Pending incident update') => {
   if (Array.isArray(value)) return value.filter(Boolean).join(' · ') || fallback
   return value || fallback
 }
@@ -22,17 +22,17 @@ function buildIncident209(incident, missionState) {
     name: incident.name,
     incidentNumber: incident.incidentNumber || incident.code || incident.id,
     reportVersion: incident.reportVersion || 'Current exercise update',
-    commander: incident.commander || incident.ic || 'Incident command not reported',
-    organization: incident.managementOrganization || incident.organization || 'Incident management organization not reported',
-    start: incident.startDateTime || incident.startedAt || incident.start || 'Not reported',
-    size: incident.acres ? `${incident.acres.toLocaleString?.() || incident.acres} acres` : text(incident.size),
-    containment: incident.containment !== undefined ? `${incident.containment}%` : text(incident.percentContained),
+    commander: incident.commander || incident.ic || 'Available in the full incident report',
+    organization: incident.managementOrganization || incident.organization || 'Available in the full incident report',
+    start: incident.startDateTime || incident.startedAt || incident.start || 'Pending incident update',
+    size: number(incident.sizeAcres ?? incident.acres, null) !== null ? `${Number(incident.sizeAcres ?? incident.acres).toLocaleString()} acres` : text(incident.size),
+    containment: (incident.containmentPercent ?? incident.containment) !== undefined ? `${incident.containmentPercent ?? incident.containment}%` : text(incident.percentContained),
     complexity: text(incident.complexity || incident.complexityLevel),
     period: text(incident.reportingPeriod || missionState.exercise?.localIncidentTime),
     location: text(incident.location || [incident.city, incident.county, incident.state].filter(Boolean).join(', ')),
     significantEvents: text(incident.significantEvents || incident.summary || incident.behavior),
     lifeSafety: text(incident.lifeSafety || incident.evacuationStatus || incident.evacuations),
-    weather: text(incident.weatherConcerns || incident.weather || incident.smoke),
+    weather: text(incident.weatherConcerns || [incident.weather, incident.wind, incident.smoke].filter(Boolean).join(' · ')),
     projectedActivity: text(incident.projectedActivity || incident.outlook || incident.expectedBehavior),
     strategicObjectives: text(incident.strategicObjectives || incident.objectives),
     threats: text(incident.threatSummary || incident.infrastructureAtRisk || incident.valuesAtRisk),
@@ -45,8 +45,10 @@ function buildIncident209(incident, missionState) {
 
 function IncidentCard({ incident, missionState, onOpen }) {
   const report = buildIncident209(incident, missionState)
-  const acreage = incident.acres ? `${incident.acres.toLocaleString?.() || incident.acres} acres` : text(incident.size)
-  const containment = incident.containment !== undefined ? `${incident.containment}% contained` : text(incident.percentContained)
+  const sizeValue = incident.sizeAcres ?? incident.acres
+  const containmentValue = incident.containmentPercent ?? incident.containment
+  const acreage = sizeValue !== undefined && sizeValue !== null ? `${Number(sizeValue).toLocaleString()} acres` : text(incident.size)
+  const containment = containmentValue !== undefined && containmentValue !== null ? `${containmentValue}% contained` : text(incident.percentContained)
 
   return <article className="situation-card">
     <header className="situation-card-head">

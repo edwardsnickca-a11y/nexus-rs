@@ -7,6 +7,19 @@ const REQUIRED_WORLD_ARRAYS = [
 ]
 
 const list = (value) => Array.isArray(value) ? value : []
+
+const REQUIRED_INCIDENT_FIELDS = [
+  'id','name','incidentNumber','city','county','location','startDateTime',
+  'sizeAcres','containmentPercent','significantEvents','lifeSafety',
+  'weatherConcerns','projectedActivity','threatSummary',
+  'strategicObjectives','plannedActions','status',
+]
+
+function hasMeaningfulValue(value) {
+  if (typeof value === 'number') return Number.isFinite(value)
+  if (Array.isArray(value)) return value.some(Boolean)
+  return String(value || '').trim().length > 0
+}
 const isObject = (value) => Boolean(value && typeof value === 'object' && !Array.isArray(value))
 
 function uniqueIds(items) {
@@ -32,6 +45,14 @@ export function validateInitialWorld(world) {
   }
   for(const key of ['incidents','customers','requirements','missions','assets','deliveries','upads']){
     if(!uniqueIds(list(world[key]))) errors.push(`${key} contains duplicate or missing IDs.`)
+  }
+
+  for(const incident of list(world.incidents)){
+    for(const field of REQUIRED_INCIDENT_FIELDS){
+      if(!hasMeaningfulValue(incident?.[field])) errors.push(`Incident ${incident?.name||incident?.id||'unknown'} is missing required situation field ${field}.`)
+    }
+    if(!Number.isFinite(Number(incident.sizeAcres))||Number(incident.sizeAcres)<0) errors.push(`Incident ${incident?.name||incident?.id||'unknown'} sizeAcres must be a non-negative number.`)
+    if(!Number.isFinite(Number(incident.containmentPercent))||Number(incident.containmentPercent)<0||Number(incident.containmentPercent)>100) errors.push(`Incident ${incident?.name||incident?.id||'unknown'} containmentPercent must be between 0 and 100.`)
   }
 
   const incidentIds=new Set(list(world.incidents).map(item=>item.id))
@@ -67,8 +88,9 @@ export function validateAdvanceResult(result,state) {
     if(!Array.isArray(result[key])) errors.push(`${key} must be an array.`)
   }
 
-  const allowedCollections=new Set(['requirements','missions','assets','deliveries','oversight','exercise'])
+  const allowedCollections=new Set(['incidents','requirements','missions','assets','deliveries','oversight','exercise'])
   const existing={
+    incidents:new Set(list(state.incidents).map(item=>item.id)),
     requirements:new Set(list(state.requirements?.items).map(item=>item.id)),
     missions:new Set(list(state.currentOps?.missions).map(item=>item.id)),
     assets:new Set(list(state.assetControl?.assets).map(item=>item.id)),
