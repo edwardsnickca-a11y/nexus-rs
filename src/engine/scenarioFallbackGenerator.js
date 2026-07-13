@@ -124,6 +124,7 @@ export function generateFallbackWorld({ role='remote_sensing_coordinator', diffi
       name,
       code:name.split(' ').map(word=>word[0]).join('').slice(0,3).toUpperCase(),
       locationSeedId:location.id,
+      locationZoneId:location.zoneId||location.id,
       city:location.city,
       community:location.community||location.city,
       county:location.county,

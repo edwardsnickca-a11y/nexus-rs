@@ -23,7 +23,7 @@ export function buildInitializationContext(state) {
     difficulty:state.exercise?.difficulty||state.exercise?.selectedDifficulty||state.scenario?.difficulty||'Standard',
     operationalContext:state.exercise?.operationalContext||'',
     exerciseFocus:state.exercise?.exerciseFocus||'Full Mission Cycle',
-    geographicConstraint:`Use only the platform-selected wildfire-area seeds below. These coordinates represent realistic wildland, canyon, ridge, foothill, forest, or WUI terrain near a reference community; they are not city centers. Build one new fictional incident around each seed. Preserve locationSeedId, community/city, county, latitude, longitude, area, terrain, and GACC region exactly. Do not move the fire marker into the reference community or downtown area. Historical references are placement context only; do not recreate or rename the historical fire.`,
+    geographicConstraint:`Use only the platform-selected wildfire-area seeds below. These coordinates represent realistic wildland, canyon, ridge, foothill, forest, or WUI terrain near a reference community; they are not city centers. Build one new fictional incident around each seed. Preserve locationSeedId, locationZoneId, community/city, county, latitude, longitude, area, terrain, and GACC region exactly. Do not move the fire marker into the reference community or downtown area. Historical references are placement context only; do not recreate or rename the historical fire.`,
     selectedIncidentLocations:scenarioLocations,
     timeStandard:'Use local Pacific incident time in all trainee-facing fields. Format HHMM PT.',
     platformCapabilities:CAPABILITY_LIBRARY,
@@ -35,7 +35,7 @@ export function buildInitializationContext(state) {
     incidentSituationRequirements:{
       requiredForEveryIncident:true,
       fields:[
-        'incidentNumber','startDateTime','locationSeedId','lat','lng','gaccRegion','sizeAcres','containmentPercent','significantEvents',
+        'incidentNumber','startDateTime','locationSeedId','locationZoneId','lat','lng','gaccRegion','sizeAcres','containmentPercent','significantEvents',
         'lifeSafety','weatherConcerns','projectedActivity','threatSummary',
         'strategicObjectives','plannedActions'
       ],
