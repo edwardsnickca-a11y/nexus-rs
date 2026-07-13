@@ -1,376 +1,131 @@
-import { useEffect, useMemo, useState } from 'react'
+import React, { useMemo, useState } from 'react'
 
-const HOURS = Array.from({length:24},(_,i)=>i)
-const ASSET_ROWS = [
-  'MQ-9',
-  'LUH-72',
-  'CAP',
-  'DoD Partner Asset',
-  'Forest Service Asset',
-  'State Partner Asset',
-  'Contract Collection Asset',
-  'Satellite Source',
-]
-
-const PERMISSIONS = {
-  remote_sensing_coordinator: {
-    sorties:false, requirements:false, upad:false, gaps:true, approval:true,
-    note:'Regional integration, partner coordination, gap resolution, and approval.',
-  },
-  remote_sensing_manager: {
-    sorties:true, requirements:false, upad:false, gaps:true, approval:false,
-    note:'Execution accuracy, sortie changes, retasks, and mission status.',
-  },
-  collection_manager: {
-    sorties:false, requirements:true, upad:false, gaps:true, approval:false,
-    note:'Requirement development, EEIs, collection windows, and draft-plan effects.',
-  },
-  upad_lno: {
-    sorties:false, requirements:false, upad:true, gaps:false, approval:false,
-    note:'UPAD assignment, product status, delivery risk, and handoff.',
-  },
+const ROLE_LABELS={
+ remote_sensing_coordinator:'Remote Sensing Coordinator',
+ remote_sensing_manager:'Remote Sensing Manager',
+ collection_manager:'Collection Manager',
+ upad_lno:'UPAD LNO',
 }
 
-const DEFAULT_DRAFT_ASSETS = ['MQ-9','LUH-72','CAP','DoD Partner Asset']
+const normalizeTime=value=>{
+ const match=String(value||'').match(/(\d{1,2})(?::?(\d{2}))?/) 
+ if(!match) return null
+ const hour=Math.max(0,Math.min(23,Number(match[1])))
+ const minute=Math.max(0,Math.min(59,Number(match[2]||0)))
+ return hour*60+minute
+}
+const pct=value=>`${Math.max(0,Math.min(100,(value/1440)*100))}%`
+const text=value=>value===undefined||value===null||value===''?'—':String(value)
+const statusTone=value=>String(value||'planned').toLowerCase().replaceAll('_','-').replaceAll(' ','-')
 
-function safeHour(value,fallback){
-  const parsed=Number(String(value??'').replace(/[^\d]/g,'').slice(0,2))
-  return Number.isFinite(parsed)&&parsed>=0&&parsed<=23?parsed:fallback
+function incidentNameFor(item,incidents){
+ const direct=item.incident||item.fire||item.incidentName
+ if(direct) return direct
+ const id=item.incidentId||item.fireId
+ return incidents.find(x=>x.id===id)?.name||'Regional / Unassigned'
+}
+function windowFor(item){
+ const start=item.startTime||item.launchTime||item.onStation||item.windowStart
+ const end=item.endTime||item.recoveryTime||item.offStation||item.windowEnd
+ if(start||end) return {start:normalizeTime(start)||0,end:normalizeTime(end)||Math.min(1440,(normalizeTime(start)||0)+120),label:`${text(start)}–${text(end)}`}
+ const parts=String(item.window||item.collectionWindow||'').match(/(\d{1,2}:?\d{0,2})\s*[–-]\s*(\d{1,2}:?\d{0,2})/)
+ if(parts) return {start:normalizeTime(parts[1])||0,end:normalizeTime(parts[2])||0,label:item.window||item.collectionWindow}
+ return {start:480,end:600,label:text(item.window||item.collectionWindow)}
+}
+function buildRows(matrix,missionState,incident,tomorrow=false){
+ const source=tomorrow
+  ? (matrix?.tomorrowSorties||matrix?.plannedSorties||missionState?.tomorrowPlan?.sorties||missionState?.tomorrowPlan?.missions||missionState?.tomorrowPlan?.requirements||[])
+  : (matrix?.sorties||missionState?.currentOps?.missions||[])
+ const incidents=missionState?.incidents||[]
+ return source.filter(item=>incident==='__all__'||incidentNameFor(item,incidents)===incident).map((item,index)=>({
+  ...item,
+  id:item.id||`${tomorrow?'tomorrow':'today'}-${index+1}`,
+  incident:incidentNameFor(item,incidents),
+  platform:item.platform||item.asset||item.assetId||item.identifier||'Unassigned platform',
+  callsign:item.callsign||item.tailNumber||item.identifier||'',
+  agency:item.agency||item.owner||item.organization||item.sourceAgency||'—',
+  requirement:item.requirement||item.requirementId||item.objective||item.title||'Unlinked requirement',
+  upad:item.upad||item.upadId||item.assignedUpad||item.productionNode||'Unassigned',
+  status:item.status||item.coordinationStatus||(tomorrow?'draft':'planned'),
+  product:item.product||item.productStatus||item.expectedProduct||'—',
+  note:item.note||item.constraint||item.risk||item.leadershipNote||'',
+  windowInfo:windowFor(item),
+ }))
 }
 
-function normalizePriority(value){
-  if(typeof value==='number') return value===1?'HIGH':value===2?'MED':'LOW'
-  return String(value||'MED').toUpperCase()
+function PermissionBanner({role}){
+ const copy={
+  remote_sensing_coordinator:'Can approve the regional matrix, resolve cross-incident conflicts, protect missions, and coordinate unmet needs.',
+  remote_sensing_manager:'Can update today’s execution for assigned missions. Cannot approve tomorrow’s regional plan.',
+  collection_manager:'Can refine requirement links, collection effects, and proposed tomorrow windows. Cannot retask aircraft.',
+  upad_lno:'Can update UPAD assignment, production status, delivery risk, and handoff. Cannot change collection priority or aircraft tasking.',
+ }[role]||'Read-only shared mission picture.'
+ return <div className="sm-permission"><strong>{ROLE_LABELS[role]||'Observer'}</strong><span>{copy}</span></div>
 }
 
-function deckToDraftSorties(items=[]){
-  const defaultSorties={
-    'mq9-sortie-01':{asset:'MQ-9',start:9,end:14,label:'MQ-9 / SORTIE 01'},
-    'luh72-sortie-02':{asset:'LUH-72',start:11,end:16,label:'LUH-72 / SORTIE 02'},
-    'cap-sortie-03':{asset:'CAP',start:13,end:18,label:'CAP / SORTIE 03'},
-  }
-  return items.map((item,index)=>{
-    const assigned=defaultSorties[item.assignedSortieId]||{
-      asset:item.assignedSortieAsset,
-      start:item.assignedSortieStart,
-      end:item.assignedSortieEnd,
-      label:item.assignedSortieLabel,
-    }
-    const sequence=Math.max(1,Number(item.deckSequence)||index+1)
-    const baseStart=Number(assigned.start||safeHour(item.acquisitionStart||item.collectionStart||item.start,[9,11,13,15][index%4]))
-    const start=Math.min(23,baseStart+sequence-1)
-    const end=Math.min(24,start+1)
-    const asset=assigned.asset||item.asset||item.platform||item.requiredPlatform||'UNASSIGNED'
-    const requirement=String(item.id||`REQ-${index+1}`).toUpperCase()
-    const fire=item.fire||item.incident||item.location||item.nai||`Collection Area ${index+1}`
-    const objective=item.what||item.title||item.decisionToSupport||'Collection requirement'
-    return {
-      id:`draft-${requirement}`,
-      identifier:assigned.label||`${asset} / UNASSIGNED`,
-      asset,
-      fire,
-      requirement,
-      objective,
-      start,
-      end,
-      upad:item.upad||'Unassigned',
-      productStatus:item.productStatus||'NOT STARTED',
-      missionStatus:item.assignedSortieId?`SEQUENCE ${sequence}`:'UNASSIGNED',
-      protected:Boolean(item.protected),
-      priority:normalizePriority(item.priority),
-      ltiov:item.when||item.ltiov||'—',
-      eeis:item.eeis||[],
-      isDraft:true,
-    }
-  })
-}
-
-function viewHours(sorties){
-  const start=Math.min(6,...sorties.map(s=>s.start))
-  const end=Math.max(22,...sorties.map(s=>s.end))
-  return Array.from({length:(end-start)+1},(_,i)=>start+i)
-}
-
-function MatrixTimeline({sorties,selectedId,onSelect,draft=false}){
-  const hours=viewHours(sorties)
-  const first=hours[0]
-  const last=hours[hours.length-1]
-  const span=Math.max(1,last-first)
-
-  const rows=useMemo(()=>{
-    const assets=[...ASSET_ROWS]
-    sorties.forEach(sortie=>{
-      if(!assets.includes(sortie.asset)) assets.push(sortie.asset)
-    })
-    return assets
-  },[sorties])
-
-  const entriesByAsset=useMemo(
-    ()=>Object.fromEntries(rows.map(row=>[row,sorties.filter(sortie=>sortie.asset===row)])),
-    [rows,sorties],
-  )
-
-  const left=sortie=>`${((sortie.start-first)/span)*100}%`
-  const width=sortie=>`${Math.max(4,((sortie.end-sortie.start)/span)*100)}%`
-
-  return <div className="nrx-sync-timeline-scroll">
-    <div className="nrx-sync-timeline" style={{'--nrx-hour-count':hours.length}}>
-      <div className="nrx-sync-time-row">
-        <div className="nrx-sync-row-label">LOCAL</div>
-        <div className="nrx-sync-hours">{hours.map(hour=><span key={hour}>{String(hour).padStart(2,'0')}00</span>)}</div>
+function Timeline({title,rows,currentMinutes,tomorrow,role,readOnly,onUpdateSortie}){
+ const canEditToday=role==='remote_sensing_manager'
+ const canEditTomorrow=role==='collection_manager'||role==='remote_sensing_coordinator'
+ const canEditUpad=role==='upad_lno'
+ const editable=!readOnly&&(tomorrow?canEditTomorrow:(canEditToday||canEditUpad))
+ return <section className="sm-section">
+  <header><div><span>{tomorrow?'NEXT OPERATIONAL PERIOD':'CURRENT OPERATIONAL PERIOD'}</span><h2>{title}</h2></div><b>{rows.length} {rows.length===1?'SORTIE':'SORTIES'}</b></header>
+  <div className="sm-grid-wrap">
+   <div className="sm-grid sm-head"><div>PLATFORM / AGENCY</div><div>REQUIREMENT · UPAD · STATUS</div><div className="sm-hours">{Array.from({length:24},(_,h)=><span key={h}>{String(h).padStart(2,'0')}</span>)}</div></div>
+   <div className="sm-body">
+    {!tomorrow&&currentMinutes!==null&&<div className="sm-now" style={{left:`calc(420px + (100% - 420px) * ${currentMinutes/1440})`}}><i/><span>NOW</span></div>}
+    {rows.length===0&&<div className="sm-empty">No sorties are currently assigned to this incident.</div>}
+    {rows.map(row=>{
+     const width=Math.max(2,row.windowInfo.end-row.windowInfo.start)
+     return <div className="sm-grid sm-row" key={row.id}>
+      <div className="sm-platform"><strong>{row.platform}{row.callsign?` · ${row.callsign}`:''}</strong><span>{row.agency}</span></div>
+      <div className="sm-details"><strong>{row.requirement}</strong><span>UPAD: {row.upad} · {String(row.status).replaceAll('_',' ')}</span>{row.note&&<em>{row.note}</em>}</div>
+      <div className="sm-track">
+       <div className={`sm-block ${statusTone(row.status)} ${tomorrow?'draft':''}`} style={{left:pct(row.windowInfo.start),width:pct(width)}} title={`${row.platform} · ${row.windowInfo.label}`}>
+        <strong>{row.windowInfo.label}</strong><span>{row.product}</span>
+       </div>
       </div>
-
-      {rows.map(row=><div className="nrx-sync-asset-row" key={row}>
-        <div className="nrx-sync-row-label">{row}</div>
-        <div className="nrx-sync-track">
-          {hours.slice(0,-1).map(hour=><i key={hour}/>)}
-          {entriesByAsset[row].map(sortie=><button
-            key={sortie.id}
-            type="button"
-            className={[
-              'nrx-sync-block',
-              selectedId===sortie.id?'selected':'',
-              sortie.protected?'protected':'',
-              draft?'draft':'',
-              String(sortie.missionStatus).toLowerCase().includes('ready')?'ready':'',
-            ].join(' ')}
-            style={{left:left(sortie),width:width(sortie)}}
-            onClick={()=>onSelect(sortie.id)}
-            title={`${sortie.identifier} · ${sortie.requirement}`}
-          >
-            <strong>{sortie.identifier}</strong>
-            <span>{String(sortie.start).padStart(2,'0')}00–{String(sortie.end).padStart(2,'0')}00</span>
-            <small>{sortie.fire} · {sortie.requirement}</small>
-          </button>)}
-        </div>
-      </div>)}
-    </div>
+      {editable&&<div className="sm-edit">
+       {canEditToday&&!tomorrow&&<select value={row.status} onChange={e=>onUpdateSortie?.(row.id,{status:e.target.value})}><option value="planned">Planned</option><option value="launched">Launched</option><option value="on_station">On station</option><option value="collecting">Collecting</option><option value="delayed">Delayed</option><option value="returning">Returning</option><option value="landed">Landed</option><option value="unable">Unable</option></select>}
+       {canEditTomorrow&&tomorrow&&<select value={row.status} onChange={e=>onUpdateSortie?.(row.id,{status:e.target.value})}><option value="draft">Draft</option><option value="coordinating">Coordinating</option><option value="confirmed">Confirmed</option><option value="at_risk">At risk</option></select>}
+       {canEditUpad&&!tomorrow&&<input value={row.upad==='Unassigned'?'':row.upad} placeholder="UPAD" onChange={e=>onUpdateSortie?.(row.id,{upad:e.target.value})}/>} 
+      </div>}
+     </div>
+    })}
+   </div>
   </div>
+ </section>
 }
 
-function ImpactSummary({sorties,draft=false}){
-  const overlaps=[]
-  const gaps=[]
-  const byAsset=sorties.reduce((acc,sortie)=>{
-    const key=sortie.asset||'Unassigned'
-    if(!acc[key]) acc[key]=[]
-    acc[key].push(sortie)
-    return acc
-  },{})
-
-  Object.entries(byAsset).forEach(([asset,items])=>{
-    const ordered=[...items].sort((a,b)=>a.start-b.start)
-    ordered.forEach((item,index)=>{
-      const next=ordered[index+1]
-      if(next&&next.start<item.end){
-        overlaps.push(`${asset}: ${item.requirement} overlaps ${next.requirement}`)
-      }
-    })
-  })
-
-  const incidentNames=[...new Set(sorties.map(s=>s.fire).filter(Boolean))]
-  incidentNames.forEach(incident=>{
-    const incidentSorties=sorties.filter(s=>s.fire===incident)
-    if(!incidentSorties.length) gaps.push(`${incident}: no collection scheduled`)
-  })
-
-  const upadLoad=sorties.reduce((acc,sortie)=>{
-    const key=sortie.upad||'Unassigned'
-    acc[key]=(acc[key]||0)+1
-    return acc
-  },{})
-
-  return <div className="nrx-sync-impact-grid">
-    <article>
-      <div className="nrx-sync-impact-head"><h3>{draft?'DRAFT PLAN EFFECTS':'EXECUTION SUMMARY'}</h3><span>{sorties.length} SORTIES</span></div>
-      <dl>
-        <div><dt>Collection Hours</dt><dd>{sorties.reduce((sum,s)=>sum+(s.end-s.start),0)} hrs</dd></div>
-        <div><dt>Incidents Covered</dt><dd>{incidentNames.length}</dd></div>
-        <div><dt>Potential Overlaps</dt><dd className={overlaps.length?'warn':'good'}>{overlaps.length}</dd></div>
-        <div><dt>Unassigned UPAD</dt><dd className={upadLoad.Unassigned?'warn':'good'}>{upadLoad.Unassigned||0}</dd></div>
-      </dl>
-    </article>
-
-    <article>
-      <div className="nrx-sync-impact-head"><h3>{draft?'WHAT CHANGED':'CURRENT FRICTION'}</h3></div>
-      <ul>
-        {(overlaps.length?overlaps:[
-          draft?'No asset-time conflicts in the current draft.':'No active asset-time conflicts.',
-        ]).slice(0,4).map(item=><li key={item}>{item}</li>)}
-      </ul>
-    </article>
-
-    <article>
-      <div className="nrx-sync-impact-head"><h3>UPAD / PRODUCT FLOW</h3></div>
-      <ul>
-        {Object.entries(upadLoad).map(([upad,count])=><li key={upad}><strong>{upad}</strong><span>{count} collection{count===1?'':'s'}</span></li>)}
-      </ul>
-    </article>
+export default function SyncMatrix({role,matrix,missionState={},readOnly=false,onUpdateSortie,onResolveNeed,onResolveGap,onApprove,onAddLeadershipNote}){
+ const incidents=missionState.incidents||[]
+ const incidentTabs=useMemo(()=>{
+  const names=incidents.map(x=>x.name).filter(Boolean)
+  const inferred=[...(matrix?.sorties||[]),...(matrix?.tomorrowSorties||matrix?.plannedSorties||[])].map(x=>incidentNameFor(x,incidents)).filter(Boolean)
+  return [...new Set([...names,...inferred])]
+ },[incidents,matrix])
+ const [activeIncident,setActiveIncident]=useState(incidentTabs[0]||'__all__')
+ const [note,setNote]=useState('')
+ const todayRows=buildRows(matrix,missionState,activeIncident,false)
+ const tomorrowRows=buildRows(matrix,missionState,activeIncident,true)
+ const currentMinutes=normalizeTime(missionState.exercise?.localIncidentTime||missionState.asOf)
+ const canApprove=!readOnly&&role==='remote_sensing_coordinator'
+ const canCoordinate=!readOnly&&role==='remote_sensing_coordinator'
+ const needs=(matrix?.unmetNeeds||[]).filter(x=>activeIncident==='__all__'||incidentNameFor(x,incidents)===activeIncident)
+ const gaps=(matrix?.coverageGaps||[]).filter(x=>activeIncident==='__all__'||incidentNameFor(x,incidents)===activeIncident)
+ return <div className="sm-page">
+  <style>{`
+   .sm-page{padding:14px 16px 28px;color:#dce9ee;background:#071827;min-height:100%;font-size:12px}.sm-titlebar{display:flex;justify-content:space-between;gap:16px;align-items:flex-start;margin-bottom:10px}.sm-titlebar h1{margin:2px 0 4px;font-size:24px}.sm-titlebar p{margin:0;color:#8fa7b3}.sm-meta{display:flex;gap:8px;align-items:center}.sm-chip{border:1px solid #2e6074;background:#0c2938;padding:7px 10px}.sm-chip b{color:#78e4ef}.sm-permission{display:flex;gap:10px;align-items:center;border:1px solid #275268;background:#0b2433;padding:9px 12px;margin-bottom:10px}.sm-permission strong{color:#72e3ee}.sm-permission span{color:#a8bbc4}.sm-tabs{display:flex;gap:4px;overflow-x:auto;position:sticky;top:0;z-index:8;background:#071827;padding:4px 0 8px}.sm-tabs button{white-space:nowrap;border:1px solid #275268;background:#0b2230;color:#a9c0ca;padding:9px 14px;cursor:pointer}.sm-tabs button.active{background:#123b50;color:#86edf4;border-color:#48cddd}.sm-section{border:1px solid #234b5e;background:#0a1e2c;margin:0 0 12px}.sm-section>header{display:flex;justify-content:space-between;align-items:center;padding:10px 12px;border-bottom:1px solid #234b5e;background:#0e2a3a}.sm-section h2{font-size:16px;margin:2px 0}.sm-section header span{color:#69dce7;font-size:9px}.sm-section header>b{color:#ffbd54}.sm-grid-wrap{overflow:auto}.sm-grid{display:grid;grid-template-columns:190px 230px minmax(820px,1fr);min-width:1240px}.sm-head{position:sticky;top:0;z-index:4;background:#102f40;color:#73e2ec;font-size:9px}.sm-head>div{padding:8px;border-right:1px solid #254c5e}.sm-hours{display:grid;grid-template-columns:repeat(24,1fr);padding:0!important}.sm-hours span{padding:8px 0;text-align:center;border-left:1px solid #24495a}.sm-body{position:relative}.sm-row{position:relative;min-height:66px;border-top:1px solid #1d3d4d}.sm-row>div{border-right:1px solid #24495a}.sm-platform,.sm-details{padding:10px}.sm-platform strong,.sm-details strong{display:block}.sm-platform span,.sm-details span,.sm-details em{display:block;color:#8fa7b3;margin-top:4px;font-style:normal}.sm-details em{color:#ffbd54}.sm-track{position:relative;background:repeating-linear-gradient(to right,transparent,transparent calc(4.166% - 1px),#1e3d4c calc(4.166% - 1px),#1e3d4c 4.166%)}.sm-block{position:absolute;top:10px;height:46px;min-width:34px;padding:7px 8px;border:1px solid #46d1df;background:#13536a;overflow:hidden;box-sizing:border-box}.sm-block.draft{border-style:dashed}.sm-block.delayed,.sm-block.at-risk{background:#6f4a16;border-color:#ffbd54}.sm-block.unable{background:#5c2830;border-color:#ff6f7d}.sm-block.collecting,.sm-block.on-station{background:#155c4d;border-color:#61d8a3}.sm-block strong,.sm-block span{display:block;white-space:nowrap;text-overflow:ellipsis;overflow:hidden}.sm-block span{font-size:9px;color:#b9d1d8;margin-top:3px}.sm-now{position:absolute;top:0;bottom:0;z-index:5;pointer-events:none}.sm-now i{position:absolute;top:0;bottom:0;border-left:2px dashed #ff8a35}.sm-now span{position:sticky;top:3px;margin-left:5px;background:#ff8a35;color:#071827;font-weight:800;font-size:8px;padding:2px 4px}.sm-empty{padding:26px;color:#8fa7b3}.sm-edit{grid-column:1/-1!important;display:flex;gap:6px;padding:5px 10px;background:#091a26}.sm-edit select,.sm-edit input{background:#071827;border:1px solid #346177;color:#dce9ee;padding:5px}.sm-bottom{display:grid;grid-template-columns:1fr 1fr;gap:10px}.sm-card{border:1px solid #244b5d;background:#0a1f2d;padding:10px}.sm-card h3{margin:0 0 8px;font-size:12px;color:#72e3ee}.sm-item{display:grid;grid-template-columns:1fr auto;gap:8px;border-top:1px solid #213f4f;padding:8px 0}.sm-item small{display:block;color:#8fa7b3;margin-top:3px}.sm-item button,.sm-actions button{border:1px solid #3bbccc;background:#0d3342;color:#86e8ef;padding:6px 9px;cursor:pointer}.sm-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:10px}.sm-note{display:flex;gap:6px}.sm-note input{flex:1;background:#071827;border:1px solid #315b6e;color:#dce9ee;padding:8px}.sm-approved{color:#67d9a2}.sm-pending{color:#ffbd54}@media(max-width:1000px){.sm-bottom{grid-template-columns:1fr}.sm-titlebar{flex-direction:column}}
+  `}</style>
+  <div className="sm-titlebar"><div><span style={{color:'#70e0eb',fontSize:9}}>SHARED REGIONAL MISSION PICTURE</span><h1>SYNC MATRIX</h1><p>Incident-specific execution today and coordinated collection for tomorrow. Local incident time only.</p></div><div className="sm-meta"><div className="sm-chip">VERSION <b>{matrix?.version||1}</b></div><div className="sm-chip">STATUS <b className={matrix?.coordinatorApprovalStatus==='approved'?'sm-approved':'sm-pending'}>{matrix?.status||matrix?.coordinatorApprovalStatus||'DRAFT'}</b></div></div></div>
+  <PermissionBanner role={role}/>
+  <div className="sm-tabs">{incidentTabs.length?incidentTabs.map(name=><button key={name} className={activeIncident===name?'active':''} onClick={()=>setActiveIncident(name)}>{name}</button>):<button className="active">REGIONAL / UNASSIGNED</button>}</div>
+  <Timeline title="TODAY’S PLAN" rows={todayRows} currentMinutes={currentMinutes} tomorrow={false} role={role} readOnly={readOnly} onUpdateSortie={onUpdateSortie}/>
+  <Timeline title="TOMORROW’S SYNC" rows={tomorrowRows} currentMinutes={null} tomorrow role={role} readOnly={readOnly} onUpdateSortie={onUpdateSortie}/>
+  <div className="sm-bottom">
+   <div className="sm-card"><h3>UNMET COLLECTION NEEDS</h3>{needs.length?needs.map(x=><div className="sm-item" key={x.id}><div><strong>{text(x.title||x.requirement||x.id)}</strong><small>{text(x.detail||x.reason||x.status)}</small></div>{canCoordinate&&x.status!=='COORDINATING'&&<button onClick={()=>onResolveNeed?.(x.id)}>COORDINATE</button>}</div>):<div className="sm-empty">No unmet needs recorded for this incident.</div>}</div>
+   <div className="sm-card"><h3>COVERAGE GAPS / LEADERSHIP NOTES</h3>{gaps.map(x=><div className="sm-item" key={x.id}><div><strong>{text(x.title||x.gap||x.id)}</strong><small>{text(x.detail||x.status)}</small></div>{canCoordinate&&x.status!=='RESOLVED'&&<button onClick={()=>onResolveGap?.(x.id)}>RESOLVE</button>}</div>)}{canApprove&&<div className="sm-note"><input value={note} onChange={e=>setNote(e.target.value)} placeholder="Add leadership brief note"/><button onClick={()=>{if(note.trim()){onAddLeadershipNote?.(note.trim());setNote('')}}}>ADD</button></div>}</div>
   </div>
-}
-
-export default function SyncMatrix({
-  role,
-  matrix,
-  onUpdateSortie,
-  onResolveNeed,
-  onResolveGap,
-  onApprove,
-  onAddLeadershipNote,
-}){
-  const [mode,setMode]=useState(role==='collection_manager'?'tomorrow':'today')
-  const [draftDeck,setDraftDeck]=useState([])
-  const permission=PERMISSIONS[role]||PERMISSIONS.remote_sensing_coordinator
-
-  useEffect(()=>{
-    const loadDraft=()=>{
-      try{
-        const saved=JSON.parse(localStorage.getItem('nexus-rs-collection-deck-draft')||'[]')
-        setDraftDeck(Array.isArray(saved)?saved:[])
-      }catch{
-        setDraftDeck([])
-      }
-    }
-    loadDraft()
-    window.addEventListener('storage',loadDraft)
-    window.addEventListener('focus',loadDraft)
-    document.addEventListener('visibilitychange',loadDraft)
-    return ()=>{
-      window.removeEventListener('storage',loadDraft)
-      window.removeEventListener('focus',loadDraft)
-      document.removeEventListener('visibilitychange',loadDraft)
-    }
-  },[])
-
-  const todaySorties=matrix?.sorties||[]
-  const tomorrowSorties=useMemo(()=>deckToDraftSorties(draftDeck),[draftDeck])
-  const sorties=mode==='today'?todaySorties:tomorrowSorties
-  const [selectedId,setSelectedId]=useState(sorties[0]?.id)
-
-  useEffect(()=>{
-    setSelectedId(sorties[0]?.id)
-  },[mode,sorties.length])
-
-  const selected=sorties.find(sortie=>sortie.id===selectedId)||sorties[0]
-  const update=(field,value)=>{
-    if(mode==='today'&&selected&&!selected.isDraft) onUpdateSortie?.(selected.id,{[field]:value})
-  }
-
-  return <div className="nrx-sync-page">
-    <style>{`
-      .nrx-sync-page{display:flex;flex-direction:column;gap:10px;min-width:0}
-      .nrx-sync-toolbar{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 12px;background:#071d2b;border:1px solid #17435a;border-radius:6px}
-      .nrx-sync-tabs{display:flex;gap:7px}
-      .nrx-sync-tabs button{height:32px;padding:0 15px;border:1px solid #24536a;background:#081927;color:#96adba;font-size:10px;font-weight:700;letter-spacing:.04em;cursor:pointer}
-      .nrx-sync-tabs button.active{background:#0d6977;border-color:#25cbd8;color:#efffff}
-      .nrx-sync-toolbar-text{text-align:right}
-      .nrx-sync-toolbar-text strong{display:block;color:#e7f2f6;font-size:12px}
-      .nrx-sync-toolbar-text span{display:block;color:#7f98a7;font-size:9px;margin-top:2px}
-      .nrx-sync-main{display:grid;grid-template-columns:minmax(0,1fr) 290px;gap:10px}
-      .nrx-sync-board,.nrx-sync-detail,.nrx-sync-impact-grid>article{background:#071d2b;border:1px solid #17435a;border-radius:6px;overflow:hidden}
-      .nrx-sync-title{display:flex;justify-content:space-between;gap:12px;padding:12px;border-bottom:1px solid #17435a}
-      .nrx-sync-title span{display:block;color:#41dce8;font-size:9px;letter-spacing:.08em}
-      .nrx-sync-title h2{margin:3px 0 0;color:#edf6fa;font-size:17px}
-      .nrx-sync-title p{margin:4px 0 0;color:#829aa9;font-size:9px}
-      .nrx-sync-chip{align-self:flex-start;padding:4px 8px;border:1px solid #bd8b1f;color:#ffc94d;background:rgba(189,139,31,.12);font-size:8px}
-      .nrx-sync-authority{padding:7px 12px;border-bottom:1px solid #17435a;color:#8ea7b5;font-size:9px}
-      .nrx-sync-authority strong{color:#dbe7ec}
-      .nrx-sync-timeline-scroll{overflow:auto;padding:0 0 8px}
-      .nrx-sync-timeline{min-width:1120px}
-      .nrx-sync-time-row,.nrx-sync-asset-row{display:grid;grid-template-columns:145px minmax(900px,1fr)}
-      .nrx-sync-row-label{display:flex;align-items:center;padding:0 10px;border-right:1px solid #17435a;border-bottom:1px solid #17384b;color:#d8e4e9;font-size:10px;font-weight:700}
-      .nrx-sync-hours{display:grid;grid-template-columns:repeat(var(--nrx-hour-count),1fr);height:31px;border-bottom:1px solid #17435a}
-      .nrx-sync-hours span{display:flex;align-items:center;justify-content:center;border-right:1px solid #17384b;color:#7f98a7;font-size:8px}
-      .nrx-sync-asset-row{min-height:48px}
-      .nrx-sync-track{position:relative;border-bottom:1px solid #17384b;background:rgba(3,17,30,.32)}
-      .nrx-sync-track>i{position:relative;display:inline-block;width:calc(100% / (var(--nrx-hour-count) - 1));height:100%;border-right:1px solid rgba(23,56,75,.75)}
-      .nrx-sync-block{position:absolute;top:6px;height:35px;z-index:2;border:1px solid #228f9b;background:linear-gradient(90deg,#0a5660,#0d747b);color:#eaffff;border-radius:4px;padding:3px 7px;text-align:left;overflow:hidden;cursor:pointer}
-      .nrx-sync-block.draft{border-style:dashed;background:linear-gradient(90deg,#173c61,#225887)}
-      .nrx-sync-block.ready{border-color:#32d7c4}
-      .nrx-sync-block.selected{box-shadow:0 0 0 2px rgba(127,232,244,.75)}
-      .nrx-sync-block.protected:after{content:'P';position:absolute;right:4px;top:3px;color:#ffd45c;font-size:7px}
-      .nrx-sync-block strong,.nrx-sync-block span,.nrx-sync-block small{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-      .nrx-sync-block strong{font-size:8px}.nrx-sync-block span{font-size:7px}.nrx-sync-block small{font-size:7px;color:#bcd0d8}
-      .nrx-sync-detail header{padding:11px 12px;border-bottom:1px solid #17435a}
-      .nrx-sync-detail h3{margin:0;color:#47dbe8;font-size:12px}
-      .nrx-sync-detail-body{display:flex;flex-direction:column;gap:9px;padding:11px}
-      .nrx-sync-detail-body label{display:flex;flex-direction:column;gap:4px;color:#839caa;font-size:8px}
-      .nrx-sync-detail-body input,.nrx-sync-detail-body select{height:31px;padding:0 8px;border:1px solid #21485c;background:#041523;color:#e6f0f4;font-size:10px}
-      .nrx-sync-detail-empty{padding:18px;color:#78909d;font-size:10px}
-      .nrx-sync-impact-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
-      .nrx-sync-impact-head{display:flex;justify-content:space-between;padding:9px 11px;border-bottom:1px solid #17435a}
-      .nrx-sync-impact-head h3{margin:0;color:#45dbe7;font-size:10px}
-      .nrx-sync-impact-head span{color:#91a7b4;font-size:8px}
-      .nrx-sync-impact-grid dl{display:grid;grid-template-columns:1fr 1fr;margin:0}
-      .nrx-sync-impact-grid dl div{padding:10px;border-right:1px solid #17384b;border-bottom:1px solid #17384b}
-      .nrx-sync-impact-grid dt{color:#839aa7;font-size:8px}.nrx-sync-impact-grid dd{margin:3px 0 0;color:#e7f1f5;font-size:14px}
-      .nrx-sync-impact-grid dd.warn{color:#ffc454}.nrx-sync-impact-grid dd.good{color:#4ee0cd}
-      .nrx-sync-impact-grid ul{list-style:none;margin:0;padding:8px 11px}
-      .nrx-sync-impact-grid li{display:flex;justify-content:space-between;gap:10px;padding:6px 0;border-bottom:1px solid #17384b;color:#c4d3db;font-size:9px}
-      .nrx-sync-impact-grid li:last-child{border-bottom:0}
-      @media(max-width:1100px){.nrx-sync-main{grid-template-columns:1fr}.nrx-sync-impact-grid{grid-template-columns:1fr}}
-    `}</style>
-
-    <div className="nrx-sync-toolbar">
-      <div className="nrx-sync-tabs">
-        <button className={mode==='today'?'active':''} onClick={()=>setMode('today')}>TODAY'S SYNC</button>
-        <button className={mode==='tomorrow'?'active':''} onClick={()=>setMode('tomorrow')}>TOMORROW'S SYNC — DRAFT</button>
-      </div>
-      <div className="nrx-sync-toolbar-text">
-        <strong>{mode==='today'?'Approved / Executing Collection Picture':'Developing Collection Plan'}</strong>
-        <span>{mode==='today'?'Current operational-period baseline':'Updates from the Collection Manager collection deck'}</span>
-      </div>
-    </div>
-
-    <div className="nrx-sync-main">
-      <section className="nrx-sync-board">
-        <div className="nrx-sync-title">
-          <div>
-            <span>{mode==='today'?'TODAY — EXECUTION BASELINE':'TOMORROW — DRAFT COLLECTION SYNC'}</span>
-            <h2>{matrix?.operationalPeriod||'Operational Period'} · {matrix?.date||'Local Incident Date'}</h2>
-            <p>Local incident time · {mode==='today'?`As of ${matrix?.asOf||'—'} · Version ${matrix?.version||'—'}`:'Live draft generated from the developing collection deck'}</p>
-          </div>
-          <span className="nrx-sync-chip">{mode==='today'?(matrix?.status||'ACTIVE'):'DRAFT — NOT APPROVED'}</span>
-        </div>
-        <div className="nrx-sync-authority"><strong>Role Authority:</strong> {permission.note}</div>
-        {sorties.length
-          ? <MatrixTimeline sorties={sorties} selectedId={selectedId} onSelect={setSelectedId} draft={mode==='tomorrow'}/>
-          : <div className="nrx-sync-detail-empty">No requirements have been added to the Tomorrow collection deck yet.</div>}
-      </section>
-
-      <aside className="nrx-sync-detail">
-        <header><h3>{mode==='today'?'SORTIE DETAIL':'DRAFT COLLECTION DETAIL'}</h3></header>
-        {selected?<div className="nrx-sync-detail-body">
-          <label>Asset<input value={selected.identifier||selected.asset} disabled/></label>
-          <label>Incident / Area<input value={selected.fire||''} disabled/></label>
-          <label>Requirement<input value={selected.requirement||''} disabled={mode==='today'||!permission.requirements} onChange={event=>update('requirement',event.target.value)}/></label>
-          <label>Collection Objective<input value={selected.objective||''} disabled={mode==='today'||!permission.requirements} onChange={event=>update('objective',event.target.value)}/></label>
-          <label>Window<input value={`${String(selected.start).padStart(2,'0')}00–${String(selected.end).padStart(2,'0')}00`} disabled/></label>
-          <label>LTIOV<input value={selected.ltiov||'—'} disabled/></label>
-          <label>Assigned UPAD<input value={selected.upad||'Unassigned'} disabled/></label>
-          <label>Status<input value={selected.missionStatus||'—'} disabled/></label>
-        </div>:<div className="nrx-sync-detail-empty">Select a sortie or add requirements to the draft deck.</div>}
-      </aside>
-    </div>
-
-    <ImpactSummary sorties={sorties} draft={mode==='tomorrow'}/>
-
-    {mode==='today'&&matrix&&<section className="support full stateful-support">
-      <article className="panel">
-        <div className="panel-head"><h3>Unmet Needs</h3><span className="chip red">{matrix.unmetNeeds?.filter(x=>x.status==='OPEN').length||0} OPEN</span></div>
-        {(matrix.unmetNeeds||[]).map(item=><div className="support-record" key={item.id}>
-          <strong>{item.requirement} · {item.fire}</strong><p>{item.window} Local · {item.reason}</p><small>Decision deadline: {item.deadline}</small>
-          {item.status==='OPEN'&&permission.gaps&&<button className="secondary-button" onClick={()=>onResolveNeed?.(item.id)}>Mark Coordinating</button>}
-        </div>)}
-      </article>
-
-      <article className="panel">
-        <div className="panel-head"><h3>Coverage Gaps</h3><span className="chip amber">{matrix.coverageGaps?.filter(x=>x.status!=='RESOLVED').length||0} AT RISK</span></div>
-        {(matrix.coverageGaps||[]).map(item=><div className="support-record" key={item.id}>
-          <strong>{item.fire} · {item.window} Local</strong><p>{item.consequence}</p><small>{item.requirement} · {item.status}</small>
-          {item.status!=='RESOLVED'&&permission.gaps&&<button className="secondary-button" onClick={()=>onResolveGap?.(item.id)}>Resolve Gap</button>}
-        </div>)}
-      </article>
-    </section>}
-  </div>
+  {canApprove&&<div className="sm-actions"><button onClick={onApprove}>APPROVE MATRIX FOR LEADERSHIP BRIEF</button></div>}
+ </div>
 }

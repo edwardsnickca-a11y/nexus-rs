@@ -36,7 +36,6 @@ import { INITIAL_MATRIX } from './data/syncMatrix.js'
 import { buildSyncMatrixFromState } from './engine/syncMatrixBuilder.js'
 import { initializeScenario, selectRole as controllerSelectRole, startExercise, beginTransition, approveTransition, endExercise, resetExercise, isWorkspaceReadOnly } from './engine/exerciseController.js'
 import { buildTomorrowPlanReviews } from './engine/tomorrowPlanReview.js'
-import { GACC_COORDINATION_CENTERS, selectGaccIncidentSeeds } from './data/californiaGaccLocations.js'
 
 
 
@@ -250,7 +249,7 @@ export default function App(){
     result=await requestScenarioController({mode,context})
    }catch(error){
     result=mode==='initialize'
-      ? generateFallbackWorld({role:baseState.exercise?.selectedRole,difficulty:context.difficulty,gaccRegion:context.gaccRegion,scenarioLocations:context.scenarioLocations})
+      ? generateFallbackWorld({role:baseState.exercise?.selectedRole,difficulty:context.difficulty,gaccRegion:context.gaccRegion})
       : generateFallbackAdvance(baseState)
    }
 
@@ -258,7 +257,7 @@ export default function App(){
     result=normalizeInitialWorld(result)
     let validation=validateInitialWorld(result)
     if(!validation.ok){
-     result=normalizeInitialWorld(generateFallbackWorld({role:baseState.exercise?.selectedRole,difficulty:context.difficulty,gaccRegion:context.gaccRegion,scenarioLocations:context.scenarioLocations}))
+     result=normalizeInitialWorld(generateFallbackWorld({role:baseState.exercise?.selectedRole,difficulty:context.difficulty,gaccRegion:context.gaccRegion}))
      validation=validateInitialWorld(result)
     }
     if(!validation.ok) throw new Error(validation.errors.join(' '))
@@ -302,16 +301,12 @@ export default function App(){
  const confirmStartEx=async(scenario, setup={})=>{
   const initialized=applyPortalScenario(missionState,scenario)
   const gaccRegion=selectExerciseGacc()
-  const scenarioLocations=selectGaccIncidentSeeds(gaccRegion,3)
-  const coordinationCenter=GACC_COORDINATION_CENTERS[gaccRegion]
   const configured={
    ...initialized,
-   scenario:{...(initialized.scenario||{}),gaccRegion,scenarioLocations,coordinationCenter},
+   scenario:{...(initialized.scenario||{}),gaccRegion},
    exercise:{
     ...(initialized.exercise||{}),
     gaccRegion,
-    scenarioLocations,
-    coordinationCenter,
     participantName:(setup.participantName||initialized.exercise?.participantName||'').trim(),
     operationalContext:setup.operationalContext||initialized.exercise?.operationalContext||'',
     exerciseFocus:setup.exerciseFocus||initialized.exercise?.exerciseFocus||'Full Mission Cycle',
@@ -500,7 +495,7 @@ export default function App(){
   situation:<Situation missionState={workspaceMissionState}/>,
   current:<CurrentOperationsRouter role={currentRole} missionState={workspaceMissionState} readOnly={readOnly} onNavigate={navigate} onToggleProtection={toggleProtection} onReleaseAsset={releaseAsset} onUpdateMission={updateCurrentMission} onUpdateRequirement={updateRequirement} onValidateRequirement={validateRequirement} onSendRequirementForward={sendRequirementForward} onUpdateDelivery={updateDelivery} advisorProps={{role:currentRole,missionState,operationalSummary:deriveOperationalSummary(missionState),onSubmitDecision:submitFreeTextDecision,pending:advisorPending,busy:advisorBusy,mode:advisorMode,onConfirm:confirmAdvisorAction,onCancel:cancelAdvisorAction,onOpenAdvisor:()=>setActive('advisor')}} onEndExercise={()=>setShowEndEx(true)}/>,
   tomorrow:<TomorrowPlan role={currentRole} missionState={workspaceMissionState} readOnly={readOnly} onMarkTaskable={markTaskable} onAssignUpad={assignUpad} onApprovePlan={approvePlan} onSubmitForReview={submitTomorrowPlanForReview} onOpenCurrent={()=>navigate('current')}/>,
-  sync:<SyncMatrix role={currentRole} matrix={syncMatrix} readOnly={readOnly} onUpdateSortie={updateSortie} onResolveNeed={resolveNeed} onResolveGap={resolveGap} onApprove={approveMatrix} onAddLeadershipNote={addLeadershipNote}/>,
+  sync:<SyncMatrix role={currentRole} matrix={syncMatrix} missionState={workspaceMissionState} readOnly={readOnly} onUpdateSortie={updateSortie} onResolveNeed={resolveNeed} onResolveGap={resolveGap} onApprove={approveMatrix} onAddLeadershipNote={addLeadershipNote}/>,
   requirements:<Requirements role={currentRole} missionState={workspaceMissionState} readOnly={readOnly} onUpdateRequirement={updateRequirement} onValidateRequirement={validateRequirement} onSendForward={sendRequirementForward} onAddRequirement={addRequirement}/>,
   platforms:<Platforms role={currentRole} missionState={missionState}/>,
   upad:<Dissemination role={currentRole} missionState={workspaceMissionState} readOnly={readOnly} onUpdateDelivery={updateDelivery} onVerifyReceipt={verifyReceipt} onRecordFeedback={recordCustomerFeedback}/>,
