@@ -25,6 +25,8 @@ import { evaluateMissionDecision } from './engine/missionAdvisor.js'
 import { buildAdvisorContext } from './engine/advisorPromptBuilder.js'
 import { validateAdvisorResponse, deterministicFallback } from './engine/advisorResponseValidator.js'
 import { requestAdvisorInterpretation } from './services/advisorApi.js'
+import { requestScenarioEvolution } from './services/scenarioApi.js'
+import { applyScenarioResult, buildScenarioContext, markScenarioDirectorStatus } from './engine/scenarioPromptBuilder.js'
 import { applyIntegratedAction, deriveOperationalSummary, verifyCustomerReceipt, recordCustomerFeedback as integrateCustomerFeedback } from './engine/integrationEngine.js'
 import { INITIAL_MISSION_STATE } from './data/missionState.js'
 import { INITIAL_MATRIX } from './data/syncMatrix.js'
@@ -178,6 +180,7 @@ export default function App(){
  const [pendingIncident,setPendingIncident]=useState('')
  const [pendingStart,setPendingStart]=useState(null)
  const [showAdvanceTurn,setShowAdvanceTurn]=useState(false)
+ const [scenarioBusy,setScenarioBusy]=useState(false)
 
 
  const currentRole=missionState.exercise?.selectedRole || role || 'remote_sensing_coordinator'
@@ -200,18 +203,36 @@ export default function App(){
   setMissionState(prev=>controllerSelectRole(prev,selectedRole))
   if(selectedRole!=='remote_sensing_manager') setPendingIncident('')
  }
+ const runScenarioController=async(startState,mode='advance')=>{
+  const difficulty=startState.exercise?.difficulty||startState.exercise?.selectedDifficulty||startState.scenario?.difficulty||'Standard'
+  const context=buildScenarioContext(startState,mode)
+  setScenarioBusy(true)
+  setMissionState(markScenarioDirectorStatus(startState,mode==='initialize'?'initializing':'advancing'))
+  try{
+   const result=await requestScenarioEvolution({mode,difficulty,context})
+   const updated=applyScenarioResult(startState,result,mode)
+   setMissionState(updated)
+   return updated
+  }catch(error){
+   const fallback=mode==='advance' ? advanceTurn(startState) : startState
+   setMissionState(markScenarioDirectorStatus(fallback,'fallback',error?.message||'Scenario service unavailable'))
+   return fallback
+  }finally{
+   setScenarioBusy(false)
+  }
+ }
+
  const confirmIncidentAssignment=()=>{
   if(!pendingIncident||!pendingStart) return
-  setMissionState(prev=>{
-   const configured={
-    ...pendingStart.configured,
-    exercise:{...(pendingStart.configured.exercise||{}),assignedIncident:pendingIncident,currentPhase:'STARTEX Ready'},
-    activeIncident:pendingIncident,
-   }
-   return startExercise(configured)
-  })
+  const configured={
+   ...pendingStart.configured,
+   exercise:{...(pendingStart.configured.exercise||{}),assignedIncident:pendingIncident,currentPhase:'STARTEX Ready'},
+   activeIncident:pendingIncident,
+  }
+  const started=startExercise(configured)
   setPendingStart(null)
   setActive('current')
+  runScenarioController(started,'initialize')
  }
  const confirmStartEx=(scenario, setup={})=>{
   const initialized=applyPortalScenario(missionState,scenario)
@@ -223,8 +244,9 @@ export default function App(){
    setActive('incident')
    return
   }
-  setMissionState(startExercise(configured))
+  const started=startExercise(configured)
   setActive('current')
+  runScenarioController(started,'initialize')
  }
  const unresolvedTurnItems=()=>{
   const items=[]
@@ -240,17 +262,12 @@ export default function App(){
   if(openWindows.length) items.push(`${openWindows.length} decision window${openWindows.length===1?' remains':'s remain'} open`)
   return items.slice(0,5)
  }
- const nextTurnTime=()=>{
-  const current=missionState.exercise?.localIncidentTime||missionState.asOf||''
-  const match=String(current).match(/(\d{2})(\d{2})/)
-  if(!match) return 'next decision period'
-  const total=(Number(match[1])*60+Number(match[2])+45)%(24*60)
-  return `${String(Math.floor(total/60)).padStart(2,'0')}${String(total%60).padStart(2,'0')} PT`
- }
+ const nextTurnTime=()=>missionState.simulation?.scenarioDirector?.nextDecisionReason||'the next decision point' 
  const requestAdvanceExercise=()=>setShowAdvanceTurn(true)
  const confirmAdvanceExercise=()=>{
-  setMissionState(prev=>advanceTurn(prev))
+  if(scenarioBusy) return
   setShowAdvanceTurn(false)
+  runScenarioController(missionState,'advance')
  }
  const advanceExercise=requestAdvanceExercise
  const reviewTransition=()=>{setMissionState(prev=>beginTransition(prev));setActive('transition')}
@@ -418,10 +435,10 @@ export default function App(){
     <section style={{width:'min(92vw,560px)',border:'1px solid #34758a',background:'#081d2b',boxShadow:'0 24px 70px rgba(0,0,0,.65)'}}>
      <header style={{padding:'16px 18px',borderBottom:'1px solid #285467'}}>
       <span style={{fontSize:10,letterSpacing:'.12em',color:'#68e2ed'}}>ADVANCE EXERCISE</span>
-      <h2 style={{margin:'5px 0 0'}}>Advance to {nextTurnTime()}?</h2>
+      <h2 style={{margin:'5px 0 0'}}>Advance to the next decision point?</h2>
      </header>
      <div style={{padding:'16px 18px'}}>
-      <p style={{marginTop:0,color:'#b9ccd5'}}>The scenario will evaluate unresolved work, advance the incident clock, and release any injects or consequences due in the next turn.</p>
+      <p style={{marginTop:0,color:'#b9ccd5'}}>The AI Scenario Controller will evaluate the work completed during this decision period, advance simulated time to a plausible next decision point, and apply any resulting developments or consequences.</p>
       <strong style={{display:'block',marginBottom:8,color:'#e9f3f6'}}>Open items</strong>
       {unresolvedTurnItems().length
        ? <ul style={{margin:'0 0 4px',paddingLeft:20,color:'#cbdbe2'}}>{unresolvedTurnItems().map(item=><li key={item} style={{margin:'6px 0'}}>{item}</li>)}</ul>
@@ -429,7 +446,7 @@ export default function App(){
      </div>
      <footer style={{display:'flex',justifyContent:'flex-end',gap:8,padding:'13px 18px',borderTop:'1px solid #285467'}}>
       <button type="button" onClick={()=>setShowAdvanceTurn(false)} style={{minHeight:36,padding:'0 14px',border:'1px solid #365b6c',background:'#102a38',color:'#d6e4ea',cursor:'pointer'}}>CANCEL</button>
-      <button type="button" onClick={confirmAdvanceExercise} style={{minHeight:36,padding:'0 14px',border:'1px solid #69dce7',background:'#0d6979',color:'#efffff',fontWeight:800,cursor:'pointer'}}>ADVANCE TURN</button>
+      <button type="button" disabled={scenarioBusy} onClick={confirmAdvanceExercise} style={{minHeight:36,padding:'0 14px',border:'1px solid #69dce7',background:'#0d6979',color:'#efffff',fontWeight:800,cursor:scenarioBusy?'wait':'pointer',opacity:scenarioBusy?.65:1}}>{scenarioBusy?'EVOLVING…':'ADVANCE TURN'}</button>
      </footer>
     </section>
    </div>}
