@@ -36,6 +36,7 @@ import { INITIAL_MATRIX } from './data/syncMatrix.js'
 import { buildSyncMatrixFromState } from './engine/syncMatrixBuilder.js'
 import { initializeScenario, selectRole as controllerSelectRole, startExercise, beginTransition, approveTransition, endExercise, resetExercise, isWorkspaceReadOnly } from './engine/exerciseController.js'
 import { buildTomorrowPlanReviews } from './engine/tomorrowPlanReview.js'
+import { GACC_COORDINATION_CENTERS, selectGaccIncidentSeeds } from './data/californiaGaccLocations.js'
 
 
 
@@ -249,7 +250,7 @@ export default function App(){
     result=await requestScenarioController({mode,context})
    }catch(error){
     result=mode==='initialize'
-      ? generateFallbackWorld({role:baseState.exercise?.selectedRole,difficulty:context.difficulty,gaccRegion:context.gaccRegion})
+      ? generateFallbackWorld({role:baseState.exercise?.selectedRole,difficulty:context.difficulty,gaccRegion:context.gaccRegion,scenarioLocations:context.scenarioLocations})
       : generateFallbackAdvance(baseState)
    }
 
@@ -257,7 +258,7 @@ export default function App(){
     result=normalizeInitialWorld(result)
     let validation=validateInitialWorld(result)
     if(!validation.ok){
-     result=normalizeInitialWorld(generateFallbackWorld({role:baseState.exercise?.selectedRole,difficulty:context.difficulty,gaccRegion:context.gaccRegion}))
+     result=normalizeInitialWorld(generateFallbackWorld({role:baseState.exercise?.selectedRole,difficulty:context.difficulty,gaccRegion:context.gaccRegion,scenarioLocations:context.scenarioLocations}))
      validation=validateInitialWorld(result)
     }
     if(!validation.ok) throw new Error(validation.errors.join(' '))
@@ -301,12 +302,16 @@ export default function App(){
  const confirmStartEx=async(scenario, setup={})=>{
   const initialized=applyPortalScenario(missionState,scenario)
   const gaccRegion=selectExerciseGacc()
+  const scenarioLocations=selectGaccIncidentSeeds(gaccRegion,3)
+  const coordinationCenter=GACC_COORDINATION_CENTERS[gaccRegion]
   const configured={
    ...initialized,
-   scenario:{...(initialized.scenario||{}),gaccRegion},
+   scenario:{...(initialized.scenario||{}),gaccRegion,scenarioLocations,coordinationCenter},
    exercise:{
     ...(initialized.exercise||{}),
     gaccRegion,
+    scenarioLocations,
+    coordinationCenter,
     participantName:(setup.participantName||initialized.exercise?.participantName||'').trim(),
     operationalContext:setup.operationalContext||initialized.exercise?.operationalContext||'',
     exerciseFocus:setup.exerciseFocus||initialized.exercise?.exerciseFocus||'Full Mission Cycle',

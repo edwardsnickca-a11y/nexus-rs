@@ -1,31 +1,5 @@
 import { callsignForPlatform } from './capabilityLibrary.js'
-
-const LOCATIONS = [
-  { city:'Redding', county:'Shasta County', zone:'northern Sacramento Valley', gacc:'North Ops', tz:'America/Los_Angeles' },
-  { city:'Quincy', county:'Plumas County', zone:'American Valley', gacc:'North Ops', tz:'America/Los_Angeles' },
-  { city:'Susanville', county:'Lassen County', zone:'Honey Lake region', gacc:'North Ops', tz:'America/Los_Angeles' },
-  { city:'Weaverville', county:'Trinity County', zone:'Trinity Alps foothills', gacc:'North Ops', tz:'America/Los_Angeles' },
-  { city:'Ukiah', county:'Mendocino County', zone:'Russian River valley', gacc:'North Ops', tz:'America/Los_Angeles' },
-  { city:'Yreka', county:'Siskiyou County', zone:'Shasta Valley', gacc:'North Ops', tz:'America/Los_Angeles' },
-  { city:'Alturas', county:'Modoc County', zone:'Modoc Plateau', gacc:'North Ops', tz:'America/Los_Angeles' },
-  { city:'Truckee', county:'Nevada County', zone:'Sierra crest and Interstate 80 corridor', gacc:'North Ops', tz:'America/Los_Angeles' },
-  { city:'Auburn', county:'Placer County', zone:'western Sierra foothills', gacc:'North Ops', tz:'America/Los_Angeles' },
-  { city:'Santa Rosa', county:'Sonoma County', zone:'North Bay wildland-urban interface', gacc:'North Ops', tz:'America/Los_Angeles' },
-  { city:'Napa', county:'Napa County', zone:'wine-country foothills', gacc:'North Ops', tz:'America/Los_Angeles' },
-  { city:'Monterey', county:'Monterey County', zone:'central coast ranges', gacc:'North Ops', tz:'America/Los_Angeles' },
-  { city:'Fresno', county:'Fresno County', zone:'southern Sierra foothills', gacc:'South Ops', tz:'America/Los_Angeles' },
-  { city:'Mariposa', county:'Mariposa County', zone:'central Sierra foothills', gacc:'South Ops', tz:'America/Los_Angeles' },
-  { city:'Bakersfield', county:'Kern County', zone:'southern Sierra and Tehachapi foothills', gacc:'South Ops', tz:'America/Los_Angeles' },
-  { city:'Tehachapi', county:'Kern County', zone:'Tehachapi Mountains', gacc:'South Ops', tz:'America/Los_Angeles' },
-  { city:'Santa Barbara', county:'Santa Barbara County', zone:'south coast mountains', gacc:'South Ops', tz:'America/Los_Angeles' },
-  { city:'Ojai', county:'Ventura County', zone:'Topatopa foothills', gacc:'South Ops', tz:'America/Los_Angeles' },
-  { city:'Santa Clarita', county:'Los Angeles County', zone:'northern Los Angeles County wildland-urban interface', gacc:'South Ops', tz:'America/Los_Angeles' },
-  { city:'San Bernardino', county:'San Bernardino County', zone:'San Bernardino Mountains foothills', gacc:'South Ops', tz:'America/Los_Angeles' },
-  { city:'Idyllwild', county:'Riverside County', zone:'San Jacinto Mountains', gacc:'South Ops', tz:'America/Los_Angeles' },
-  { city:'Julian', county:'San Diego County', zone:'Peninsular Ranges', gacc:'South Ops', tz:'America/Los_Angeles' },
-  { city:'Ramona', county:'San Diego County', zone:'San Diego backcountry', gacc:'South Ops', tz:'America/Los_Angeles' },
-  { city:'Bishop', county:'Inyo County', zone:'eastern Sierra and Owens Valley', gacc:'South Ops', tz:'America/Los_Angeles' },
-]
+import { locationsForGacc } from '../data/californiaGaccLocations.js'
 
 const INCIDENT_SUFFIXES = ['North', 'East', 'Ridge', 'Creek', 'Foothill', 'Valley', 'Pass', 'Bench']
 const SIGNIFICANT_EVENTS = [
@@ -131,12 +105,14 @@ function makeId(prefix,index) {
   return `${prefix}-${String(index+1).padStart(3,'0')}`
 }
 
-export function generateFallbackWorld({ role='remote_sensing_coordinator', difficulty='Standard', gaccRegion='North Ops' }={}) {
+export function generateFallbackWorld({ role='remote_sensing_coordinator', difficulty='Standard', gaccRegion='North Ops', scenarioLocations=[] }={}) {
   const seed=randomSeed()
   const random=rng(seed)
-  const incidentCount=2+Math.floor(random()*4)
+  const requestedIncidentCount=2+Math.floor(random()*4)
   const selectedGacc=gaccRegion==='South Ops'?'South Ops':'North Ops'
-  const locations=shuffled(random,LOCATIONS.filter(item=>item.gacc===selectedGacc)).slice(0,incidentCount)
+  const supplied=Array.isArray(scenarioLocations)&&scenarioLocations.length?scenarioLocations:locationsForGacc(selectedGacc)
+  const incidentCount=Math.min(requestedIncidentCount,supplied.length)
+  const locations=shuffled(random,supplied.filter(item=>(item.gaccRegion||item.gacc)===selectedGacc)).slice(0,incidentCount)
   const startMinutes=360+[0,15,30,45][Math.floor(random()*4)]
   const platformCycle=['MQ-9','UH-72','CAP','CAP','UH-72']
 
@@ -150,8 +126,11 @@ export function generateFallbackWorld({ role='remote_sensing_coordinator', diffi
       city:location.city,
       county:location.county,
       location:`${location.city}, ${location.county}`,
-      zone:location.zone,
-      gacc:location.gacc,
+      zone:location.area||location.zone,
+      gacc:selectedGacc,
+      gaccRegion:selectedGacc,
+      lat:Number(location.lat),
+      lng:Number(location.lng),
       incidentNumber:`CA-${location.county.replace(/\s+County$/,'').slice(0,3).toUpperCase()}-${String(1000+Math.floor(random()*8999))}`,
       startDateTime:`Day ${1+Math.floor(random()*3)}, ${timeAt(Math.max(0,startMinutes-(180+Math.floor(random()*720))))}`,
       sizeAcres:acres,
@@ -375,6 +354,7 @@ export function generateFallbackWorld({ role='remote_sensing_coordinator', diffi
     localTimeZone:'America/Los_Angeles',
     difficulty,
     selectedRole:role,
+    gaccRegion:selectedGacc,
     incidentCount,
     incidents,
     customers,

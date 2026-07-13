@@ -1,5 +1,6 @@
 import { CAPABILITY_LIBRARY } from './capabilityLibrary.js'
 import { ROLE_AUTHORITY } from './roleAuthority.js'
+import { GACC_COORDINATION_CENTERS } from '../data/californiaGaccLocations.js'
 
 const list = (value) => Array.isArray(value) ? value : []
 const take = (items,count=20) => list(items).slice(-count)
@@ -8,28 +9,33 @@ export function buildInitializationContext(state) {
   const role=state.exercise?.selectedRole||state.activeRole||'remote_sensing_coordinator'
   const gaccRegion=state.exercise?.gaccRegion||state.scenario?.gaccRegion||'North Ops'
   const regionLabel=gaccRegion==='South Ops'?'Southern California':'Northern California'
+  const scenarioLocations=state.exercise?.scenarioLocations||state.scenario?.scenarioLocations||[]
+  const coordinationCenter=state.exercise?.coordinationCenter||state.scenario?.coordinationCenter||GACC_COORDINATION_CENTERS[gaccRegion]
   return {
     mode:'initialize',
     randomizationNonce:`${Date.now()}-${Math.random().toString(36).slice(2)}`,
     scenarioConcept:`${regionLabel} Multi-Fire Remote Sensing Operations`,
     gaccRegion,
     regionLabel,
+    scenarioLocations,
+    coordinationCenter,
     selectedRole:role,
     difficulty:state.exercise?.difficulty||state.exercise?.selectedDifficulty||state.scenario?.difficulty||'Standard',
     operationalContext:state.exercise?.operationalContext||'',
     exerciseFocus:state.exercise?.exerciseFocus||'Full Mission Cycle',
-    geographicConstraint:`Use 2–5 wildfire incidents only inside ${gaccRegion}. Use real California cities, counties, tribal jurisdictions, national forests, mountain ranges, valleys, or recognized operational areas. Do not invent geographic names. Vary the geography between exercises and avoid repeatedly selecting the same cities or counties.`,
+    geographicConstraint:`Use only the platform-selected real incident seed locations below. Do not substitute another city, county, landmark, or coordinate. Build one wildfire incident around each selected location and preserve its city, county, latitude, longitude, and GACC region exactly.`,
+    selectedIncidentLocations:scenarioLocations,
     timeStandard:'Use local Pacific incident time in all trainee-facing fields. Format HHMM PT.',
     platformCapabilities:CAPABILITY_LIBRARY,
     roleAuthority:ROLE_AUTHORITY[role],
-    gaccSelectionRequirement:`The application has already selected ${gaccRegion}. Do not change the region. Keep every generated incident geographically consistent with ${gaccRegion}, and describe the scenario as ${regionLabel}.`,
+    gaccSelectionRequirement:`The application has already selected ${gaccRegion}. Do not change the region. The coordination center is ${coordinationCenter?.city||''}, California. This is the staff location only, not the location of every incident. Every generated incident must use one of the exact platform-selected incident locations and coordinates.`,
     locationDiversityRequirement:'Choose a fresh mix of real incident locations for each exercise. Consider coastal, valley, foothill, mountain, desert, and wildland-urban interface settings appropriate to the selected GACC. Avoid repeatedly defaulting to the same small cluster of locations.',
     gaccPerspective:'The Remote Sensing Coordinator operates from a California GACC-style regional coordination perspective.',
     outputPurpose:'Return a complete fresh world. Do not preserve Pine Ridge, Bear Creek, Eagle Peak, or other static demo entities.',
     incidentSituationRequirements:{
       requiredForEveryIncident:true,
       fields:[
-        'incidentNumber','startDateTime','sizeAcres','containmentPercent','significantEvents',
+        'incidentNumber','startDateTime','lat','lng','gaccRegion','sizeAcres','containmentPercent','significantEvents',
         'lifeSafety','weatherConcerns','projectedActivity','threatSummary',
         'strategicObjectives','plannedActions'
       ],
@@ -54,6 +60,8 @@ export function buildAdvanceContext(state) {
   const role=state.exercise?.selectedRole||state.activeRole||'remote_sensing_coordinator'
   const gaccRegion=state.exercise?.gaccRegion||state.scenario?.gaccRegion||'North Ops'
   const regionLabel=gaccRegion==='South Ops'?'Southern California':'Northern California'
+  const scenarioLocations=state.exercise?.scenarioLocations||state.scenario?.scenarioLocations||[]
+  const coordinationCenter=state.exercise?.coordinationCenter||state.scenario?.coordinationCenter||GACC_COORDINATION_CENTERS[gaccRegion]
 
   return {
     mode:'advance',
@@ -62,6 +70,8 @@ export function buildAdvanceContext(state) {
     selectedRole:role,
     gaccRegion,
     regionLabel,
+    scenarioLocations,
+    coordinationCenter,
     assignedIncident:state.exercise?.assignedIncident||state.activeIncident||'',
     currentIncidentTime:state.exercise?.localIncidentTime||state.asOf||'',
     currentTurn:Number(state.exercise?.turnNumber||0),

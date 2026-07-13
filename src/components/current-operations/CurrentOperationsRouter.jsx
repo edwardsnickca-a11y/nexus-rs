@@ -119,7 +119,24 @@ function OperationalMap({missionState}){
  const hostRef=useRef(null)
  const dragRef=useRef(null)
  const [size,setSize]=useState({width:700,height:310})
- const [view,setView]=useState({lat:39.55,lng:-121.55,zoom:8})
+ const gaccRegion=missionState.exercise?.gaccRegion||missionState.scenario?.gaccRegion||'North Ops'
+ const coordinationCenter=missionState.exercise?.coordinationCenter||missionState.scenario?.coordinationCenter||(
+  gaccRegion==='South Ops'
+   ? {lat:33.9806,lng:-117.3755}
+   : {lat:40.5865,lng:-122.3917}
+ )
+ const validIncidents=(missionState.incidents||[]).filter(incident=>Number.isFinite(Number(incident.lat))&&Number.isFinite(Number(incident.lng)))
+ const initialCenter=validIncidents.length
+  ? {lat:validIncidents.reduce((sum,item)=>sum+Number(item.lat),0)/validIncidents.length,lng:validIncidents.reduce((sum,item)=>sum+Number(item.lng),0)/validIncidents.length}
+  : coordinationCenter
+ const [view,setView]=useState({lat:initialCenter.lat,lng:initialCenter.lng,zoom:7})
+
+ useEffect(()=>{
+  if(!validIncidents.length) return
+  const lat=validIncidents.reduce((sum,item)=>sum+Number(item.lat),0)/validIncidents.length
+  const lng=validIncidents.reduce((sum,item)=>sum+Number(item.lng),0)/validIncidents.length
+  setView(current=>({...current,lat,lng,zoom:validIncidents.length>3?6:7}))
+ },[missionState.incidents])
 
  useEffect(()=>{
   if(!hostRef.current) return
@@ -157,25 +174,19 @@ function OperationalMap({missionState}){
   }
  }
 
- const mapDefaults=[
-  {lat:40.58,lng:-122.39,tone:'red'},
-  {lat:40.17,lng:-122.24,tone:'orange'},
-  {lat:39.73,lng:-121.84,tone:'amber'},
-  {lat:40.42,lng:-120.65,tone:'red'},
-  {lat:41.73,lng:-122.64,tone:'orange'},
- ]
- const incidents=(missionState.incidents||[]).slice(0,5).map((incident,index)=>({
+ const tones=['red','orange','amber','red','orange']
+ const incidents=validIncidents.slice(0,5).map((incident,index)=>({
   ...incident,
   id:incident.id||`incident-${index+1}`,
   name:incident.name||`Incident ${index+1}`,
-  lat:Number(incident.lat)||mapDefaults[index%mapDefaults.length].lat,
-  lng:Number(incident.lng)||mapDefaults[index%mapDefaults.length].lng,
-  tone:mapDefaults[index%mapDefaults.length].tone,
+  lat:Number(incident.lat),
+  lng:Number(incident.lng),
+  tone:tones[index%tones.length],
  }))
  const missionDefaults=(missionState.currentOps?.missions||[]).slice(0,5).map((mission,index)=>({
   label:mission.callsign||mission.platform||`Asset ${index+1}`,
-  lat:(incidents[index%Math.max(1,incidents.length)]?.lat||40)-.18,
-  lng:(incidents[index%Math.max(1,incidents.length)]?.lng||-122)-.22,
+  lat:(incidents[index%Math.max(1,incidents.length)]?.lat||coordinationCenter.lat)-.08,
+  lng:(incidents[index%Math.max(1,incidents.length)]?.lng||coordinationCenter.lng)-.08,
  }))
  const missions=(missionState.currentOps?.missions||[]).slice(0,3)
  const markerPosition=(lat,lng)=>{

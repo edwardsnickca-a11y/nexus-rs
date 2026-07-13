@@ -1,4 +1,5 @@
 import { APPROVED_PLATFORM_TYPES, callsignForPlatform } from './capabilityLibrary.js'
+import { incidentMatchesGacc } from '../data/californiaGaccLocations.js'
 
 const REQUIRED_WORLD_ARRAYS = [
   'incidents','customers','requirements','missions','assets','sorties',
@@ -9,7 +10,7 @@ const REQUIRED_WORLD_ARRAYS = [
 const list = (value) => Array.isArray(value) ? value : []
 
 const REQUIRED_INCIDENT_FIELDS = [
-  'id','name','incidentNumber','city','county','location','startDateTime',
+  'id','name','incidentNumber','city','county','location','lat','lng','gaccRegion','startDateTime',
   'sizeAcres','containmentPercent','significantEvents','lifeSafety',
   'weatherConcerns','projectedActivity','threatSummary',
   'strategicObjectives','plannedActions','status',
@@ -51,6 +52,10 @@ export function validateInitialWorld(world) {
     for(const field of REQUIRED_INCIDENT_FIELDS){
       if(!hasMeaningfulValue(incident?.[field])) errors.push(`Incident ${incident?.name||incident?.id||'unknown'} is missing required situation field ${field}.`)
     }
+    if(!Number.isFinite(Number(incident.lat))||!Number.isFinite(Number(incident.lng))) errors.push(`Incident ${incident?.name||incident?.id||'unknown'} must include numeric latitude and longitude.`)
+    const expectedGacc=world.gaccRegion||incident.gaccRegion
+    if(incident.gaccRegion!==expectedGacc) errors.push(`Incident ${incident?.name||incident?.id||'unknown'} does not match the selected GACC region.`)
+    if(expectedGacc&&!incidentMatchesGacc(incident,expectedGacc)) errors.push(`Incident ${incident?.name||incident?.id||'unknown'} coordinates are not geographically consistent with ${expectedGacc}.`)
     if(!Number.isFinite(Number(incident.sizeAcres))||Number(incident.sizeAcres)<0) errors.push(`Incident ${incident?.name||incident?.id||'unknown'} sizeAcres must be a non-negative number.`)
     if(!Number.isFinite(Number(incident.containmentPercent))||Number(incident.containmentPercent)<0||Number(incident.containmentPercent)>100) errors.push(`Incident ${incident?.name||incident?.id||'unknown'} containmentPercent must be between 0 and 100.`)
   }
