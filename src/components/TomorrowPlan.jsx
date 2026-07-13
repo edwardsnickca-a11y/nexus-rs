@@ -129,16 +129,16 @@ export default function TomorrowPlan({
       </div>
       <div className="tp-table-wrap">
         <table className="tp-table">
-          <thead><tr><th>Incident / Requirement</th><th>Pri</th><th>LTIOV</th><th>Taskable</th><th>Platform / Sortie</th><th>UPAD / Product</th><th>Execution Risk</th><th>Action</th></tr></thead>
+          <thead><tr><th className="tp-col-incident">Incident / Requirement</th><th className="tp-col-pri">Pri</th><th className="tp-col-ltiov">LTIOV</th><th className="tp-col-taskable">Taskable</th><th className="tp-col-platform">Platform / Sortie</th><th className="tp-col-upad">UPAD / Product</th><th className="tp-col-risk">Execution Risk</th><th className="tp-col-action">Action</th></tr></thead>
           <tbody>{visibleRows.map((row) => <tr key={row.id}>
-            <td><strong>{row.incident}</strong><span>{row.title}</span></td>
-            <td>{row.priority}</td>
-            <td>{row.ltiov}</td>
-            <td><span className={`status-chip ${row.taskable ? 'good' : 'warn'}`}>{row.taskable ? 'TASKABLE' : 'DEVELOP'}</span></td>
-            <td><strong>{row.platform}</strong><span>{row.sortie}</span></td>
-            <td><strong>{row.upad}</strong><span>{row.product}</span></td>
-            <td><span>{row.risk}</span></td>
-            <td><div className="tp-row-actions">
+            <td className="tp-col-incident"><strong>{row.incident}</strong><span>{row.title}</span></td>
+            <td className="tp-col-pri">{row.priority}</td>
+            <td className="tp-col-ltiov">{row.ltiov}</td>
+            <td className="tp-col-taskable"><span className={`status-chip ${row.taskable ? 'good' : 'warn'}`}>{row.taskable ? 'TASKABLE' : 'DEVELOP'}</span></td>
+            <td className="tp-col-platform"><strong>{row.platform}</strong><span>{row.sortie}</span></td>
+            <td className="tp-col-upad"><strong>{row.upad}</strong><span>{row.product}</span></td>
+            <td className="tp-col-risk"><span>{row.risk}</span></td>
+            <td className="tp-col-action"><div className="tp-row-actions">
               {role === 'collection_manager' && !row.taskable && <button onClick={() => onMarkTaskable?.(row.id)} disabled={readOnly}>MARK TASKABLE</button>}
               {role === 'upad_lno' && row.upad === 'Unassigned' && <button onClick={() => onAssignUpad?.(row.id)} disabled={readOnly}>ASSIGN UPAD</button>}
               {(role === 'remote_sensing_manager' || role === 'remote_sensing_coordinator') && <span className="permission-note">REVIEW</span>}
@@ -150,8 +150,8 @@ export default function TomorrowPlan({
 
     <section className="tp-lower-grid">
       <div className="panel">
-        <div className="panel-head"><div><span className="eyebrow">STAFF COORDINATION</span><h3>AI Role Reviews</h3></div><span className="status-chip quiet">{reviews.length} REVIEWS</span></div>
-        {reviews.length ? <div className="tp-review-list">{reviews.map((review) => <ReviewCard key={review.id} review={review}/>)}</div> : <p className="muted-copy">Submit the plan for coordination. The simulated RS Manager, UPAD LNO, and RS Coordinator will review only the portions that fall within their authority.</p>}
+        <div className="panel-head"><div><span className="eyebrow">STAFF COORDINATION</span><h3>Staff Coordination</h3></div><span className="status-chip quiet">{reviews.length} REVIEWS</span></div>
+        {reviews.length ? <div className="tp-review-list">{reviews.map((review) => <ReviewCard key={review.id} review={review}/>)}</div> : <p className="muted-copy">Submit the plan for coordination. The RS Manager, UPAD LNO, and RS Coordinator will review only the portions that fall within their authority.</p>}
       </div>
       <div className="panel">
         <div className="panel-head"><div><span className="eyebrow">ROLE AUTHORITY</span><h3>{ROLE_NAMES[role] || 'Trainee'} Responsibilities</h3></div></div>
