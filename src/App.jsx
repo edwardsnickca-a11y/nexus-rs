@@ -2,7 +2,7 @@ import React, { useState } from 'react'
 import Sidebar from './components/Sidebar.jsx'
 import Header from './components/Header.jsx'
 import AdvisorPanel from './components/AdvisorPanel.jsx'
-import Overview from './components/Overview.jsx'
+import Situation from './components/Situation.jsx'
 import CurrentOperationsRouter from './components/current-operations/CurrentOperationsRouter.jsx'
 import TomorrowPlan from './components/TomorrowPlan.jsx'
 import SyncMatrix from './components/SyncMatrix.jsx'
@@ -431,7 +431,7 @@ export default function App(){
   incident:<IncidentAssignment incidents={pendingStart?.generatedState?.incidents||missionState.incidents||[]} selectedIncident={pendingIncident} onSelect={setPendingIncident} onConfirm={confirmIncidentAssignment}/>,
   'scenario-loading':<section className="panel" style={{maxWidth:760,margin:'70px auto',padding:28,textAlign:'center'}}><span className="eyebrow">SCENARIO CONTROLLER</span><h2>Generating a fresh Northern California exercise…</h2><p style={{color:'#8fa7b3'}}>Building incidents, customers, requirements, missions, resources, UPAD conditions, airspace, and hidden scenario truth.</p></section>,
   advisor:<AdvisorConversation role={currentRole} missionState={missionState} operationalSummary={deriveOperationalSummary(missionState)} onSubmitDecision={submitFreeTextDecision} pending={advisorPending} busy={advisorBusy} mode={advisorMode} onConfirm={confirmAdvisorAction} onCancel={cancelAdvisorAction} onClose={()=>setActive('current')}/>,
-  mission:<Overview role={currentRole}/>,
+  situation:<Situation missionState={workspaceMissionState}/>,
   current:<CurrentOperationsRouter role={currentRole} missionState={workspaceMissionState} readOnly={readOnly} onNavigate={setActive} onToggleProtection={toggleProtection} onReleaseAsset={releaseAsset} onUpdateMission={updateCurrentMission} onUpdateRequirement={updateRequirement} onValidateRequirement={validateRequirement} onSendRequirementForward={sendRequirementForward} onUpdateDelivery={updateDelivery} advisorProps={{role:currentRole,missionState,operationalSummary:deriveOperationalSummary(missionState),onSubmitDecision:submitFreeTextDecision,pending:advisorPending,busy:advisorBusy,mode:advisorMode,onConfirm:confirmAdvisorAction,onCancel:cancelAdvisorAction,onOpenAdvisor:()=>setActive('advisor')}} onEndExercise={()=>setShowEndEx(true)}/>,
   tomorrow:<TomorrowPlan role={currentRole} missionState={workspaceMissionState} readOnly={readOnly} onMarkTaskable={markTaskable} onAssignUpad={assignUpad} onApprovePlan={approvePlan} onOpenCurrent={()=>setActive('current')}/>,
   sync:<SyncMatrix role={currentRole} matrix={syncMatrix} readOnly={readOnly} onUpdateSortie={updateSortie} onResolveNeed={resolveNeed} onResolveGap={resolveGap} onApprove={approveMatrix} onAddLeadershipNote={addLeadershipNote}/>,

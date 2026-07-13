@@ -3,7 +3,7 @@ import { ROLES } from '../../data/roles.js'
 import AdvisorPanel from '../AdvisorPanel.jsx'
 import Icon from '../../common/Icon.jsx'
 const NAV = [
-  ['mission', 'MISSION', 'mission'],
+  ['situation', 'SITUATION', 'map-layers'],
   ['current', 'CURRENT OPS', 'current-ops'],
   ['tomorrow', "TOMORROW'S PLAN", 'tomorrows-plan'],
   ['sync', 'SYNC MATRIX', 'sync-matrix'],
@@ -1212,7 +1212,7 @@ function UPADView(props){
   <Panel title="UPAD MANNING, SPECIALTY & SHIFT BOARD" className="rx-us-board"><div className="rx-us-cards">{upads.map(u=>{const ds=decks.filter(d=>primary(d)===u.id);const ex=Object.values(exceptions).filter(id=>id===u.id).length;return <article className="rx-us-card" key={u.id}><header><h3>{u.name}</h3><em>{u.state}</em></header><div className="rx-us-skills">{u.skills.map(x=><span key={x}>{x}</span>)}</div><div className="rx-us-load"><i style={{width:`${u.load}%`}}/></div><dl><div><dt>Workload</dt><dd>{u.load}%</dd></div><div><dt>Sorties Assigned</dt><dd>{ds.length}</dd></div><div><dt>Task Exceptions</dt><dd>{ex}</dd></div></dl><select value={shifts[u.id]} onChange={ev=>setShifts(c=>({...c,[u.id]:ev.target.value}))}><option>0600–1400L</option><option>1000–1800L</option><option>1400–2200L</option><option>1800–0200L</option><option>OFF SHIFT</option></select></article>})}</div></Panel>
   <div className="rx-us-bottom">
    <Panel title="ACTIVE SORTIE / PRODUCT BOARD"><div className="rx-us-table"><div className="head"><span>SORTIE</span><span>TASKINGS</span><span>PRODUCTS</span><span>PRODUCT MIX</span><span>PRIMARY UPAD</span><span>ACTION</span></div>{decks.map(d=><div className="row" key={d.id}><strong>{d.id}</strong><span>{d.taskCount}</span><span>{d.productCount}</span><span>{Object.keys(d.products).join(' · ')}</span><span>{primary(d)||'—'}</span><button onClick={()=>{setSelectedId(d.id);setOpenId(d.id)}}>OPEN</button></div>)}</div></Panel>
-   <Panel title="UPAD SUPPORT REQUESTS" accent="purple"><div className="rx-us-support">{[['bandwidth','Additional Bandwidth','U1'],['exploit','Extra Exploitation Support','U2'],['staffing','Additional Imagery Analyst','U2']].map(([id,label,from])=><div className="row" key={id}><strong>{label}</strong><span>{from}</span><select value={support[id]} onChange={ev=>setSupport(c=>({...c,[id]:ev.target.value}))}><option>OPEN</option><option>IN REVIEW</option><option>FLOW TO RS COORD</option><option>RESOLVED</option></select></div>)}</div><Button onClick={()=>onNavigate?.('mission')}>FLOW UNMET NEEDS TO RS COORD</Button></Panel>
+   <Panel title="UPAD SUPPORT REQUESTS" accent="purple"><div className="rx-us-support">{[['bandwidth','Additional Bandwidth','U1'],['exploit','Extra Exploitation Support','U2'],['staffing','Additional Imagery Analyst','U2']].map(([id,label,from])=><div className="row" key={id}><strong>{label}</strong><span>{from}</span><select value={support[id]} onChange={ev=>setSupport(c=>({...c,[id]:ev.target.value}))}><option>OPEN</option><option>IN REVIEW</option><option>FLOW TO RS COORD</option><option>RESOLVED</option></select></div>)}</div><Button onClick={()=>onNavigate?.('current')}>FLOW UNMET NEEDS TO RS COORD</Button></Panel>
   </div>
   {openDeck&&<div className="rx-us-modal"><div className="rx-us-modal-card"><header><div><span>COLLECTION DECK / TASK EXCEPTION MANAGER</span><h2>{openDeck.id}</h2><p>{openDeck.taskCount} taskings · {openDeck.productCount} expected products · Primary: {upad(primary(openDeck))?.name||'UNASSIGNED'}</p></div><button onClick={()=>setOpenId('')}>CLOSE</button></header><div className="rx-us-note"><strong>DEFAULT:</strong> Every Task ID inherits the sortie's primary UPAD. Reassign only specialty or capacity exceptions.</div><div className="rx-us-exceptions"><div className="head"><span>TASK ID</span><span>TASK / CUSTOMER NEED</span><span>TYPE</span><span>EXPECTED PRODUCT</span><span>EEIs</span><span>UPAD ASSIGNMENT</span></div>{openDeck.tasks.map(t=>{const p=primary(openDeck);const effective=exceptions[t.id]||p;return <div className="row" key={t.id}><strong>{t.id}</strong><span><b>{t.title}</b><small>{t.need}</small></span><span>{t.type}</span><span>{t.product}</span><span>{t.eeis}</span><select value={effective} onChange={ev=>setExceptions(c=>({...c,[t.id]:ev.target.value}))}><option value={p}>PRIMARY · {p||'UNASSIGNED'}</option>{upads.filter(u=>u.id!==p).map(u=><option value={u.id} key={u.id}>{u.id} · {u.skills.join('/')}</option>)}</select></div>})}</div></div></div>}
  </div>
@@ -1228,7 +1228,7 @@ export default function CurrentOperationsRouter({
  const resizeSidebar=(delta)=>setSidebarWidth(v=>Math.max(118,Math.min(250,v+delta.dx)))
  return <div className="rx-shell rx-shell-resizable" style={{'--rx-sidebar-width':`${sidebarWidth}px`}}>
   <LiveHeader role={role} missionState={missionState} onAdvance={onAdvanceExercise} onEnd={onEndExercise}/>
-  <Sidebar role={role} active={role==='collection_manager'?'requirements':role==='upad_lno'?'upad':'mission'} onNavigate={onNavigate}/>
+  <Sidebar role={role} active="current" onNavigate={onNavigate}/>
   <DragHandle className="shell-left" onDrag={resizeSidebar}/>
   <main className="rx-main"><View {...common}/></main>
   <AdvisorColumn {...advisorProps}/>
