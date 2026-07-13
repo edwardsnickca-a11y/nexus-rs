@@ -1,5 +1,5 @@
 import { APPROVED_PLATFORM_TYPES, callsignForPlatform } from './capabilityLibrary.js'
-import { incidentMatchesGacc } from '../data/californiaGaccLocations.js'
+import { locationsForGacc, distanceMiles, incidentMatchesGacc } from '../data/californiaGaccLocations.js'
 
 const REQUIRED_WORLD_ARRAYS = [
   'incidents','customers','requirements','missions','assets','sorties',
@@ -10,7 +10,7 @@ const REQUIRED_WORLD_ARRAYS = [
 const list = (value) => Array.isArray(value) ? value : []
 
 const REQUIRED_INCIDENT_FIELDS = [
-  'id','name','incidentNumber','city','county','location','lat','lng','gaccRegion','startDateTime',
+  'id','name','incidentNumber','locationSeedId','city','county','location','lat','lng','gaccRegion','startDateTime',
   'sizeAcres','containmentPercent','significantEvents','lifeSafety',
   'weatherConcerns','projectedActivity','threatSummary',
   'strategicObjectives','plannedActions','status',
@@ -56,6 +56,14 @@ export function validateInitialWorld(world) {
     const expectedGacc=world.gaccRegion||incident.gaccRegion
     if(incident.gaccRegion!==expectedGacc) errors.push(`Incident ${incident?.name||incident?.id||'unknown'} does not match the selected GACC region.`)
     if(expectedGacc&&!incidentMatchesGacc(incident,expectedGacc)) errors.push(`Incident ${incident?.name||incident?.id||'unknown'} coordinates are not geographically consistent with ${expectedGacc}.`)
+    const selectedSeed=locationsForGacc(expectedGacc).find(item=>item.id===incident.locationSeedId)
+    if(!selectedSeed) errors.push(`Incident ${incident?.name||incident?.id||'unknown'} does not reference an approved wildfire-area seed.`)
+    else {
+      const distance=distanceMiles(Number(incident.lat),Number(incident.lng),selectedSeed.lat,selectedSeed.lng)
+      if(distance>8) errors.push(`Incident ${incident?.name||incident?.id||'unknown'} moved away from its approved wildfire-area seed.`)
+      if(String(incident.city||'')!==String(selectedSeed.city||'')) errors.push(`Incident ${incident?.name||incident?.id||'unknown'} changed its reference community.`)
+      if(String(incident.county||'')!==String(selectedSeed.county||'')) errors.push(`Incident ${incident?.name||incident?.id||'unknown'} changed its reference county.`)
+    }
     if(!Number.isFinite(Number(incident.sizeAcres))||Number(incident.sizeAcres)<0) errors.push(`Incident ${incident?.name||incident?.id||'unknown'} sizeAcres must be a non-negative number.`)
     if(!Number.isFinite(Number(incident.containmentPercent))||Number(incident.containmentPercent)<0||Number(incident.containmentPercent)>100) errors.push(`Incident ${incident?.name||incident?.id||'unknown'} containmentPercent must be between 0 and 100.`)
   }

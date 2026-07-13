@@ -23,19 +23,19 @@ export function buildInitializationContext(state) {
     difficulty:state.exercise?.difficulty||state.exercise?.selectedDifficulty||state.scenario?.difficulty||'Standard',
     operationalContext:state.exercise?.operationalContext||'',
     exerciseFocus:state.exercise?.exerciseFocus||'Full Mission Cycle',
-    geographicConstraint:`Use only the platform-selected real incident seed locations below. Do not substitute another city, county, landmark, or coordinate. Build one wildfire incident around each selected location and preserve its city, county, latitude, longitude, and GACC region exactly.`,
+    geographicConstraint:`Use only the platform-selected wildfire-area seeds below. These coordinates represent realistic wildland, canyon, ridge, foothill, forest, or WUI terrain near a reference community; they are not city centers. Build one new fictional incident around each seed. Preserve locationSeedId, community/city, county, latitude, longitude, area, terrain, and GACC region exactly. Do not move the fire marker into the reference community or downtown area. Historical references are placement context only; do not recreate or rename the historical fire.`,
     selectedIncidentLocations:scenarioLocations,
     timeStandard:'Use local Pacific incident time in all trainee-facing fields. Format HHMM PT.',
     platformCapabilities:CAPABILITY_LIBRARY,
     roleAuthority:ROLE_AUTHORITY[role],
-    gaccSelectionRequirement:`The application has already selected ${gaccRegion}. Do not change the region. The coordination center is ${coordinationCenter?.city||''}, California. This is the staff location only, not the location of every incident. Every generated incident must use one of the exact platform-selected incident locations and coordinates.`,
+    gaccSelectionRequirement:`The application has already selected ${gaccRegion}. Do not change the region. The coordination center is ${coordinationCenter?.city||''}, California. This is the staff location only, not the location of every incident. Every generated incident must use one exact platform-selected wildfire-area seed and its coordinates. The named community is only the nearest operational reference, never the marker location.`,
     locationDiversityRequirement:'Choose a fresh mix of real incident locations for each exercise. Consider coastal, valley, foothill, mountain, desert, and wildland-urban interface settings appropriate to the selected GACC. Avoid repeatedly defaulting to the same small cluster of locations.',
     gaccPerspective:'The Remote Sensing Coordinator operates from a California GACC-style regional coordination perspective.',
     outputPurpose:'Return a complete fresh world. Do not preserve Pine Ridge, Bear Creek, Eagle Peak, or other static demo entities.',
     incidentSituationRequirements:{
       requiredForEveryIncident:true,
       fields:[
-        'incidentNumber','startDateTime','lat','lng','gaccRegion','sizeAcres','containmentPercent','significantEvents',
+        'incidentNumber','startDateTime','locationSeedId','lat','lng','gaccRegion','sizeAcres','containmentPercent','significantEvents',
         'lifeSafety','weatherConcerns','projectedActivity','threatSummary',
         'strategicObjectives','plannedActions'
       ],
