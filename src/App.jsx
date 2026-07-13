@@ -177,6 +177,7 @@ export default function App(){
  const [advisorMode,setAdvisorMode]=useState('local')
  const [pendingIncident,setPendingIncident]=useState('')
  const [pendingStart,setPendingStart]=useState(null)
+ const [showAdvanceTurn,setShowAdvanceTurn]=useState(false)
 
 
  const currentRole=missionState.exercise?.selectedRole || role || 'remote_sensing_coordinator'
@@ -225,7 +226,33 @@ export default function App(){
   setMissionState(startExercise(configured))
   setActive('current')
  }
- const advanceExercise=()=>setMissionState(prev=>advanceTurn(prev))
+ const unresolvedTurnItems=()=>{
+  const items=[]
+  const requirements=(missionState.requirements?.items||[]).filter(item=>!['satisfied','cancelled','canceled','superseded'].includes(item.status))
+  const incomplete=requirements.filter(item=>item.status==='needs_clarification'||!item.taskable)
+  const riskyMissions=(missionState.currentOps?.missions||[]).filter(item=>/risk|delayed|pending/i.test(`${item.status||''} ${item.risk||''}`))
+  const riskyDeliveries=(missionState.dissemination?.deliveries||[]).filter(item=>item.receiptStatus!=='verified'||['at_risk','delayed'].includes(item.deliveryStatus))
+  const openWindows=(missionState.exercise?.decisionWindows||[]).filter(item=>!item.status||item.status==='open')
+
+  if(incomplete.length) items.push(`${incomplete.length} requirement${incomplete.length===1?'':'s'} still need development`)
+  if(riskyMissions.length) items.push(`${riskyMissions.length} mission${riskyMissions.length===1?'':'s'} have execution risk`)
+  if(riskyDeliveries.length) items.push(`${riskyDeliveries.length} product${riskyDeliveries.length===1?'':'s'} lack complete delivery or receipt`)
+  if(openWindows.length) items.push(`${openWindows.length} decision window${openWindows.length===1?' remains':'s remain'} open`)
+  return items.slice(0,5)
+ }
+ const nextTurnTime=()=>{
+  const current=missionState.exercise?.localIncidentTime||missionState.asOf||''
+  const match=String(current).match(/(\d{2})(\d{2})/)
+  if(!match) return 'next decision period'
+  const total=(Number(match[1])*60+Number(match[2])+45)%(24*60)
+  return `${String(Math.floor(total/60)).padStart(2,'0')}${String(total%60).padStart(2,'0')} PT`
+ }
+ const requestAdvanceExercise=()=>setShowAdvanceTurn(true)
+ const confirmAdvanceExercise=()=>{
+  setMissionState(prev=>advanceTurn(prev))
+  setShowAdvanceTurn(false)
+ }
+ const advanceExercise=requestAdvanceExercise
  const reviewTransition=()=>{setMissionState(prev=>beginTransition(prev));setActive('transition')}
  const approveLifecycleTransition=()=>{setMissionState(prev=>approveTransition(prev));setActive('current')}
  const confirmEndEx=(reason)=>{setMissionState(prev=>endExercise(prev,reason));setShowEndEx(false);setActive('aar')}
@@ -385,6 +412,52 @@ export default function App(){
     advisorProps={{role:currentRole,missionState,operationalSummary:deriveOperationalSummary(missionState),onSubmitDecision:submitFreeTextDecision,pending:advisorPending,busy:advisorBusy,mode:advisorMode,onConfirm:confirmAdvisorAction,onCancel:cancelAdvisorAction,onOpenAdvisor:()=>setActive('advisor')}}
     onEndExercise={()=>setShowEndEx(true)}
    />
+
+   <button
+    type="button"
+    onClick={requestAdvanceExercise}
+    disabled={!String(missionState.exercise?.status||'').startsWith('active')}
+    style={{
+     position:'fixed',
+     top:58,
+     left:'50%',
+     transform:'translateX(-50%)',
+     zIndex:9997,
+     minHeight:38,
+     padding:'0 17px',
+     border:'1px solid #71e5ef',
+     borderRadius:5,
+     background:'linear-gradient(180deg,#116f82,#0b4f60)',
+     color:'#efffff',
+     fontWeight:800,
+     letterSpacing:'.04em',
+     cursor:'pointer',
+     boxShadow:'0 5px 18px rgba(0,0,0,.35)',
+    }}
+   >
+    {missionState.exercise?.localIncidentTime||missionState.asOf||'CURRENT TIME'} &nbsp; · &nbsp; NEXT TURN →
+   </button>
+
+   {showAdvanceTurn&&<div style={{position:'fixed',inset:0,zIndex:10020,display:'flex',alignItems:'center',justifyContent:'center',padding:24,background:'rgba(0,8,15,.86)'}}>
+    <section style={{width:'min(92vw,560px)',border:'1px solid #34758a',background:'#081d2b',boxShadow:'0 24px 70px rgba(0,0,0,.65)'}}>
+     <header style={{padding:'16px 18px',borderBottom:'1px solid #285467'}}>
+      <span style={{fontSize:10,letterSpacing:'.12em',color:'#68e2ed'}}>ADVANCE EXERCISE</span>
+      <h2 style={{margin:'5px 0 0'}}>Advance to {nextTurnTime()}?</h2>
+     </header>
+     <div style={{padding:'16px 18px'}}>
+      <p style={{marginTop:0,color:'#b9ccd5'}}>The scenario will evaluate unresolved work, advance the incident clock, and release any injects or consequences due in the next turn.</p>
+      <strong style={{display:'block',marginBottom:8,color:'#e9f3f6'}}>Open items</strong>
+      {unresolvedTurnItems().length
+       ? <ul style={{margin:'0 0 4px',paddingLeft:20,color:'#cbdbe2'}}>{unresolvedTurnItems().map(item=><li key={item} style={{margin:'6px 0'}}>{item}</li>)}</ul>
+       : <p style={{color:'#8fa7b3'}}>No unresolved items were detected.</p>}
+     </div>
+     <footer style={{display:'flex',justifyContent:'flex-end',gap:8,padding:'13px 18px',borderTop:'1px solid #285467'}}>
+      <button type="button" onClick={()=>setShowAdvanceTurn(false)} style={{minHeight:36,padding:'0 14px',border:'1px solid #365b6c',background:'#102a38',color:'#d6e4ea',cursor:'pointer'}}>CANCEL</button>
+      <button type="button" onClick={confirmAdvanceExercise} style={{minHeight:36,padding:'0 14px',border:'1px solid #69dce7',background:'#0d6979',color:'#efffff',fontWeight:800,cursor:'pointer'}}>ADVANCE TURN</button>
+     </footer>
+    </section>
+   </div>}
+
    {showEndEx && <EndExModal missionState={missionState} onCancel={()=>setShowEndEx(false)} onConfirm={confirmEndEx}/>}
   </>
  }
