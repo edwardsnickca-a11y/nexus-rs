@@ -34,7 +34,7 @@ import { applyIntegratedAction, deriveOperationalSummary, verifyCustomerReceipt,
 import { INITIAL_MISSION_STATE } from './data/missionState.js'
 import { INITIAL_MATRIX } from './data/syncMatrix.js'
 import { buildSyncMatrixFromState } from './engine/syncMatrixBuilder.js'
-import { initializeScenario, selectRole as controllerSelectRole, startExercise, beginTransition, approveTransition, endExercise, resetExercise, isWorkspaceReadOnly } from './engine/exerciseController.js'
+import { initializeScenario, selectRole as controllerSelectRole, startExercise, beginTransition, approveTransition, endExercise, resetExercise, isWorkspaceReadOnly, advanceTurn } from './engine/exerciseController.js'
 import { buildTomorrowPlanReviews } from './engine/tomorrowPlanReview.js'
 
 
@@ -340,10 +340,13 @@ export default function App(){
   return items.slice(0,5)
  }
  const requestAdvanceExercise=()=>setShowAdvanceTurn(true)
- const confirmAdvanceExercise=()=>{
+ const confirmAdvanceExercise=async()=>{
   if(scenarioBusy) return
   setShowAdvanceTurn(false)
-  runScenarioController(missionState,'advance')
+  const scenarioResult=await runScenarioController(missionState,'advance')
+  const withClarifications=await advanceTurn(scenarioResult)
+  setMissionState(withClarifications)
+  setSyncMatrix(buildSyncMatrixFromState(withClarifications))
  }
  const advanceExercise=requestAdvanceExercise
  const reviewTransition=()=>{setMissionState(prev=>beginTransition(prev));setActive('transition')}
