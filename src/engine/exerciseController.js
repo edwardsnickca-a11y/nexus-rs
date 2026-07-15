@@ -225,7 +225,7 @@ function updateDecisionWindows(state, exercise) {
   return windows
 }
 
-function generateClarificationResponses(state, exercise) {
+async function generateClarificationResponses(state, exercise) {
   // Find requirements that have been requested for clarification but don't have a response yet
   const pendingClarifications = safeArray(state.requirements?.items).filter(
     (r) => r.status === 'clarification_requested' && !r.clarificationResponse
@@ -233,14 +233,14 @@ function generateClarificationResponses(state, exercise) {
 
   if (pendingClarifications.length === 0) return []
 
-  // For each pending clarification, generate a customer response
-  return pendingClarifications.map((req) => {
-    // Build context for the AI to generate a realistic customer response
-    const missingFields = req.missingFields || []
-    const customerOrg = req.customer || 'Customer'
-    
-    // Construct a prompt for the advisor to generate a customer response in their voice
-    const prompt = `You are a ${customerOrg} representative responding to a clarification request on requirement ${req.id.toUpperCase()}.
+  // For each pending clarification, generate a customer response via advisor API
+  const responses = await Promise.all(
+    pendingClarifications.map(async (req) => {
+      const missingFields = req.missingFields || []
+      const customerOrg = req.customer || 'Customer'
+      
+      // Build prompt for advisor to generate customer response
+      const prompt = `You are a ${customerOrg} representative responding to a clarification request on requirement ${req.id.toUpperCase()}.
 
 The requirement request was: "${req.title || 'untitled'}"
 The customer initially said they needed: "${req.decisionToSupport || 'decision support (not yet specified)'}"
@@ -249,28 +249,49 @@ We are requesting clarification on: ${missingFields.join(', ')}
 
 Respond as the customer would in their own voice and style (e.g., law enforcement, emergency management, etc.). Be realistic, natural, and brief (2-3 sentences). Address the missing information directly. Do NOT say "To clarify" or meta-commentary. Just answer like you're responding to a follow-up call.`
 
-    // NOTE: In a real implementation, this would call the advisor API here.
-    // For now, this is a placeholder structure. The actual call would be:
-    // const response = await callAdvisorAPI(prompt)
-    
-    // Placeholder response (in production, replace with actual advisor call)
-    const mockResponses = {
-      'cc-req-002': 'The east side of the ridge, coordinates 38.56, -122.48 to 38.58, -122.46. We need this by 1400 hours before we move evacuation resources. Life safety is the priority—we need to know what structures are in the burn zone.',
-      'ulf-req-001': 'Highway 20 is our primary evacuation route. We need current status on structure threats within 2 miles of the route—if it closes, we lose access to the northern communities.',
-      'default': `We need eyes on the situation to make resource decisions. The missing details would help us understand exactly what we're looking for and when you can deliver it.`,
-    }
-    const responseText = mockResponses[req.id.toLowerCase()] || mockResponses.default
+      try {
+        // Call advisor API
+        const response = await fetch('/api/advisor', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            exactText: prompt,
+            role: exercise.selectedRole || 'collection_manager',
+            context: {
+              requirementId: req.id,
+              incident: req.fire,
+              customer: req.customer,
+              missingFields,
+            },
+          }),
+        })
 
-    return {
-      requirementId: req.id,
-      clarificationResponse: responseText,
-      customerOrg: req.customer || 'Customer',
-      respondedAtTurn: exercise.turnNumber,
-    }
-  })
+        if (!response.ok) {
+          console.error(`Advisor API error for ${req.id}:`, response.status)
+          return null
+        }
+
+        const data = await response.json()
+        const responseText = data.interpretation || data.result || data.response || ''
+
+        return {
+          requirementId: req.id,
+          clarificationResponse: responseText,
+          customerOrg: req.customer || 'Customer',
+          respondedAtTurn: exercise.turnNumber,
+        }
+      } catch (err) {
+        console.error(`Failed to generate clarification response for ${req.id}:`, err)
+        return null
+      }
+    })
+  )
+
+  // Filter out failed responses
+  return responses.filter(Boolean)
 }
 
-export function advanceTurn(state) {
+export async function advanceTurn(state) {
   const previous = state.exercise || DEFAULT_EXERCISE
   if (![EXERCISE_STATUS.ACTIVE_OP1, EXERCISE_STATUS.TRANSITION, EXERCISE_STATUS.ACTIVE_OP2].includes(previous.status)) return state
   let exercise = {
@@ -281,8 +302,8 @@ export function advanceTurn(state) {
   exercise.decisionWindows = updateDecisionWindows(state, exercise)
   const expired = exercise.decisionWindows.filter((w) => w.status === 'expired' && w.expiredAtTurn === exercise.turnNumber)
   
-  // Generate clarification responses for pending clarification requests
-  const clarificationResponses = generateClarificationResponses(state, exercise)
+  // Generate clarification responses (now async)
+  const clarificationResponses = await generateClarificationResponses(state, exercise)
   
   // Inject responses into requirements
   let updatedRequirements = state.requirements
