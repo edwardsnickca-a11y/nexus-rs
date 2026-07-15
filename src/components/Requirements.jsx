@@ -18,20 +18,6 @@ const roleAuthority = {
   upad_lno: 'PRODUCTION IMPACT / READ ONLY',
 }
 
-const CLARIFY_Q = {
-  'decision to support': 'What decision will this information support?',
-  where: 'What exact area, NAI, coordinates, or boundary should be collected?',
-  when: 'What is the required collection window or latest time of value?',
-  eeis: 'What specific observable information must the product answer?',
-  what: 'What activity, condition, or indicator must be reported?',
-  why: 'What is the operational justification for this requirement?',
-  who: 'Who is the requesting customer or supported decision-maker?',
-}
-const questionFor = field => CLARIFY_Q[String(field).toLowerCase()] || `Please clarify: ${field}.`
-const questionsFor = fields => (fields || []).map(field => ({ field, q: questionFor(field) }))
-
-// ---------------------------------------------------------------- Center: editor
-
 function RequirementEditor({ requirement, role, readOnly, onUpdate, onValidate, onSendForward, onRequestClarification }) {
   const editable = role === 'collection_manager' && !readOnly
   const [draft, setDraft] = useState(requirement)
@@ -51,6 +37,7 @@ function RequirementEditor({ requirement, role, readOnly, onUpdate, onValidate, 
   })
 
   const missing = requirement.missingFields || []
+  const hasResponse = requirement.status === 'clarification_requested' && requirement.clarificationResponse
 
   return <section className="panel requirement-detail">
     <div className="requirement-header-meta">
@@ -65,16 +52,9 @@ function RequirementEditor({ requirement, role, readOnly, onUpdate, onValidate, 
       </div>
     </div>
 
-    {requirement.status === 'needs_clarification' && <div className="clarification-banner">
-      <div>
-        <strong>NEEDS CLARIFICATION</strong>
-        <p>Missing: {missing.length ? missing.join(' · ') : 'Requirement is incomplete for tasking.'}</p>
-      </div>
-      {editable && <button className="primary-button small" onClick={() => onRequestClarification()}>REQUEST CLARIFICATION</button>}
-    </div>}
-
-    {requirement.status === 'clarification_requested' && <div className="clarification-banner pending">
-      <div><strong>CLARIFICATION REQUESTED</strong><p>Awaiting customer response. See the clarification panel for the drafted request.</p></div>
+    {hasResponse && <div style={{background:'#0a1f2d',border:'1px solid #1b3c52',borderRadius:'9px',padding:'11px',marginBottom:'12px'}}>
+      <span style={{display:'block',color:'#6f879a',fontSize:'9px',textTransform:'uppercase',letterSpacing:'.08em',marginBottom:'8px'}}>Customer Response — {requirement.customerOrg || 'Customer'}</span>
+      <p style={{margin:'0',color:'#d0dde7',fontSize:'11px',lineHeight:'1.5'}}>{requirement.clarificationResponse}</p>
     </div>}
 
     <div className="authority-note"><strong>{roleAuthority[role]}</strong><span>{editable ? 'Collection Manager owns requirement and EEI development.' : 'Fields are visible for coordination; changes belong to the Collection Manager.'}</span></div>
@@ -116,26 +96,16 @@ function RequirementEditor({ requirement, role, readOnly, onUpdate, onValidate, 
       <button className="ghost-button" onClick={()=>{save(); setTimeout(()=>onValidate(requirement.id),0)}}>Validate Requirement</button>
       <button className="primary-button small" disabled={requirement.status!=='taskable'} onClick={()=>onSendForward(requirement.id)}>Send Forward</button>
     </div>}
+
+    <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',gap:'12px',padding:'11px 13px',marginTop:'12px',borderRadius:'9px',border:'1px solid #7a591f',background:'rgba(161,105,28,.16)'}}>
+      <div><strong style={{display:'block',color:'#f2c574',fontSize:'11px',letterSpacing:'.05em'}}>NEEDS CLARIFICATION</strong><span style={{color:'#e5c890',fontSize:'10px'}}>Missing: {missing.join(' · ')}</span></div>
+      {editable && <button className="primary-button small" onClick={onRequestClarification} style={{whiteSpace:'nowrap'}}>REQUEST CLARIFICATION</button>}
+    </div>
   </section>
 }
 
-// ---------------------------------------------------------------- Right: context + clarification
-
-function ContextPanel({ requirement, role, readOnly, composerOpen, setComposerOpen, onRequestClarification, onAskAdvisor }) {
-  const canRequest = role === 'collection_manager' && !readOnly
+function ContextPanel({ requirement, role, readOnly, onAskAdvisor }) {
   const missing = requirement.missingFields || []
-  const questions = questionsFor(missing)
-  const log = requirement.clarificationLog || []
-
-  const submitClarification = () => {
-    onRequestClarification(requirement.id, {
-      missingFields: missing,
-      requestedAt: 'CURRENT LOCAL',
-      requestedBy: role,
-      status: 'clarification_requested',
-    })
-    setComposerOpen(false)
-  }
 
   const askAdvisor = () => {
     const text = `Advisor, I need your read on requirement ${requirement.id.toUpperCase()} (${requirement.fire}). ` +
@@ -157,49 +127,47 @@ function ContextPanel({ requirement, role, readOnly, composerOpen, setComposerOp
         <div><dt>Incident</dt><dd>{requirement.fire || 'Not recorded'}</dd></div>
         <div><dt>Received</dt><dd>{requirement.receivedAt || 'Not recorded'}</dd></div>
       </dl>
-      {requirement.originalRequest && <p className="original-request">&ldquo;{requirement.originalRequest}&rdquo;</p>}
     </section>
 
     <section className="clarification-missing-list">
       <span className="context-label">Missing information</span>
       {missing.length
         ? <ul>{missing.map(f => <li key={f}>{f}</li>)}</ul>
-        : <p className="context-empty">Nothing outstanding &mdash; requirement is complete.</p>}
+        : <p className="context-empty">Nothing outstanding — requirement is complete.</p>}
     </section>
-
-    {questions.length > 0 && <section className="clarification-question-list">
-      <span className="context-label">Suggested clarification questions</span>
-      <ul>{questions.map(({ field, q }) => <li key={field}><strong>{field}</strong><span>{q}</span></li>)}</ul>
-    </section>}
 
     <section className="clarification-actions">
-      <button className="primary-button small" disabled={!canRequest} onClick={() => setComposerOpen(v => !v)}>
-        {composerOpen ? 'CLOSE' : 'REQUEST CLARIFICATION'}
-      </button>
       <button className="secondary-button" onClick={askAdvisor}>ASK ADVISOR</button>
-    </section>
-
-    <section className="clarification-history">
-      <span className="context-label">Clarification history</span>
-      {log.length
-        ? log.map(entry => <div key={entry.id} className="clarification-history-item">
-            <strong>{entry.requestedBy ? entry.requestedBy.replaceAll('_', ' ') : 'Requested'} · {entry.requestedAt || 'earlier'}</strong>
-            {entry.missingFields?.length ? <small>{entry.missingFields.join(' · ')}</small> : null}
-            {entry.response ? <p className="clarification-response">Response: {entry.response}</p> : null}
-          </div>)
-        : <p className="context-empty">No clarification activity recorded.</p>}
     </section>
   </aside>
 }
 
-// ---------------------------------------------------------------- Main layout
+function FieldReferenceGuide() {
+  return <section className="panel field-reference-guide">
+    <h4>Field Reference Guide</h4>
+    <div className="field-reference-grid">
+      <div><strong>WHAT</strong><p>Activity, condition, or indicator to report</p></div>
+      <div><strong>WHERE</strong><p>NAI, coordinates, or defined collection area</p></div>
+      <div><strong>WHEN</strong><p>Collection window and latest time of value</p></div>
+      <div><strong>WHY</strong><p>Operational justification for requirement</p></div>
+      <div><strong>Decision to Support</strong><p>What decision will this information support?</p></div>
+      <div><strong>EEIs</strong><p>Specific, observable answers tied to decision</p></div>
+    </div>
+  </section>
+}
+
+function NewRequirementForm({ onAdd }) {
+  const [title, setTitle] = useState('')
+  const [fire, setFire] = useState('Fire Alpha')
+  const [customer, setCustomer] = useState('')
+  return <div className="new-requirement"><input value={title} onChange={e=>setTitle(e.target.value)} placeholder="Requirement title"/><select value={fire} onChange={e=>setFire(e.target.value)}><option>Fire Alpha</option><option>Fire Bravo</option><option>Fire Charlie</option></select><input value={customer} onChange={e=>setCustomer(e.target.value)} placeholder="Customer / requestor"/><button className="primary-button small" disabled={!title||!customer} onClick={()=>onAdd({title,fire,customer,who:customer,requestType:'ad_hoc',priority:3,decisionToSupport:'',what:'',where:'',when:'',why:'',requiredEffect:'',requestedPlatform:'',nai:'',pir:'',eeis:[],disseminationMethod:'',existingSourceCheck:false,organicSuitability:'',alternateSource:'',duplicateStatus:'unknown',oversightFlag:false})}>Add</button></div>
+}
 
 export default function Requirements({ role, missionState, readOnly, onUpdateRequirement, onValidateRequirement, onSendForward, onAddRequirement, onRequestClarification, onAskAdvisor }) {
   const requirements = missionState.requirements?.items || []
   const [selectedId, setSelectedId] = useState(requirements[0]?.id)
   const [filter, setFilter] = useState('all')
   const [showNew, setShowNew] = useState(false)
-  const [composerOpen, setComposerOpen] = useState(false)
   const selected = requirements.find(r => r.id === selectedId) || requirements[0]
   const filtered = useMemo(() => requirements.filter(r => filter === 'all' || r.status === filter), [requirements, filter])
   const counts = {
@@ -208,8 +176,6 @@ export default function Requirements({ role, missionState, readOnly, onUpdateReq
     clarification: requirements.filter(r => r.status === 'needs_clarification' || r.status === 'clarification_requested').length,
     oversight: requirements.filter(r => r.oversightFlag).length,
   }
-
-  React.useEffect(() => { setComposerOpen(false) }, [selectedId])
 
   return <div className="requirements-workspace">
     <section className="panel requirements-header">
@@ -237,10 +203,12 @@ export default function Requirements({ role, missionState, readOnly, onUpdateReq
         </div>
       </section>
 
-      {selected && <RequirementEditor requirement={selected} role={role} readOnly={readOnly} onUpdate={onUpdateRequirement} onValidate={onValidateRequirement} onSendForward={onSendForward} onRequestClarification={() => setComposerOpen(true)} />}
+      {selected && <RequirementEditor requirement={selected} role={role} readOnly={readOnly} onUpdate={onUpdateRequirement} onValidate={onValidateRequirement} onSendForward={onSendForward} onRequestClarification={() => onRequestClarification(selected.id, {missingFields: selected.missingFields, status: 'clarification_requested'})} />}
 
-      {selected && <ContextPanel requirement={selected} role={role} readOnly={readOnly} composerOpen={composerOpen} setComposerOpen={setComposerOpen} onRequestClarification={onRequestClarification} onAskAdvisor={onAskAdvisor} />}
+      {selected && <ContextPanel requirement={selected} role={role} readOnly={readOnly} onAskAdvisor={onAskAdvisor} />}
     </div>
+
+    <FieldReferenceGuide />
 
     <section className="panel collection-doctrine">
       <div className="panel-heading"><h3>Taskability Standard</h3><span className="chip slate">CONTROLLED WORKFLOW</span></div>
@@ -248,11 +216,3 @@ export default function Requirements({ role, missionState, readOnly, onUpdateReq
     </section>
   </div>
 }
-
-function NewRequirementForm({ onAdd }) {
-  const [title, setTitle] = useState('')
-  const [fire, setFire] = useState('Fire Alpha')
-  const [customer, setCustomer] = useState('')
-  return <div className="new-requirement"><input value={title} onChange={e=>setTitle(e.target.value)} placeholder="Requirement title"/><select value={fire} onChange={e=>setFire(e.target.value)}><option>Fire Alpha</option><option>Fire Bravo</option><option>Fire Charlie</option></select><input value={customer} onChange={e=>setCustomer(e.target.value)} placeholder="Customer / requestor"/><button className="primary-button small" disabled={!title||!customer} onClick={()=>onAdd({title,fire,customer,who:customer,requestType:'ad_hoc',priority:3,decisionToSupport:'',what:'',where:'',when:'',why:'',requiredEffect:'',requestedPlatform:'',nai:'',pir:'',eeis:[],disseminationMethod:'',existingSourceCheck:false,organicSuitability:'',alternateSource:'',duplicateStatus:'unknown',oversightFlag:false})}>Add</button></div>
-}
-
