@@ -251,7 +251,7 @@ Respond as the customer would in their own voice and style (e.g., law enforcemen
 
       try {
         // Call advisor API
-        const response = await fetch('/api/advisor', {
+        const response = await fetch('/api/clarification', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -272,7 +272,12 @@ Respond as the customer would in their own voice and style (e.g., law enforcemen
         }
 
         const data = await response.json()
-        const responseText = data.interpretation || data.result || data.response || ''
+        const candidates = [data.interpretation, data.result, data.response]
+        const responseText = candidates.find((v) => typeof v === 'string' && v.trim()) || ''
+        if (!responseText) {
+          console.error(`Clarification for ${req.id}: no usable text in API response`)
+          return null
+        }
 
         return {
           requirementId: req.id,

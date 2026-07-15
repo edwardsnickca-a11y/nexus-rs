@@ -236,6 +236,7 @@ export default async function handler(req,res){
       signal:controller.signal,
       body:JSON.stringify({
         model:MODEL,
+        reasoning:{effort:'low'},
         instructions:instructions(mode,difficulty),
         input:[{
           role:'user',
