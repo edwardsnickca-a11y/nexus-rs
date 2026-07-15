@@ -225,7 +225,7 @@ export default async function handler(req,res){
   const timeout=setTimeout(()=>controller.abort(),70_000)
 
   try{
-    const response=await fetch('https://api.openai.com/v1/responses',{
+    const response=await fetch('https://api.openai.com/v1/chat/completions',{
       method:'POST',
       headers:{
         Authorization:`Bearer ${process.env.OPENAI_API_KEY}`,
@@ -234,35 +234,27 @@ export default async function handler(req,res){
       signal:controller.signal,
       body:JSON.stringify({
         model:MODEL,
-        instructions:instructions(mode,difficulty),
-        input:[{
+        max_tokens:4000,
+        temperature:1,
+        messages:[{
           role:'user',
-          content:[{
-            type:'input_text',
-            text:`RANDOMIZATION NONCE: ${nonce}
+          content:`${instructions(mode,difficulty)}
+
+RANDOMIZATION NONCE: ${nonce}
 
 CONTROLLED EXERCISE CONTEXT
 ${JSON.stringify(context)}
 
 Generate the next authoritative Scenario Controller state.`,
-          }],
         }],
-        text:{
-          format:{
-            type:'json_schema',
-            name:mode==='initialize'?'nexus_rs_initial_world':'nexus_rs_scenario_advance',
-            strict:true,
-            schema:mode==='initialize'?initializationSchema:advanceSchema,
-          },
-        },
       }),
     })
 
     const data=await response.json().catch(()=>({}))
     if(!response.ok){
-      return send(res,response.status,{error:data?.error?.message||'OpenAI Scenario Controller failed',code:data?.error?.code||'openai_scenario_failed'})
+      return send(res,response.status,{error:data?.error?.message||'OpenAI Scenario Controller failed',code:data?.error?.type||'openai_scenario_failed'})
     }
-    const output=extractText(data)
+    const output=data?.choices?.[0]?.message?.content||''
     if(!output) return send(res,502,{error:'OpenAI returned no scenario output',code:'empty_scenario_response'})
 
     let parsed
