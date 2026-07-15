@@ -477,7 +477,14 @@ export default function App(){
  })
 
  const matrixChange=(updatedBy,note,mutate)=>setSyncMatrix(prev=>{const next=mutate(prev);const version=prev.version+1;return {...next,version,asOf:'CURRENT LOCAL',coordinatorApprovalStatus:'pending',status:'UPDATE REQUIRED',changeHistory:[...prev.changeHistory,{version,asOf:'CURRENT LOCAL',updatedBy,note}]}})
- const updateSortie=(sortieId,changes)=>matrixChange(currentRole,`Updated ${sortieId}: ${Object.keys(changes).join(', ')}.`,prev=>({...prev,sorties:prev.sorties.map(s=>s.id===sortieId?{...s,...changes}:s)}))
+ const updateSortie=(sortieId,changes)=>matrixChange(currentRole,`Updated ${sortieId}: ${Object.keys(changes).join(', ')}.`,prev=>{
+  const todaySorties=prev.sorties||[]
+  if(todaySorties.some(s=>s.id===sortieId))return {...prev,sorties:todaySorties.map(s=>s.id===sortieId?{...s,...changes}:s)}
+  const tomorrowKey=Array.isArray(prev.tomorrowSorties)?'tomorrowSorties':Array.isArray(prev.plannedSorties)?'plannedSorties':null
+  if(tomorrowKey&&prev[tomorrowKey].some(s=>s.id===sortieId))return {...prev,[tomorrowKey]:prev[tomorrowKey].map(s=>s.id===sortieId?{...s,...changes}:s)}
+  const overrides=prev.partnerOverrides||{}
+  return {...prev,partnerOverrides:{...overrides,[sortieId]:{...(overrides[sortieId]||{}),...changes}}}
+ })
  const resolveNeed=(id)=>matrixChange(currentRole,`Unmet need ${id} moved to coordinating.`,prev=>({...prev,unmetNeeds:prev.unmetNeeds.map(x=>x.id===id?{...x,status:'COORDINATING'}:x)}))
  const resolveGap=(id)=>matrixChange(currentRole,`Coverage gap ${id} resolved.`,prev=>({...prev,coverageGaps:prev.coverageGaps.map(x=>x.id===id?{...x,status:'RESOLVED'}:x)}))
  const addLeadershipNote=(note)=>matrixChange(currentRole,'Leadership note added.',prev=>({...prev,leadershipNotes:[...prev.leadershipNotes,note]}))
