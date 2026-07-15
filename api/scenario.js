@@ -1,5 +1,7 @@
 import crypto from 'node:crypto'
 
+export const config={maxDuration:60}
+
 const MODEL=process.env.OPENAI_SCENARIO_MODEL||process.env.OPENAI_MODEL||'gpt-5-mini'
 const MAX_BODY_BYTES=450_000
 
@@ -222,10 +224,10 @@ export default async function handler(req,res){
   const difficulty=context.difficulty||'Standard'
   const nonce=context.randomizationNonce||crypto.randomUUID()
   const controller=new AbortController()
-  const timeout=setTimeout(()=>controller.abort(),70_000)
+  const timeout=setTimeout(()=>controller.abort(),55_000)
 
   try{
-    const response=await fetch('https://api.openai.com/v1/chat/completions',{
+    const response=await fetch('https://api.openai.com/v1/responses',{
       method:'POST',
       headers:{
         Authorization:`Bearer ${process.env.OPENAI_API_KEY}`,
@@ -234,27 +236,35 @@ export default async function handler(req,res){
       signal:controller.signal,
       body:JSON.stringify({
         model:MODEL,
-        max_tokens:4000,
-        temperature:1,
-        messages:[{
+        instructions:instructions(mode,difficulty),
+        input:[{
           role:'user',
-          content:`${instructions(mode,difficulty)}
-
-RANDOMIZATION NONCE: ${nonce}
+          content:[{
+            type:'input_text',
+            text:`RANDOMIZATION NONCE: ${nonce}
 
 CONTROLLED EXERCISE CONTEXT
 ${JSON.stringify(context)}
 
 Generate the next authoritative Scenario Controller state.`,
+          }],
         }],
+        text:{
+          format:{
+            type:'json_schema',
+            name:mode==='initialize'?'nexus_rs_initial_world':'nexus_rs_scenario_advance',
+            strict:true,
+            schema:mode==='initialize'?initializationSchema:advanceSchema,
+          },
+        },
       }),
     })
 
     const data=await response.json().catch(()=>({}))
     if(!response.ok){
-      return send(res,response.status,{error:data?.error?.message||'OpenAI Scenario Controller failed',code:data?.error?.type||'openai_scenario_failed'})
+      return send(res,response.status,{error:data?.error?.message||'OpenAI Scenario Controller failed',code:data?.error?.code||'openai_scenario_failed'})
     }
-    const output=data?.choices?.[0]?.message?.content||''
+    const output=extractText(data)
     if(!output) return send(res,502,{error:'OpenAI returned no scenario output',code:'empty_scenario_response'})
 
     let parsed
