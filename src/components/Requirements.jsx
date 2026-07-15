@@ -129,14 +129,7 @@ function ContextPanel({ requirement, role, readOnly, onAskAdvisor }) {
       </dl>
     </section>
 
-    <section className="clarification-missing-list">
-      <span className="context-label">Missing information</span>
-      {missing.length
-        ? <ul>{missing.map(f => <li key={f}>{f}</li>)}</ul>
-        : <p className="context-empty">Nothing outstanding — requirement is complete.</p>}
-    </section>
-
-    <section className="clarification-actions">
+<section className="clarification-actions">
       <button className="secondary-button" onClick={askAdvisor}>ASK ADVISOR</button>
     </section>
   </aside>
