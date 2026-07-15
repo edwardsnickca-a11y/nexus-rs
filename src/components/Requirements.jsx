@@ -127,18 +127,9 @@ function ContextPanel({ requirement, role, readOnly, composerOpen, setComposerOp
   const questions = questionsFor(missing)
   const log = requirement.clarificationLog || []
 
-  const defaultMessage = useMemo(() => {
-    const lines = questions.map(({ q }) => `- ${q}`)
-    return `Clarification requested for ${requirement.id.toUpperCase()} (${requirement.fire}).\n\n${lines.join('\n') || 'Please provide additional detail so this requirement can be developed to a taskable standard.'}`
-  }, [requirement.id, requirement.fire, missing.join('|')])
-
-  const [message, setMessage] = useState(defaultMessage)
-  React.useEffect(() => { setMessage(defaultMessage) }, [defaultMessage])
-
   const submitClarification = () => {
     onRequestClarification(requirement.id, {
       missingFields: missing,
-      message: message.trim(),
       requestedAt: 'CURRENT LOCAL',
       requestedBy: role,
       status: 'clarification_requested',
@@ -188,22 +179,12 @@ function ContextPanel({ requirement, role, readOnly, composerOpen, setComposerOp
       <button className="secondary-button" onClick={askAdvisor}>ASK ADVISOR</button>
     </section>
 
-    {composerOpen && canRequest && <section className="clarification-composer">
-      <span className="context-label">Draft clarification request</span>
-      <textarea value={message} onChange={e => setMessage(e.target.value)} aria-label="Clarification message" />
-      <div className="clarification-composer-actions">
-        <button className="ghost-button" onClick={() => setComposerOpen(false)}>Cancel</button>
-        <button className="primary-button small" disabled={!message.trim()} onClick={submitClarification}>Record Request</button>
-      </div>
-    </section>}
-
     <section className="clarification-history">
       <span className="context-label">Clarification history</span>
       {log.length
         ? log.map(entry => <div key={entry.id} className="clarification-history-item">
             <strong>{entry.requestedBy ? entry.requestedBy.replaceAll('_', ' ') : 'Requested'} · {entry.requestedAt || 'earlier'}</strong>
             {entry.missingFields?.length ? <small>{entry.missingFields.join(' · ')}</small> : null}
-            {entry.message ? <p>{entry.message}</p> : null}
             {entry.response ? <p className="clarification-response">Response: {entry.response}</p> : null}
           </div>)
         : <p className="context-empty">No clarification activity recorded.</p>}
@@ -211,7 +192,7 @@ function ContextPanel({ requirement, role, readOnly, composerOpen, setComposerOp
   </aside>
 }
 
-// ---------------------------------------------------------------- Left: queue + main
+// ---------------------------------------------------------------- Main layout
 
 export default function Requirements({ role, missionState, readOnly, onUpdateRequirement, onValidateRequirement, onSendForward, onAddRequirement, onRequestClarification, onAskAdvisor }) {
   const requirements = missionState.requirements?.items || []
@@ -238,7 +219,7 @@ export default function Requirements({ role, missionState, readOnly, onUpdateReq
 
     <div className="requirements-main-grid">
       <section className="panel requirement-queue">
-        <div className="panel-heading"><h3>Requirement Queue</h3>{role === 'collection_manager' && !readOnly && <button className="ghost-button" onClick={() => setShowNew(!showNew)}>+ New Requirement</button>}</div>
+        <div className="panel-heading" style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:'10px'}}><h3>Requirement Queue</h3>{role === 'collection_manager' && !readOnly && <button className="ghost-button" onClick={() => setShowNew(!showNew)}>+ New Requirement</button>}</div>
         <div className="filter-row">
           <button className={filter === 'all' ? 'active' : ''} onClick={() => setFilter('all')}>All</button>
           <button className={filter === 'needs_clarification' ? 'active' : ''} onClick={() => setFilter('needs_clarification')}>Needs Clarification</button>
@@ -247,9 +228,10 @@ export default function Requirements({ role, missionState, readOnly, onUpdateReq
         </div>
         {showNew && <NewRequirementForm onAdd={(payload) => { onAddRequirement(payload); setShowNew(false) }} />}
         <div className="queue-list">{filtered.map(req => <button key={req.id} className={`queue-card ${selected?.id === req.id ? 'selected' : ''}`} onClick={() => setSelectedId(req.id)}>
-          <div><strong>{req.id.toUpperCase()} · {req.fire}</strong><span className={`chip ${isPositive(req.status) ? 'teal' : 'amber'}`}>{STATUS_LABELS[req.status] || req.status}</span></div>
+          <div><strong>{req.id.toUpperCase()}</strong><span className={`chip ${isPositive(req.status) ? 'teal' : 'amber'}`}>{STATUS_LABELS[req.status] || req.status}</span></div>
+          <div><small className="queue-card-fire">{req.fire}</small></div>
           <p>{req.title}</p>
-          <small>P{req.priority} · {req.requestType.replace('_', ' ')} · {req.customer}</small>
+          <small>P{req.priority} · {req.requestType.replace('_', ' ')}</small>
         </button>)}
         {filtered.length === 0 && <p className="context-empty">No requirements in this view.</p>}
         </div>
@@ -273,3 +255,4 @@ function NewRequirementForm({ onAdd }) {
   const [customer, setCustomer] = useState('')
   return <div className="new-requirement"><input value={title} onChange={e=>setTitle(e.target.value)} placeholder="Requirement title"/><select value={fire} onChange={e=>setFire(e.target.value)}><option>Fire Alpha</option><option>Fire Bravo</option><option>Fire Charlie</option></select><input value={customer} onChange={e=>setCustomer(e.target.value)} placeholder="Customer / requestor"/><button className="primary-button small" disabled={!title||!customer} onClick={()=>onAdd({title,fire,customer,who:customer,requestType:'ad_hoc',priority:3,decisionToSupport:'',what:'',where:'',when:'',why:'',requiredEffect:'',requestedPlatform:'',nai:'',pir:'',eeis:[],disseminationMethod:'',existingSourceCheck:false,organicSuitability:'',alternateSource:'',duplicateStatus:'unknown',oversightFlag:false})}>Add</button></div>
 }
+
