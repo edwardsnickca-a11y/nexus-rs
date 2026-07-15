@@ -348,7 +348,7 @@ export default function App(){
   setMissionState(withClarifications)
   setSyncMatrix(buildSyncMatrixFromState(withClarifications))
  }
- const advanceExercise=requestAdvanceExercise
+ const advanceExercise=confirmAdvanceExercise
  const reviewTransition=()=>{setMissionState(prev=>beginTransition(prev));setActive('transition')}
  const approveLifecycleTransition=()=>{setMissionState(prev=>approveTransition(prev));setActive('current')}
  const confirmEndEx=(reason)=>{setMissionState(prev=>endExercise(prev,reason));setShowEndEx(false);setActive('aar')}
