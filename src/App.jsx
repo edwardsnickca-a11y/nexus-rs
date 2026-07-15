@@ -569,7 +569,7 @@ export default function App(){
    <div className="main-shell">
      <Header role={currentRole} missionState={missionState} onReset={resetActiveExercise} portalMode={portalMode}/>
      {!portalMode && <ExerciseStatusBar missionState={missionState} onStart={confirmStartEx} onAdvance={advanceExercise} onTransition={reviewTransition} onEnd={()=>setShowEndEx(true)} onAar={()=>setActive('aar')}/>}
-     <main className={portalMode?'portal-workspace':'workspace'}>
+     <main className={portalMode?'portal-workspace':'workspace'} style={!portalMode&&active==='sync'?{gridTemplateColumns:'minmax(0,1fr)',maxWidth:'none'}:undefined}>
        <div>{content}</div>
        {!portalMode && active!=='sync' && <AdvisorPanel role={currentRole} missionState={missionState} operationalSummary={deriveOperationalSummary(missionState)} onSubmitDecision={submitFreeTextDecision} pending={advisorPending} busy={advisorBusy} mode={advisorMode} onConfirm={confirmAdvisorAction} onCancel={cancelAdvisorAction}/>}
      </main>
