@@ -105,11 +105,11 @@ export const INITIAL_MISSION_STATE = {
     stateAuthority: 'State J3',
     allocationStatus: 'ACTIVE STATE ALLOCATION',
     assets: [
-      { id:'asset-mq9-01', type:'MQ-9', identifier:'MQ-9-01', callsign:'GARGOYLE', quantity:1, controlRelationship:'State Allocated', status:'assigned', assignment:'Pine Ridge', missionId:'mission-alpha', returnable:true, recallRisk:'Medium', notes:'Protected current mission.' },
-      { id:'asset-luh72-01', type:'UH-72', identifier:'UH-72-01', callsign:'BEAR', quantity:1, controlRelationship:'State Allocated', status:'assigned', assignment:'Bear Creek', missionId:'mission-bravo', returnable:true, recallRisk:'Low', notes:'Current sortie scheduled.' },
-      { id:'asset-luh72-02', type:'UH-72', identifier:'UH-72-02', callsign:'BEAR', quantity:1, controlRelationship:'State Allocated', status:'reserve', assignment:'Regional Reserve', missionId:null, returnable:true, recallRisk:'High', notes:'Unassigned state asset held for emerging need.' },
-      { id:'asset-cap-01', type:'CAP', identifier:'CAP-01', quantity:1, controlRelationship:'State Allocated', status:'assigned', assignment:'Eagle Peak', missionId:'mission-charlie', returnable:true, recallRisk:'Medium', notes:'Afternoon collection window.' },
-      { id:'asset-cap-02', type:'CAP', identifier:'CAP-02', quantity:1, controlRelationship:'State Allocated', status:'reserve', assignment:'Regional Reserve', missionId:null, returnable:true, recallRisk:'High', notes:'Available for tasking or release.' },
+      { id:'asset-mq9-01', type:'MQ-9', platformId:'platform-mq9', identifier:'MQ-9-01', callsign:'GARGOYLE', quantity:1, controlRelationship:'State Allocated', status:'assigned', assignment:'Pine Ridge', missionId:'mission-alpha', returnable:true, recallRisk:'Medium', notes:'Protected current mission.' },
+      { id:'asset-luh72-01', type:'UH-72', platformId:'platform-uh72', identifier:'UH-72-01', callsign:'BEAR', quantity:1, controlRelationship:'State Allocated', status:'assigned', assignment:'Bear Creek', missionId:'mission-bravo', returnable:true, recallRisk:'Low', notes:'Current sortie scheduled.' },
+      { id:'asset-luh72-02', type:'UH-72', platformId:'platform-uh72', identifier:'UH-72-02', callsign:'BEAR', quantity:1, controlRelationship:'State Allocated', status:'reserve', assignment:'Regional Reserve', missionId:null, returnable:true, recallRisk:'High', notes:'Unassigned state asset held for emerging need.' },
+      { id:'asset-cap-01', type:'CAP', platformId:'platform-cap-182', config:'Still Imagery (C-182)', identifier:'CAP-01', quantity:1, controlRelationship:'State Allocated', status:'assigned', assignment:'Eagle Peak', missionId:'mission-charlie', returnable:true, recallRisk:'Medium', notes:'Afternoon collection window.' },
+      { id:'asset-cap-02', type:'CAP', platformId:'platform-cap-182', config:'Still Imagery (C-182)', identifier:'CAP-02', quantity:1, controlRelationship:'State Allocated', status:'reserve', assignment:'Regional Reserve', missionId:null, returnable:true, recallRisk:'High', notes:'Available for tasking or release.' },
     ],
     requests: [],
     history: [

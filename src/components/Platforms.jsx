@@ -62,7 +62,7 @@ export default function Assets({ role, missionState }) {
       <div className="panel-heading"><h3>All Approved Platforms</h3><span className="chip teal">CONTROLLED DATA</span></div>
       <div className="platform-card-grid">
         {PLATFORM_LIBRARY.map(platform => {
-          const allocated = missionState.assetControl.assets.filter(asset => asset.type === platform.type)
+          const allocated = missionState.assetControl.assets.filter(asset => asset.platformId ? asset.platformId === platform.id : asset.type === platform.type)
           const isRegional = allocated.length > 0
           return <button key={platform.id} className={`platform-select-card ${selectedPlatform.id === platform.id ? 'selected' : ''}`} onClick={() => setSelectedPlatformId(platform.id)}>
             <div><strong>{platform.type}</strong><span>{isRegional ? `${allocated.length} ALLOCATED` : 'NOT IN REGION'}</span></div>
@@ -113,7 +113,7 @@ export default function Assets({ role, missionState }) {
           <div key={incident}>
             <strong style={{display:'block',marginBottom:'10px'}}>{incident}</strong>
             {assets.map(asset => {
-              const displayName = asset.type === 'CAP' ? `${asset.type}` : asset.type.replace('UH-', 'UH-').replace('MQ-', 'MQ-')
+              const displayName = asset.config ? `${asset.type} · ${asset.config}` : asset.type
               return <div key={asset.id} style={{marginLeft:'12px',marginBottom:'8px',paddingLeft:'10px',borderLeft:'2px solid #254457'}}>
                 <small style={{color:'#8fa5b7'}}>{displayName} · {asset.identifier}</small><span style={{display:'block',color:'#64cfc6',fontSize:'11px',fontWeight:'700'}}>{asset.status.toUpperCase()}</span>
               </div>
