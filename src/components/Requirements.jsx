@@ -73,10 +73,13 @@ function RequirementEditor({ requirement, role, readOnly, onUpdate, onValidate, 
       <label>NAI / Collection Area<input disabled={!editable} value={draft.nai || ''} onChange={e=>set('nai',e.target.value)}/></label>
       <label>PIR / Decision Link<input disabled={!editable} value={draft.pir || ''} onChange={e=>set('pir',e.target.value)}/></label>
       <label className="wide">Required effect / capability<textarea disabled={!editable} value={draft.requiredEffect || ''} onChange={e=>set('requiredEffect',e.target.value)} placeholder="Request the effect or capability, not a platform"/></label>
-      <label>Platform named by customer<input disabled={!editable} value={draft.requestedPlatform || ''} onChange={e=>set('requestedPlatform',e.target.value)} placeholder="Leave blank unless customer explicitly named one"/></label>
       <label>Organic asset suitability<textarea disabled={!editable} value={draft.organicSuitability || ''} onChange={e=>set('organicSuitability',e.target.value)} placeholder="Which available effects could satisfy this requirement?"/></label>
       <label className="wide">EEIs — one per line<textarea className="tall" disabled={!editable} value={(draft.eeis || []).join('\n')} onChange={e=>setEeis(e.target.value)} placeholder="Each EEI should be specific, observable, and tied to the decision."/></label>
       <label className="wide">Dissemination method and verification<textarea disabled={!editable} value={draft.disseminationMethod || ''} onChange={e=>set('disseminationMethod',e.target.value)} placeholder="How will the customer receive the information, and how will receipt be verified?"/></label>
+      <label>Select asset<select disabled={!editable} value={draft.requestedPlatform || ''} onChange={e=>set('requestedPlatform',e.target.value)}><option value="">— Unassigned —</option>{missionState?.assetControl?.assets?.map(asset => {
+        const label = asset.type === 'CAP' ? `${asset.identifier} · ${asset.assignment} (${asset.status})` : `${asset.callsign}-${asset.identifier.split('-')[1]} · ${asset.assignment} (${asset.status})`
+        return <option key={asset.id} value={asset.identifier}>{label}</option>
+      })}</select></label>
       <label>Alternate source<textarea disabled={!editable} value={draft.alternateSource || ''} onChange={e=>set('alternateSource',e.target.value)} placeholder="Existing imagery, partner source, public data, etc."/></label>
       <label>Duplicate status<select disabled={!editable} value={draft.duplicateStatus || 'unknown'} onChange={e=>set('duplicateStatus',e.target.value)}><option value="unknown">Unknown</option><option value="unique">Unique</option><option value="possible_overlap">Possible overlap</option><option value="duplicate">Duplicate</option></select></label>
     </div>
@@ -104,36 +107,7 @@ function RequirementEditor({ requirement, role, readOnly, onUpdate, onValidate, 
   </section>
 }
 
-function ContextPanel({ requirement, role, readOnly, onAskAdvisor }) {
-  const missing = requirement.missingFields || []
 
-  const askAdvisor = () => {
-    const text = `Advisor, I need your read on requirement ${requirement.id.toUpperCase()} (${requirement.fire}). ` +
-      `Title: "${requirement.title || 'untitled'}". Current status: ${STATUS_LABELS[requirement.status] || requirement.status}. ` +
-      `Decision to support: ${requirement.decisionToSupport || 'not yet defined'}. ` +
-      `Missing: ${missing.join(', ') || 'none'}. ` +
-      `As ${role.replaceAll('_', ' ')}, what clarification or sourcing should I pursue before this is taskable?`
-    onAskAdvisor(text)
-  }
-
-  return <aside className="panel requirement-context-panel">
-    <div className="panel-heading"><h3>Clarification &amp; Source</h3></div>
-
-    <section className="request-origin">
-      <span className="context-label">Request origin</span>
-      <dl>
-        <div><dt>Customer</dt><dd>{requirement.customer || 'Not recorded'}</dd></div>
-        <div><dt>Requesting org</dt><dd>{requirement.requestingOrg || requirement.who || 'Not recorded'}</dd></div>
-        <div><dt>Incident</dt><dd>{requirement.fire || 'Not recorded'}</dd></div>
-        <div><dt>Received</dt><dd>{requirement.receivedAt || 'Not recorded'}</dd></div>
-      </dl>
-    </section>
-
-<section className="clarification-actions">
-      <button className="secondary-button" onClick={askAdvisor}>ASK ADVISOR</button>
-    </section>
-  </aside>
-}
 
 function FieldReferenceGuide() {
   return <section className="panel field-reference-guide">
@@ -198,14 +172,11 @@ export default function Requirements({ role, missionState, readOnly, onUpdateReq
 
       {selected && <RequirementEditor requirement={selected} role={role} readOnly={readOnly} onUpdate={onUpdateRequirement} onValidate={onValidateRequirement} onSendForward={onSendForward} onRequestClarification={() => onRequestClarification(selected.id, {missingFields: selected.missingFields, status: 'clarification_requested'})} />}
 
-      {selected && <ContextPanel requirement={selected} role={role} readOnly={readOnly} onAskAdvisor={onAskAdvisor} />}
+
     </div>
 
     <FieldReferenceGuide />
 
-    <section className="panel collection-doctrine">
-      <div className="panel-heading"><h3>Taskability Standard</h3><span className="chip slate">CONTROLLED WORKFLOW</span></div>
-      <div className="doctrine-grid"><div><strong>Acceptable</strong><p>Necessary and reasonable given cost, risk, authority, and expected value.</p></div><div><strong>Feasible</strong><p>Can be accomplished with available effects, time, airspace, PAD, and dissemination architecture.</p></div><div><strong>Complete</strong><p>Includes what, where, when, why, who, decision to support, EEIs, and customer delivery path.</p></div><div><strong>Source Before Task</strong><p>Check existing information, organic assets, and alternate sources before requesting additional collection.</p></div></div>
-    </section>
+
   </div>
 }
