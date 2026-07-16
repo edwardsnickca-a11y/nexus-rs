@@ -25,14 +25,22 @@ function ArchitectureFlow({ architecture }) {
   </div>
 }
 
-export default function Platforms({ role, missionState }) {
+export default function Assets({ role, missionState }) {
   const [selectedPlatformId, setSelectedPlatformId] = useState('platform-mq9')
   const [selectedRequirementId, setSelectedRequirementId] = useState('req-alpha')
   const selectedPlatform = PLATFORM_LIBRARY.find(item => item.id === selectedPlatformId) || PLATFORM_LIBRARY[0]
   const taskableRequirements = missionState.requirements.items.filter(req => ['taskable', 'sent_forward'].includes(req.status))
   const selectedRequirement = missionState.requirements.items.find(req => req.id === selectedRequirementId) || taskableRequirements[0]
-  const allocation = missionState.assetControl.assets.filter(asset => asset.type === selectedPlatform.type)
   const match = useMemo(() => evaluatePlatformSuitability(selectedRequirement, selectedPlatform), [selectedRequirement, selectedPlatform])
+  
+  const regionalAssets = missionState.assetControl.assets.filter(asset => asset.status === 'assigned' || asset.status === 'reserve')
+  const allocationByIncident = {}
+  regionalAssets.forEach(asset => {
+    const fire = asset.assignment || 'Unassigned'
+    if (!allocationByIncident[fire]) allocationByIncident[fire] = []
+    allocationByIncident[fire].push(asset)
+  })
+  
   const roleFocus = {
     remote_sensing_coordinator: 'Regional availability, allocation gaps, state control, and capability shortfalls.',
     remote_sensing_manager: 'Execution limits, airspace, weather, mission risk, and PAD architecture.',
@@ -44,21 +52,22 @@ export default function Platforms({ role, missionState }) {
     <section className="panel platform-hero">
       <div>
         <span className="eyebrow">Controlled Capability Library</span>
-        <h2>Platforms and PAD Architecture</h2>
-        <p>Use approved platform facts to match validated requirements with collection effects, constraints, production implications, and realistic delivery paths.</p>
+        <h2>Assets and Capability Reference</h2>
+        <p>View all approved platform capabilities, match validated requirements with effects, and see current regional allocation by incident.</p>
       </div>
       <div className="platform-role-focus"><span>ROLE EMPHASIS</span><strong>{roleFocus}</strong></div>
     </section>
 
     <section className="panel platform-selector-panel">
-      <div className="panel-heading"><h3>Approved v0.1 Platforms</h3><span className="chip teal">CONTROLLED DATA</span></div>
+      <div className="panel-heading"><h3>All Approved Platforms</h3><span className="chip teal">CONTROLLED DATA</span></div>
       <div className="platform-card-grid">
         {PLATFORM_LIBRARY.map(platform => {
           const allocated = missionState.assetControl.assets.filter(asset => asset.type === platform.type)
+          const isRegional = allocated.length > 0
           return <button key={platform.id} className={`platform-select-card ${selectedPlatform.id === platform.id ? 'selected' : ''}`} onClick={() => setSelectedPlatformId(platform.id)}>
-            <div><strong>{platform.type}</strong><span>{allocated.length} ALLOCATED</span></div>
+            <div><strong>{platform.type}</strong><span>{isRegional ? `${allocated.length} ALLOCATED` : 'NOT IN REGION'}</span></div>
             <p>{platform.category}</p>
-            <small>{allocated.filter(a => a.status === 'assigned').length} assigned · {allocated.filter(a => a.status === 'reserve').length} reserve · {allocated.filter(a => a.status === 'released').length} released</small>
+            {isRegional && <small>{allocated.filter(a => a.status === 'assigned').length} assigned · {allocated.filter(a => a.status === 'reserve').length} reserve</small>}
           </button>
         })}
       </div>
@@ -94,18 +103,23 @@ export default function Platforms({ role, missionState }) {
         </div>
         <div className="match-reasons">{match.reasons.map(reason => <p key={reason}>• {reason}</p>)}</div>
       </> : <p className="empty-state">No taskable requirement is available for matching.</p>}
-      <div className="match-guardrail">This is a controlled suitability aid, not an automatic tasking decision. The Collection Manager recommends the effect; the RS Manager evaluates execution; the Coordinator resolves regional allocation.</div>
+      <div className="match-guardrail">This is a reference tool to evaluate capability against requirements. Use this to identify if you need to request capabilities not currently allocated to the region.</div>
     </section>
 
     <section className="panel allocation-panel">
-      <div className="panel-heading"><h3>Current Allocation</h3><span className="chip amber">STATE CONTROLLED</span></div>
+      <div className="panel-heading"><h3>Current Regional Allocation</h3><span className="chip amber">STATE CONTROLLED</span></div>
       <div className="platform-allocation-list">
-        {allocation.map(asset => <div key={asset.id}>
-          <strong>{asset.identifier}</strong>
-          <span>{asset.status.toUpperCase()}</span>
-          <p>{asset.assignment}</p>
-          <small>Recall risk: {asset.recallRisk} · {asset.notes}</small>
-        </div>)}
+        {Object.entries(allocationByIncident).map(([incident, assets]) => 
+          <div key={incident}>
+            <strong style={{display:'block',marginBottom:'10px'}}>{incident}</strong>
+            {assets.map(asset => {
+              const displayName = asset.type === 'CAP' ? `${asset.type}` : asset.type.replace('UH-', 'UH-').replace('MQ-', 'MQ-')
+              return <div key={asset.id} style={{marginLeft:'12px',marginBottom:'8px',paddingLeft:'10px',borderLeft:'2px solid #254457'}}>
+                <small style={{color:'#8fa5b7'}}>{displayName} · {asset.identifier}</small><span style={{display:'block',color:'#64cfc6',fontSize:'11px',fontWeight:'700'}}>{asset.status.toUpperCase()}</span>
+              </div>
+            })}
+          </div>
+        )}
       </div>
     </section>
 
