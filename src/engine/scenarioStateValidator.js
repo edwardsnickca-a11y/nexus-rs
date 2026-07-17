@@ -1,5 +1,6 @@
 import { APPROVED_PLATFORM_TYPES, callsignForPlatform } from './capabilityLibrary.js'
 import { locationsForGacc, distanceMiles, incidentMatchesGacc } from '../data/californiaGaccLocations.js'
+import { allocateRegionalAssets } from './assetAllocation.js'
 
 const REQUIRED_WORLD_ARRAYS = [
   'incidents','customers','requirements','missions','assets','sorties',
@@ -88,8 +89,15 @@ export function validateInitialWorld(world) {
     if(!missionIds.has(delivery.missionId)) errors.push(`Delivery ${delivery.id} references an unknown mission.`)
   }
   for(const asset of list(world.assets)){
-    if(!APPROVED_PLATFORM_TYPES.includes(asset.type)) errors.push(`Asset ${asset.id} uses unsupported platform type ${asset.type}.`)
-    if(asset.callsign!==callsignForPlatform(asset.type)) errors.push(`Asset ${asset.id} uses an unsupported callsign.`)
+    const baseType=asset.type
+    const isSatellite=baseType==='EO/IR Satellite'
+    if(!isSatellite && !APPROVED_PLATFORM_TYPES.includes(baseType)) errors.push(`Asset ${asset.id} uses unsupported platform type ${asset.type}.`)
+    // Callsigns may carry a numeric suffix (e.g. GARGOYLE-01, BEAR-02); validate the base.
+    if(!isSatellite){
+      const base=callsignForPlatform(baseType)
+      const callsignBase=String(asset.callsign||'').replace(/-\d+$/,'')
+      if(callsignBase!==base) errors.push(`Asset ${asset.id} uses an unsupported callsign.`)
+    }
   }
 
   return {ok:errors.length===0,errors,value:world}
@@ -246,6 +254,37 @@ export function normalizeInitialWorld(world) {
     ...item,
     requirementId:requirementByOldId.get(item.requirementId)||item.requirementId,
   }))
+
+  // ---- Deterministic regional asset allocation (path-independent) ----
+  // Replace whatever assets the AI or fallback produced with the realistic
+  // regional allocation model, then relink missions to their incident's primary asset.
+  const allocation=allocateRegionalAssets(copy.incidents||[])
+  copy.assets=allocation.assets
+  const missionIdByPrimaryAsset=new Map()
+  copy.missions=(copy.missions||[]).map(mission=>{
+    const primary=allocation.primaryAssetByIncidentId[mission.incidentId]
+    if(primary && !missionIdByPrimaryAsset.has(primary.id)) missionIdByPrimaryAsset.set(primary.id,mission.id)
+    return {
+      ...mission,
+      assetId:primary?primary.id:null,
+      callsign:primary?primary.callsign:mission.callsign,
+      platform:primary?primary.identifier:mission.platform,
+    }
+  })
+  // Stamp missionId back onto the primary assets so asset->mission links are consistent.
+  copy.assets=copy.assets.map(asset=>
+    missionIdByPrimaryAsset.has(asset.id)?{...asset,missionId:missionIdByPrimaryAsset.get(asset.id)}:asset
+  )
+  // Keep sorties/decks/deliveries callsigns consistent with the reallocated assets.
+  const missionById=new Map(copy.missions.map(m=>[m.id,m]))
+  copy.sorties=(copy.sorties||[]).map(item=>{
+    const mission=missionById.get(item.missionId)
+    return mission?{...item,callsign:mission.callsign}:item
+  })
+  copy.deliveries=(copy.deliveries||[]).map(item=>{
+    const mission=missionById.get(item.missionId)
+    return mission?{...item,sourcePlatform:mission.callsign}:item
+  })
 
   return copy
 }

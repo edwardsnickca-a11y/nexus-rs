@@ -43,8 +43,19 @@ export default function Assets({ role, missionState }) {
   })
   const regionalSummary = Object.entries(regionalCounts).map(([label, count]) => `${count}x ${label}`)
 
+  // Always-on regional assets (e.g. EO/IR satellite) — not tied to a specific fire.
+  const regionalStandingAssets = regionalAssets.filter(asset => asset.status === 'assigned' && asset.assignment === 'Regional')
+
+  // Build per-incident allocation seeded from the incident list so fires with NO assets still show.
+  const incidentList = Array.isArray(missionState.incidents) ? missionState.incidents : []
+  const rankedIncidents = [...incidentList].sort((a, b) =>
+    ((b.lifeSafetyTier || 0) - (a.lifeSafetyTier || 0)) ||
+    ((b.sizeAcres || 0) - (a.sizeAcres || 0)) ||
+    ((a.containmentPercent || 0) - (b.containmentPercent || 0))
+  )
   const allocationByIncident = {}
-  regionalAssets.filter(asset => asset.status === 'assigned').forEach(asset => {
+  rankedIncidents.forEach(incident => { allocationByIncident[incident.name] = [] })
+  regionalAssets.filter(asset => asset.status === 'assigned' && asset.assignment !== 'Regional').forEach(asset => {
     const fire = asset.assignment || 'Unassigned'
     if (!allocationByIncident[fire]) allocationByIncident[fire] = []
     allocationByIncident[fire].push(asset)
@@ -67,6 +78,42 @@ export default function Assets({ role, missionState }) {
         <p>View all approved platform capabilities, match validated requirements with effects, and see current regional allocation by incident.</p>
       </div>
       <div className="platform-role-focus"><span>ROLE EMPHASIS</span><strong>{roleFocus}</strong></div>
+    </section>
+
+    <section className="panel allocation-panel">
+      <div className="panel-heading"><h3>Current Regional Allocation</h3></div>
+      <div className="allocation-strip">
+        <div className="allocation-strip-col">
+          <strong className="allocation-strip-label allocation-strip-label-regional">Regional</strong>
+          <div className="allocation-strip-body">{regionalSummary.join(' · ')}</div>
+          {regionalStandingAssets.map(asset => <div key={asset.id} className="allocation-strip-body">{assetLabel(asset)} · {asset.identifier}</div>)}
+        </div>
+        {Object.entries(allocationByIncident).map(([incident, assets]) => {
+          const hasHigherEndSensor = assets.some(a => a.type === 'MQ-9' || a.type === 'UH-72')
+          return (
+          <React.Fragment key={incident}>
+            <div className="allocation-strip-divider" />
+            <div className="allocation-strip-col">
+              <strong className="allocation-strip-label">{incident}{!hasHigherEndSensor && <span className="allocation-sensor-gap">⚠ SENSOR GAP</span>}</strong>
+              <div className={`allocation-strip-body${assets.length ? '' : ' allocation-strip-body-gap'}`}>
+                {assets.length
+                  ? assets.map(asset => <div key={asset.id}>{assetLabel(asset)} · {asset.identifier}</div>)
+                  : <div>No organic assets allocated</div>}
+              </div>
+            </div>
+          </React.Fragment>
+          )
+        })}
+        <div className="allocation-strip-divider" />
+        <div className="allocation-strip-col">
+          <strong className="allocation-strip-label allocation-strip-label-regional">Reserves</strong>
+          <div className="allocation-strip-body allocation-strip-body-muted">
+            {reserveAssets.length
+              ? reserveAssets.map(asset => <div key={asset.id}>{assetLabel(asset)} · {asset.identifier}</div>)
+              : <div>None</div>}
+          </div>
+        </div>
+      </div>
     </section>
 
     <section className="panel platform-selector-panel">
@@ -115,36 +162,6 @@ export default function Assets({ role, missionState }) {
         <div className="match-reasons">{match.reasons.map(reason => <p key={reason}>• {reason}</p>)}</div>
       </> : <p className="empty-state">No taskable requirement is available for matching.</p>}
       <div className="match-guardrail">This is a reference tool to evaluate capability against requirements. Use this to identify if you need to request capabilities not currently allocated to the region.</div>
-    </section>
-
-    <section className="panel allocation-panel">
-      <div className="panel-heading"><h3>Current Regional Allocation</h3></div>
-      <div className="allocation-strip">
-        <div className="allocation-strip-col">
-          <strong className="allocation-strip-label allocation-strip-label-regional">Regional</strong>
-          <div className="allocation-strip-body">{regionalSummary.join(' · ')}</div>
-        </div>
-        {Object.entries(allocationByIncident).map(([incident, assets]) =>
-          <React.Fragment key={incident}>
-            <div className="allocation-strip-divider" />
-            <div className="allocation-strip-col">
-              <strong className="allocation-strip-label">{incident}</strong>
-              <div className="allocation-strip-body">
-                {assets.map(asset => <div key={asset.id}>{assetLabel(asset)} · {asset.identifier}</div>)}
-              </div>
-            </div>
-          </React.Fragment>
-        )}
-        <div className="allocation-strip-divider" />
-        <div className="allocation-strip-col">
-          <strong className="allocation-strip-label allocation-strip-label-regional">Reserves</strong>
-          <div className="allocation-strip-body allocation-strip-body-muted">
-            {reserveAssets.length
-              ? reserveAssets.map(asset => <div key={asset.id}>{assetLabel(asset)} · {asset.identifier}</div>)
-              : <div>None</div>}
-          </div>
-        </div>
-      </div>
     </section>
 
     <section className="panel pad-panel full">

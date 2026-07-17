@@ -8,11 +8,20 @@ const SIGNIFICANT_EVENTS = [
   'Suppression progress improved on one flank while smoke limited aerial observation elsewhere.',
   'A shift in fire behavior increased concern for transportation and utility corridors.',
 ]
-const LIFE_SAFETY = [
-  'Evacuation warnings remain in effect for exposed communities; route status is under active review.',
-  'No new evacuation orders are reported, but access for an isolated community remains a concern.',
-  'Evacuation operations are in progress in the most exposed area, with traffic control points established.',
-  'Repopulation planning has begun in one sector while restrictions remain elsewhere.',
+const LIFE_SAFETY_BY_TIER = [
+  [
+    'No structures or population centers are currently threatened; the fire is burning in timber and brush away from communities.',
+    'Fire activity is confined to undeveloped terrain with no evacuation warnings or orders in effect.',
+  ],
+  [
+    'No new evacuation orders are reported, but access for an isolated community remains a concern.',
+    'A rural community is not currently threatened but has limited egress if conditions change.',
+  ],
+  [
+    'Evacuation warnings remain in effect for exposed communities; route status is under active review.',
+    'Evacuation operations are in progress in the most exposed area, with traffic control points established.',
+    'Structures are threatened in the wildland-urban interface and life-safety is the driving concern.',
+  ],
 ]
 const WEATHER_CONCERNS = [
   'Afternoon winds and low relative humidity may increase spread and reduce collection quality through smoke.',
@@ -114,11 +123,14 @@ export function generateFallbackWorld({ role='remote_sensing_coordinator', diffi
   const incidentCount=Math.min(requestedIncidentCount,supplied.length)
   const locations=shuffled(random,supplied.filter(item=>(item.gaccRegion||item.gacc)===selectedGacc)).slice(0,incidentCount)
   const startMinutes=360+[0,15,30,45][Math.floor(random()*4)]
-  const platformCycle=['MQ-9','UH-72','CAP','CAP','UH-72']
 
   const incidents=locations.map((location,index)=>{
     const name=`${location.city} ${choose(random,INCIDENT_SUFFIXES)}`
     const acres=Math.round((700+random()*22000)/50)*50
+    // Life-safety tier: 2 = active evacuations / structures threatened, 1 = isolated access concern, 0 = timber, no immediate threat.
+    // Larger, less-contained fires skew toward higher tiers; always at least one meaningful-threat fire in the scenario.
+    const tierRoll=random()
+    const lifeSafetyTier = index===0 ? 2 : (acres>12000 ? (tierRoll>.35?2:1) : (tierRoll>.6?2:tierRoll>.3?1:0))
     return {
       id:makeId('incident',index),
       name,
@@ -144,7 +156,8 @@ export function generateFallbackWorld({ role='remote_sensing_coordinator', diffi
       significantEvents:choose(random,SIGNIFICANT_EVENTS),
       smoke:choose(random,['Light morning smoke','Moderate smoke with afternoon degradation','Dense smoke in portions of the incident','Variable smoke by drainage']),
       wind:choose(random,['Southwest winds increasing after 1300','Light morning winds with gusty afternoon outflow','North winds creating alignment concerns','Terrain-driven winds with uncertain timing']),
-      lifeSafety:choose(random,LIFE_SAFETY),
+      lifeSafety:LIFE_SAFETY_BY_TIER[lifeSafetyTier][Math.floor(random()*LIFE_SAFETY_BY_TIER[lifeSafetyTier].length)],
+      lifeSafetyTier,
       weatherConcerns:choose(random,WEATHER_CONCERNS),
       projectedActivity:choose(random,PROJECTED_ACTIVITY),
       threatSummary:choose(random,THREAT_SUMMARIES),
@@ -164,15 +177,73 @@ export function generateFallbackWorld({ role='remote_sensing_coordinator', diffi
   const products=[]
   const deadlines=[]
 
+  // ---- Regional asset allocation (models the AI RS Coordinator's prior knife-fight call) ----
+  // Priority ranking: life-safety first, then size, then lower containment.
+  const priorityOrder=incidents
+    .map((incident,idx)=>({incident,idx}))
+    .sort((a,b)=>
+      (b.incident.lifeSafetyTier-a.incident.lifeSafetyTier) ||
+      (b.incident.sizeAcres-a.incident.sizeAcres) ||
+      (a.incident.containmentPercent-b.incident.containmentPercent)
+    )
+  const priorityRank={} // incidentId -> rank (0 = highest priority)
+  priorityOrder.forEach((entry,rank)=>{priorityRank[entry.incident.id]=rank})
+  const topIncidentId=priorityOrder[0]?.incident.id
+
+  // Regional pool, real-world numbers:
+  //  - 1 MQ-9 (goes to the highest life-safety fire)
+  //  - 1 EO/IR satellite (always-on, regional)
+  //  - 4 UH-72 generated, 1 always held in reserve -> 3 allocable to top-priority fires
+  //  - 2 CAP still-imagery per fire (plentiful)
+  const uh72Total=4
+  const uh72Reserve=1
+  const uh72Allocable=uh72Total-uh72Reserve
+  // Top N incidents by priority receive one UH-72 each.
+  const uh72IncidentIds=new Set(priorityOrder.slice(0,uh72Allocable).map(e=>e.incident.id))
+
+  let assetSeq=0
+  const nextAssetId=()=>makeId('asset',assetSeq++)
+  const mkAsset=(o)=>{const a={id:nextAssetId(),quantity:1,controlRelationship:'State Allocated',returnable:true,recallRisk:choose(random,['Low','Medium','High']),notes:choose(random,['Crew availability must be confirmed.','Current allocation is subject to regional reprioritization.','Data transfer may affect product timing.','No immediate limiting factor is reported.']),...o};assets.push(a);return a}
+
+  // MQ-9 -> highest-priority (life-safety) fire
+  const topIncident=priorityOrder[0]?.incident
+  const mq9Counter={n:0}
+  const uh72Counter={n:0}
+  const capCounter={n:0}
+  if(topIncident){
+    mkAsset({type:'MQ-9',platformId:'platform-mq9',identifier:`MQ-9-0${++mq9Counter.n}`,callsign:'GARGOYLE-01',status:'assigned',assignment:topIncident.name,missionId:null})
+  }
+  // EO/IR satellite -> regional, always-on
+  mkAsset({type:'EO/IR Satellite',platformId:'platform-eoir-sat',identifier:'SAT-EOIR',callsign:'EO/IR SAT',status:'assigned',assignment:'Regional',missionId:null,returnable:false,recallRisk:'Low',notes:'Standard regional EO/IR satellite collection; always available for coverage.'})
+  // UH-72 -> one per top-priority fire (3 allocable), plus 1 held in reserve
+  priorityOrder.forEach(({incident})=>{
+    if(uh72IncidentIds.has(incident.id)){
+      mkAsset({type:'UH-72',platformId:'platform-uh72',identifier:`UH-72-0${++uh72Counter.n}`,callsign:`BEAR-0${uh72Counter.n}`,status:'assigned',assignment:incident.name,missionId:null})
+    }
+  })
+  mkAsset({type:'UH-72',platformId:'platform-uh72',identifier:`UH-72-0${++uh72Counter.n}`,callsign:`BEAR-0${uh72Counter.n}`,status:'reserve',assignment:'Regional Reserve',missionId:null,notes:'Held in regional reserve. Additional UH-72 sensor support would require an EMAC request to another state.'})
+  // CAP still imagery -> 2 per fire (labeled just "CAP")
+  incidents.forEach((incident)=>{
+    for(let c=0;c<2;c++){
+      mkAsset({type:'CAP',platformId:'platform-cap-182',identifier:`CAP-0${++capCounter.n}`,callsign:`CAP-0${capCounter.n}`,status:'assigned',assignment:incident.name,missionId:null})
+    }
+  })
+
+  // For mission linkage: pick each incident's primary assigned asset (MQ-9 > UH-72 > CAP).
+  const primaryAssetFor=(incidentName)=>{
+    const forFire=assets.filter(a=>a.assignment===incidentName && a.status==='assigned')
+    return forFire.find(a=>a.type==='MQ-9') || forFire.find(a=>a.type==='UH-72') || forFire.find(a=>a.type==='CAP') || null
+  }
   incidents.forEach((incident,index)=>{
     const customer=choose(random,CUSTOMERS)
     const need=choose(random,NEEDS)
     const requirementId=makeId('req',index)
     const missionId=makeId('mission',index)
-    const assetId=makeId('asset',index)
     const deliveryId=makeId('delivery',index)
-    const platformType=platformCycle[index%platformCycle.length]
-    const callsign=callsignForPlatform(platformType)
+    const primaryAsset=primaryAssetFor(incident.name)
+    const assetId=primaryAsset?.id||null
+    const platformType=primaryAsset?.type||'CAP'
+    const callsign=primaryAsset?.callsign||callsignForPlatform(platformType)
     const complete=random()>(difficulty==='Introductory'?.15:.38)
     const collectionStart=startMinutes+75+index*35
     const collectionEnd=collectionStart+60+Math.floor(random()*3)*30
@@ -221,27 +292,7 @@ export function generateFallbackWorld({ role='remote_sensing_coordinator', diffi
       lastUpdatedAt:timeAt(startMinutes),
     })
 
-    const platformMap={MQ9:'platform-mq9','MQ-9':'platform-mq9',UH72:'platform-uh72','UH-72':'platform-uh72',CAP:'platform-cap-182'}
-    const configMap={MQ9:'','MQ-9':'',UH72:'','UH-72':'',CAP:'Still Imagery (C-182)'}
-    const platformId=platformMap[platformType]||`platform-${platformType.toLowerCase()}`
-    const config=configMap[platformType]||''
-
-    assets.push({
-      id:assetId,
-      type:platformType,
-      platformId,
-      ...(config && {config}),
-      identifier:`${platformType}-${index+1}`,
-      callsign,
-      quantity:1,
-      controlRelationship:'State Allocated',
-      status:complete?'assigned':'available',
-      assignment:complete?incident.name:'Regional Reserve',
-      missionId:complete?missionId:null,
-      returnable:true,
-      recallRisk:choose(random,['Low','Medium','High']),
-      notes:choose(random,['Crew availability must be confirmed.','Current allocation is subject to regional reprioritization.','Data transfer may affect product timing.','No immediate limiting factor is reported.']),
-    })
+    if(primaryAsset){ primaryAsset.missionId=missionId }
 
     missions.push({
       id:missionId,
