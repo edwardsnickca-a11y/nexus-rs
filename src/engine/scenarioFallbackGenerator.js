@@ -221,9 +221,16 @@ export function generateFallbackWorld({ role='remote_sensing_coordinator', diffi
       lastUpdatedAt:timeAt(startMinutes),
     })
 
+    const platformMap={MQ9:'platform-mq9','MQ-9':'platform-mq9',UH72:'platform-uh72','UH-72':'platform-uh72',CAP:'platform-cap-182'}
+    const configMap={MQ9:'','MQ-9':'',UH72:'','UH-72':'',CAP:'Still Imagery (C-182)'}
+    const platformId=platformMap[platformType]||`platform-${platformType.toLowerCase()}`
+    const config=configMap[platformType]||''
+
     assets.push({
       id:assetId,
       type:platformType,
+      platformId,
+      ...(config && {config}),
       identifier:`${platformType}-${index+1}`,
       callsign,
       quantity:1,
