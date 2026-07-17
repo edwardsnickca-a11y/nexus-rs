@@ -248,7 +248,7 @@ function OperationalMap({missionState}){
    const mission=missions[index]
    const p=markerPosition(item.lat,item.lng)
    return <button key={item.label} type="button" className="rx-map-aircraft" style={{left:p.left,top:p.top}} title={`${mission?.id||item.label}: ${mission?.objective||'Assigned mission'}`}>
-    ✈ <b>{mission?.platform||mission?.assetId||item.label}</b>
+    ✈ <b>{mission?.callsign||item.label||mission?.platform}</b>
    </button>
   })}
   <div className="rx-map-controls">
@@ -273,7 +273,7 @@ function PlatformTable({missionState,onRelease,onUpdateMission,role}){
  const assets=missionState.assetControl?.assets||[]
  return <Panel title="PLATFORM ASSIGNMENTS & AVAILABILITY" className="rx-platform-panel">
   <table className="rx-table"><thead><tr><th>Platform</th><th>Status / Mission</th><th>Available</th><th>Next Available</th></tr></thead><tbody>
-   {assets.slice(0,6).map(a=><tr key={a.id}><td>✈ &nbsp; {a.identifier}</td><td><i className={`rx-dot ${tone(a.status)}`}/>{a.status} – {a.assignment}</td><td>{a.status==='reserve'?'Now':'—'}</td><td>{a.status==='assigned'?'OP 2':'—'}</td>{role==='remote_sensing_manager'&&<td><select className="rx-inline-select" value={(missionState.currentOps?.missions||[]).find(m=>m.id===a.missionId)?.status||'planned'} onChange={e=>a.missionId&&onUpdateMission?.(a.missionId,{status:e.target.value})}><option value="planned">Planned</option><option value="launched">Launched</option><option value="on_station">On station</option><option value="collecting">Collecting</option><option value="returning">Returning</option><option value="landed">Landed</option><option value="delayed">Delayed</option><option value="unable">Unable</option></select></td>}</tr>)}
+   {assets.slice(0,6).map(a=><tr key={a.id}><td>✈ &nbsp; {a.callsign}</td><td><i className={`rx-dot ${tone(a.status)}`}/>{a.status} – {a.assignment}</td><td>{a.status==='reserve'?'Now':'—'}</td><td>{a.status==='assigned'?'OP 2':'—'}</td>{role==='remote_sensing_manager'&&<td><select className="rx-inline-select" value={(missionState.currentOps?.missions||[]).find(m=>m.id===a.missionId)?.status||'planned'} onChange={e=>a.missionId&&onUpdateMission?.(a.missionId,{status:e.target.value})}><option value="planned">Planned</option><option value="launched">Launched</option><option value="on_station">On station</option><option value="collecting">Collecting</option><option value="returning">Returning</option><option value="landed">Landed</option><option value="delayed">Delayed</option><option value="unable">Unable</option></select></td>}</tr>)}
   </tbody></table>
   <Button onClick={role==='remote_sensing_coordinator'&&assets[0]?()=>onRelease?.(assets[0].id):undefined}>VIEW PLATFORM DETAILS</Button>
  </Panel>
@@ -292,7 +292,7 @@ function MiniSyncMatrix({missionState,onNavigate}){
  const missions=missionState.currentOps?.missions||[]
  return <Panel title="SYNC MATRIX — CURRENT & NEAR-TERM" className="rx-mini-sync">
   <table className="rx-table"><thead><tr><th>MISSION</th><th>ASSET</th><th>REQUIREMENT</th><th>WINDOW</th><th>STATUS</th><th>PROT</th><th>PRODUCT</th></tr></thead><tbody>
-   {missions.slice(0,5).map((m,i)=><tr key={m.id}><td><strong>{m.id}</strong></td><td>{m.platform||m.assetId||'—'}</td><td>{m.requirementId||m.requirement||'—'}</td><td>{m.window||m.startTime||'—'}</td><td><em className={tone(m.status||'planned')}>{String(m.status||'planned').replaceAll('_',' ')}</em></td><td>{m.protected?'◆':'—'}</td><td>{m.productStatus||['Pending','Planned','At Risk','Queued','—'][i]}</td></tr>)}
+   {missions.slice(0,5).map((m,i)=><tr key={m.id}><td><strong>{m.id}</strong></td><td>{m.callsign||m.platform||'—'}</td><td>{m.requirementId||m.requirement||'—'}</td><td>{m.window||m.startTime||'—'}</td><td><em className={tone(m.status||'planned')}>{String(m.status||'planned').replaceAll('_',' ')}</em></td><td>{m.protected?'◆':'—'}</td><td>{m.productStatus||['Pending','Planned','At Risk','Queued','—'][i]}</td></tr>)}
   </tbody></table>
   <Button onClick={()=>onNavigate?.('sync')}>OPEN FULL SYNC MATRIX</Button>
  </Panel>

@@ -86,7 +86,7 @@ export default function Assets({ role, missionState }) {
         <div className="allocation-strip-col">
           <strong className="allocation-strip-label allocation-strip-label-regional">Regional</strong>
           <div className="allocation-strip-body">{regionalSummary.join(' · ')}</div>
-          {regionalStandingAssets.map(asset => <div key={asset.id} className="allocation-strip-body">{assetLabel(asset)} · {asset.identifier}</div>)}
+          {regionalStandingAssets.map(asset => <div key={asset.id} className="allocation-strip-body">{asset.callsign}</div>)}
         </div>
         {Object.entries(allocationByIncident).map(([incident, assets]) => {
           const hasHigherEndSensor = assets.some(a => a.type === 'MQ-9' || a.type === 'UH-72')
@@ -94,10 +94,11 @@ export default function Assets({ role, missionState }) {
           <React.Fragment key={incident}>
             <div className="allocation-strip-divider" />
             <div className="allocation-strip-col">
-              <strong className="allocation-strip-label">{incident}{!hasHigherEndSensor && <span className="allocation-sensor-gap">⚠ SENSOR GAP</span>}</strong>
+              <strong className="allocation-strip-label">{incident}</strong>
+              {!hasHigherEndSensor && <div className="allocation-sensor-gap">⚠ SENSOR GAP</div>}
               <div className={`allocation-strip-body${assets.length ? '' : ' allocation-strip-body-gap'}`}>
                 {assets.length
-                  ? assets.map(asset => <div key={asset.id}>{assetLabel(asset)} · {asset.identifier}</div>)
+                  ? assets.map(asset => <div key={asset.id}>{asset.callsign}</div>)
                   : <div>No organic assets allocated</div>}
               </div>
             </div>
@@ -109,7 +110,7 @@ export default function Assets({ role, missionState }) {
           <strong className="allocation-strip-label allocation-strip-label-regional">Reserves</strong>
           <div className="allocation-strip-body allocation-strip-body-muted">
             {reserveAssets.length
-              ? reserveAssets.map(asset => <div key={asset.id}>{assetLabel(asset)} · {asset.identifier}</div>)
+              ? reserveAssets.map(asset => <div key={asset.id}>{asset.callsign}</div>)
               : <div>None</div>}
           </div>
         </div>
