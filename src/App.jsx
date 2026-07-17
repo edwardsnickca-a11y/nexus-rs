@@ -579,7 +579,7 @@ export default function App(){
      {!portalMode && <ExerciseStatusBar missionState={missionState} onStart={confirmStartEx} onAdvance={advanceExercise} onTransition={reviewTransition} onEnd={()=>setShowEndEx(true)} onAar={()=>setActive('aar')}/>}
      <main className={portalMode?'portal-workspace':'workspace'} style={!portalMode&&(active==='sync'||active==='requirements')?{gridTemplateColumns:'minmax(0,1fr)',maxWidth:'none'}:undefined}>
        <div>{content}</div>
-       {!portalMode && active!=='sync' && active!=='requirements' && <AdvisorPanel role={currentRole} missionState={missionState} operationalSummary={deriveOperationalSummary(missionState)} onSubmitDecision={submitFreeTextDecision} pending={advisorPending} busy={advisorBusy} mode={advisorMode} onConfirm={confirmAdvisorAction} onCancel={cancelAdvisorAction}/>}
+       {!portalMode && active!=='sync' && active!=='requirements' && active!=='platforms' && <AdvisorPanel role={currentRole} missionState={missionState} operationalSummary={deriveOperationalSummary(missionState)} onSubmitDecision={submitFreeTextDecision} pending={advisorPending} busy={advisorBusy} mode={advisorMode} onConfirm={confirmAdvisorAction} onCancel={cancelAdvisorAction}/>}
      </main>
    </div>
    {showEndEx && <EndExModal missionState={missionState} onCancel={()=>setShowEndEx(false)} onConfirm={confirmEndEx}/>}

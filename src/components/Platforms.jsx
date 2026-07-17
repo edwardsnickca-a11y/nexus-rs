@@ -34,12 +34,23 @@ export default function Assets({ role, missionState }) {
   const match = useMemo(() => evaluatePlatformSuitability(selectedRequirement, selectedPlatform), [selectedRequirement, selectedPlatform])
   
   const regionalAssets = missionState.assetControl.assets.filter(asset => asset.status === 'assigned' || asset.status === 'reserve')
-  const allocationByIncident = {}
+
+  const assetLabel = asset => asset.config ? `${asset.type} ${asset.config}` : asset.type
+  const regionalCounts = {}
   regionalAssets.forEach(asset => {
+    const label = assetLabel(asset)
+    regionalCounts[label] = (regionalCounts[label] || 0) + 1
+  })
+  const regionalSummary = Object.entries(regionalCounts).map(([label, count]) => `${count}x ${label}`)
+
+  const allocationByIncident = {}
+  regionalAssets.filter(asset => asset.status === 'assigned').forEach(asset => {
     const fire = asset.assignment || 'Unassigned'
     if (!allocationByIncident[fire]) allocationByIncident[fire] = []
     allocationByIncident[fire].push(asset)
   })
+
+  const reserveAssets = regionalAssets.filter(asset => asset.status === 'reserve')
   
   const roleFocus = {
     remote_sensing_coordinator: 'Regional availability, allocation gaps, state control, and capability shortfalls.',
@@ -107,19 +118,32 @@ export default function Assets({ role, missionState }) {
     </section>
 
     <section className="panel allocation-panel">
-      <div className="panel-heading"><h3>Current Regional Allocation</h3><span className="chip amber">STATE CONTROLLED</span></div>
-      <div className="platform-allocation-list">
-        {Object.entries(allocationByIncident).map(([incident, assets]) => 
-          <div key={incident}>
-            <strong style={{display:'block',marginBottom:'10px'}}>{incident}</strong>
-            {assets.map(asset => {
-              const displayName = asset.config ? `${asset.type} · ${asset.config}` : asset.type
-              return <div key={asset.id} style={{marginLeft:'12px',marginBottom:'8px',paddingLeft:'10px',borderLeft:'2px solid #254457'}}>
-                <small style={{color:'#8fa5b7'}}>{displayName} · {asset.identifier}</small><span style={{display:'block',color:'#64cfc6',fontSize:'11px',fontWeight:'700'}}>{asset.status.toUpperCase()}</span>
+      <div className="panel-heading"><h3>Current Regional Allocation</h3></div>
+      <div className="allocation-strip">
+        <div className="allocation-strip-col">
+          <strong className="allocation-strip-label allocation-strip-label-regional">Regional</strong>
+          <div className="allocation-strip-body">{regionalSummary.join(' · ')}</div>
+        </div>
+        {Object.entries(allocationByIncident).map(([incident, assets]) =>
+          <React.Fragment key={incident}>
+            <div className="allocation-strip-divider" />
+            <div className="allocation-strip-col">
+              <strong className="allocation-strip-label">{incident}</strong>
+              <div className="allocation-strip-body">
+                {assets.map(asset => <div key={asset.id}>{assetLabel(asset)} · {asset.identifier}</div>)}
               </div>
-            })}
-          </div>
+            </div>
+          </React.Fragment>
         )}
+        <div className="allocation-strip-divider" />
+        <div className="allocation-strip-col">
+          <strong className="allocation-strip-label allocation-strip-label-regional">Reserves</strong>
+          <div className="allocation-strip-body allocation-strip-body-muted">
+            {reserveAssets.length
+              ? reserveAssets.map(asset => <div key={asset.id}>{assetLabel(asset)} · {asset.identifier}</div>)
+              : <div>None</div>}
+          </div>
+        </div>
       </div>
     </section>
 
