@@ -1,5 +1,25 @@
 const list = (value) => Array.isArray(value) ? value : []
 
+
+function deriveAirspaceSummary(airspace){
+  const restrictions=list(airspace?.restrictions)
+  const conflicts=list(airspace?.conflicts)
+  const unresolved=new Set(['NOT_STARTED','IN_PROGRESS','ESCALATED','UNRESOLVED'])
+  return {
+    activeTfrs:restrictions.filter(x=>String(x.status).toUpperCase()==='ACTIVE').length,
+    upcomingTfrs:restrictions.filter(x=>String(x.status).toUpperCase()==='UPCOMING').length,
+    unresolvedConflicts:conflicts.filter(x=>unresolved.has(String(x.status).toUpperCase())).length,
+    missionsAtRisk:new Set(conflicts.filter(x=>unresolved.has(String(x.status).toUpperCase())).map(x=>x.missionId).filter(Boolean)).size,
+    upcomingChanges:restrictions.filter(x=>['UPCOMING','CHANGED','PENDING'].includes(String(x.status).toUpperCase())).length,
+  }
+}
+function normalizeAirspaceState(value){
+  const airspace=value&&typeof value==='object'&&!Array.isArray(value)?value:{restrictions:list(value),conflicts:[],summary:{}}
+  const normalized={restrictions:list(airspace.restrictions),conflicts:list(airspace.conflicts),summary:{}}
+  normalized.summary=deriveAirspaceSummary(normalized)
+  return normalized
+}
+
 function mergeById(items,id,changes) {
   let found=false
   const next=list(items).map(item=>{
@@ -62,7 +82,7 @@ export function applyInitialWorld(baseState,world) {
     collectionDecks:list(world.collectionDecks),
     upads:list(world.upads),
     products:list(world.products),
-    airspace:list(world.airspace),
+    airspace:normalizeAirspaceState(world.airspace),
     asOf:now,
     localTimeLabel:'Pacific Time',
     activeRole:baseState.exercise?.selectedRole||world.selectedRole,
@@ -170,6 +190,18 @@ function applyPatch(state,patch) {
     if(append) return {...state,[key]:[...current,{id,...changes}]}
     const merged=mergeById(current,id,changes)
     return merged.found?{...state,[key]:merged.items}:state
+  }
+
+  if(patch.collection==='airspace_restrictions'||patch.collection==='airspace_conflicts'){
+    const key=patch.collection==='airspace_restrictions'?'restrictions':'conflicts'
+    const airspace=normalizeAirspaceState(state.airspace)
+    const current=list(airspace[key])
+    let next
+    if(append) next=[...current,{id,...changes}]
+    else { const merged=mergeById(current,id,changes); if(!merged.found) return state; next=merged.items }
+    const updated={...airspace,[key]:next}
+    updated.summary=deriveAirspaceSummary(updated)
+    return {...state,airspace:updated}
   }
 
   const configs={

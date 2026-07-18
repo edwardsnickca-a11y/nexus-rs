@@ -1,5 +1,6 @@
 import { callsignForPlatform } from './capabilityLibrary.js'
 import { locationsForGacc } from '../data/californiaGaccLocations.js'
+import { FTA_REFERENCE_TABLE } from '../data/airspaceReference.js'
 
 const INCIDENT_SUFFIXES = ['North', 'East', 'Ridge', 'Creek', 'Foothill', 'Valley', 'Pass', 'Bench']
 const SIGNIFICANT_EVENTS = [
@@ -392,14 +393,74 @@ export function generateFallbackWorld({ role='remote_sensing_coordinator', diffi
     {id:'UPAD-SURGE',name:'Night-Shift / Surge UPAD',specialties:['Continuity','Overflow'],shift:choose(random,['1800–0200 PT','2200–0600 PT']),workload:10+Math.floor(random()*40),manning:'small',status:choose(random,['available','limited'])},
   ]
 
-  const airspace=incidents.map((incident,index)=>({
-    id:makeId('airspace',index),
-    incidentId:incident.id,
-    incident:incident.name,
-    type:choose(random,['TFR','Airspace coordination','Aviation hazard']),
-    status:choose(random,['active','pending_update','advisory']),
-    text:choose(random,['TFR boundary update is pending.','Manned aviation activity may constrain the collection corridor.','Smoke and aviation activity require route coordination.']),
-  }))
+  const managingAgency=selectedGacc==='South Ops'?'FAA / Southern California incident airspace coordination':'FAA / Northern California incident airspace coordination'
+  const restrictionCount=Math.min(incidents.length,difficulty==='Introductory'?1:difficulty==='Standard'?Math.max(2,Math.ceil(incidents.length*.65)):incidents.length)
+  const restrictedIncidents=priorityOrder.slice(0,restrictionCount).map(entry=>entry.incident)
+  const restrictions=restrictedIncidents.map((incident,index)=>{
+    const relatedMissions=missions.filter(m=>m.incidentId===incident.id)
+    const active=index<Math.max(1,Math.ceil(restrictionCount*.65))
+    const start=startMinutes+(active?-60:120+index*45)
+    const end=start+600+index*60
+    const ceilingFt=choose(random,[8000,10000,12000,15000])
+    const openFloor=Math.max(3500,Math.min(ceilingFt-2000,8000))
+    return {
+      id:`TFR-${String(index+1).padStart(3,'0')}`,
+      type:'TFR',
+      name:`TFR — ${incident.name}`,
+      operationalLabel:`TFR — ${incident.name}`,
+      incidentId:incident.id,
+      incident:incident.name,
+      effectiveWindow:{start:timeAt(start),end:timeAt(end)},
+      altitudeFloor:'Surface',
+      altitudeCeiling:`${ceilingFt.toLocaleString()} ft MSL`,
+      managingAgency,
+      contact:null,
+      channel:'Pending coordination',
+      status:active?'ACTIVE':'UPCOMING',
+      centerLat:incident.lat,
+      centerLng:incident.lng,
+      affectedMissions:relatedMissions.map(m=>m.id),
+      coordinationStatus:active?'UNCOORDINATED':'PENDING',
+      coordinationOwner:null,
+      coordinationNotes:'Mission-access coordination has not been completed.',
+      altitudeOccupancy:[...FTA_REFERENCE_TABLE,{band:`${openFloor.toLocaleString()}–${ceilingFt.toLocaleString()} ft MSL`,occupant:null,status:'OPEN'}],
+      verticalSeparationRule:'500 ft minimum between assigned layers',
+      lastUpdated:timeAt(startMinutes),
+    }
+  })
+  const conflicts=[]
+  restrictions.forEach((restriction,index)=>{
+    const mission=missions.find(m=>m.incidentId===restriction.incidentId)
+    if(!mission || (index>0&&random()>.62)) return
+    const tier=index%2===0?'2_ENTRY_COORDINATION':'1_FEASIBILITY'
+    conflicts.push({
+      id:`AIRSPACE-CONFLICT-${String(conflicts.length+1).padStart(3,'0')}`,
+      missionId:mission.id,
+      restrictionId:restriction.id,
+      tier,
+      conflictType:tier==='1_FEASIBILITY'?'REQUIREMENT_INFEASIBLE':'ACCESS_BLOCKED',
+      impact:tier==='1_FEASIBILITY'?'The planned collection area or timing cannot be confirmed feasible until the restriction is assessed.':'The mission cannot enter the restricted area until entry coordination is completed.',
+      requiredCoordination:tier==='1_FEASIBILITY'?'Confirm whether the requirement area and collection window can be supported within the restriction.':'Request mission-access coordination through the managing agency or incident air operations channel.',
+      owner:null,
+      deadline:mission.window?.split('–')[0]||timeAt(startMinutes+90),
+      status:'NOT_STARTED',
+      resolutionNotes:'',
+      createdAt:timeAt(startMinutes),
+      updatedAt:timeAt(startMinutes),
+    })
+  })
+  const unresolvedConflicts=conflicts.filter(c=>c.status!=='RESOLVED')
+  const airspace={
+    restrictions,
+    conflicts,
+    summary:{
+      activeTfrs:restrictions.filter(r=>r.status==='ACTIVE').length,
+      upcomingTfrs:restrictions.filter(r=>r.status==='UPCOMING').length,
+      unresolvedConflicts:unresolvedConflicts.length,
+      missionsAtRisk:new Set(unresolvedConflicts.map(c=>c.missionId)).size,
+      upcomingChanges:restrictions.filter(r=>r.status==='UPCOMING'||r.status==='PENDING').length,
+    },
+  }
 
   const initialInjects=[{
     title:'Opening regional remote-sensing picture',
@@ -473,6 +534,22 @@ export function generateFallbackAdvance(state) {
     'A partner resource became available with limitations.',
   ])
 
+  const airspaceConflicts=state.airspace?.conflicts||[]
+  const airspaceConflict=airspaceConflicts.find(item=>['NOT_STARTED','IN_PROGRESS','ESCALATED'].includes(String(item.status||'').toUpperCase()))
+  const airspacePatches=[]
+  if(airspaceConflict&&development.toLowerCase().includes('airspace')){
+    airspacePatches.push({
+      collection:'airspace_conflicts',
+      operation:'merge',
+      id:airspaceConflict.id,
+      changes:{
+        updatedAt:timeAt(base+delta),
+        status:String(airspaceConflict.status).toUpperCase()==='NOT_STARTED'?'IN_PROGRESS':airspaceConflict.status,
+        resolutionNotes:airspaceConflict.resolutionNotes||'Airspace coordination remains under review after the latest operational update.',
+      },
+    })
+  }
+
   return {
     mode:'advance',
     nextIncidentTime:timeAt(base+delta),
@@ -481,7 +558,7 @@ export function generateFallbackAdvance(state) {
     hiddenWorld:{...(director.hiddenWorld||{}),seed},
     visibleFacts:[{audienceRole:'all',incident:incident.name||'',severity:'medium',text:development}],
     injects:[{title:`${incident.name||'Regional'} update`,text:development,priority:'medium',relatedRole:'all',relatedIncident:incident.name||''}],
-    patches:incident.id?[{
+    patches:[...(incident.id?[{
       collection:'incidents',
       operation:'merge',
       id:incident.id,
@@ -493,7 +570,7 @@ export function generateFallbackAdvance(state) {
         weatherConcerns:choose(random,WEATHER_CONCERNS),
         plannedActions:choose(random,PLANNED_ACTIONS),
       },
-    }]:[],
+    }]:[]),...airspacePatches],
     consequences:[],
     advisorVisibleFacts:[development],
     aarObservations:['The exercise advanced using the local fallback controller.'],

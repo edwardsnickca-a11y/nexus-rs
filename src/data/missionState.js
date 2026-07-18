@@ -152,6 +152,12 @@ export const INITIAL_MISSION_STATE = {
       { id: 'delivery-history-1', time: '0930 PT', actor: 'UPAD LNO', action: 'Initial dissemination tracker established for current missions.' }
     ]
   },
+  airspace: {
+    restrictions: [],
+    conflicts: [],
+    summary: { activeTfrs: 0, upcomingTfrs: 0, unresolvedConflicts: 0, missionsAtRisk: 0, upcomingChanges: 0 },
+  },
+
   crossPeriodImpacts: [
     { id: 'x1', source: 'Current Ops', impact: 'Protecting MQ-9-01 through 1300 reduces OP 2 reposition time.', target: "Tomorrow's Plan" },
     { id: 'x2', source: "Tomorrow's Plan", impact: 'Bear Creek requirement is not taskable, so the OP 2 sortie cannot be finalized.', target: 'Current Ops' },

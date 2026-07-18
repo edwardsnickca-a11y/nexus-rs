@@ -1,14 +1,37 @@
 import { APPROVED_PLATFORM_TYPES, callsignForPlatform } from './capabilityLibrary.js'
 import { locationsForGacc, distanceMiles, incidentMatchesGacc } from '../data/californiaGaccLocations.js'
 import { allocateRegionalAssets } from './assetAllocation.js'
+import { FTA_REFERENCE_TABLE } from '../data/airspaceReference.js'
 
 const REQUIRED_WORLD_ARRAYS = [
   'incidents','customers','requirements','missions','assets','sorties',
-  'collectionDecks','upads','products','deliveries','airspace',
+  'collectionDecks','upads','products','deliveries',
   'oversightIssues','initialInjects',
 ]
 
 const list = (value) => Array.isArray(value) ? value : []
+
+
+const AIRSPACE_RESTRICTION_STATUSES=new Set(['ACTIVE','UPCOMING','PENDING','EXPIRED','CHANGED','CANCELLED'])
+const AIRSPACE_COORD_STATUSES=new Set(['UNCOORDINATED','IN_PROGRESS','COORDINATED','ESCALATED','UNRESOLVED'])
+const AIRSPACE_CONFLICT_STATUSES=new Set(['NOT_STARTED','IN_PROGRESS','RESOLVED','UNABLE_TO_RESOLVE','ESCALATED'])
+const AIRSPACE_TIERS=new Set(['1_FEASIBILITY','2_ENTRY_COORDINATION','3_ALTITUDE_ALLOCATION'])
+
+function sameFtaBand(actual,expected){
+  return String(actual?.band||'')===String(expected?.band||'') && String(actual?.occupant||'')===String(expected?.occupant||'') && String(actual?.status||'')===String(expected?.status||'')
+}
+function recomputeAirspaceSummary(airspace){
+  const restrictions=list(airspace?.restrictions)
+  const conflicts=list(airspace?.conflicts)
+  const unresolved=new Set(['NOT_STARTED','IN_PROGRESS','ESCALATED','UNRESOLVED'])
+  return {
+    activeTfrs:restrictions.filter(x=>String(x.status).toUpperCase()==='ACTIVE').length,
+    upcomingTfrs:restrictions.filter(x=>String(x.status).toUpperCase()==='UPCOMING').length,
+    unresolvedConflicts:conflicts.filter(x=>unresolved.has(String(x.status).toUpperCase())).length,
+    missionsAtRisk:new Set(conflicts.filter(x=>unresolved.has(String(x.status).toUpperCase())).map(x=>x.missionId).filter(Boolean)).size,
+    upcomingChanges:restrictions.filter(x=>['UPCOMING','CHANGED','PENDING'].includes(String(x.status).toUpperCase())).length,
+  }
+}
 
 const REQUIRED_INCIDENT_FIELDS = [
   'id','name','incidentNumber','locationSeedId','locationZoneId','city','county','location','lat','lng','gaccRegion','startDateTime',
@@ -75,6 +98,35 @@ export function validateInitialWorld(world) {
   const requirementIds=new Set(list(world.requirements).map(item=>item.id))
   const missionIds=new Set(list(world.missions).map(item=>item.id))
   const assetIds=new Set(list(world.assets).map(item=>item.id))
+  const airspace=world.airspace
+  if(!isObject(airspace)) errors.push('airspace must be an object with restrictions, conflicts, and summary.')
+  const restrictions=list(airspace?.restrictions)
+  const conflicts=list(airspace?.conflicts)
+  if(!Array.isArray(airspace?.restrictions)) errors.push('airspace.restrictions must be an array.')
+  if(!Array.isArray(airspace?.conflicts)) errors.push('airspace.conflicts must be an array.')
+  if(!uniqueIds(restrictions)) errors.push('airspace.restrictions contains duplicate or missing IDs.')
+  if(!uniqueIds(conflicts)) errors.push('airspace.conflicts contains duplicate or missing IDs.')
+  const restrictionIds=new Set(restrictions.map(item=>item.id))
+  for(const restriction of restrictions){
+    if(!incidentIds.has(restriction.incidentId)) errors.push(`Airspace restriction ${restriction.id} references an unknown incident.`)
+    if(!AIRSPACE_RESTRICTION_STATUSES.has(String(restriction.status||'').toUpperCase())) errors.push(`Airspace restriction ${restriction.id} has invalid status.`)
+    if(!AIRSPACE_COORD_STATUSES.has(String(restriction.coordinationStatus||'').toUpperCase())) errors.push(`Airspace restriction ${restriction.id} has invalid coordination status.`)
+    for(const missionId of list(restriction.affectedMissions)){ if(!missionIds.has(missionId)) errors.push(`Airspace restriction ${restriction.id} references unknown mission ${missionId}.`) }
+    const occupancy=list(restriction.altitudeOccupancy)
+    if(occupancy.length<FTA_REFERENCE_TABLE.length || !FTA_REFERENCE_TABLE.every((expected,index)=>sameFtaBand(occupancy[index],expected))) errors.push(`Airspace restriction ${restriction.id} does not preserve the controlled FTA reference bands.`)
+  }
+  for(const conflict of conflicts){
+    if(!missionIds.has(conflict.missionId)) errors.push(`Airspace conflict ${conflict.id} references an unknown mission.`)
+    if(!restrictionIds.has(conflict.restrictionId)) errors.push(`Airspace conflict ${conflict.id} references an unknown restriction.`)
+    if(!AIRSPACE_TIERS.has(String(conflict.tier||''))) errors.push(`Airspace conflict ${conflict.id} has invalid tier.`)
+    if(String(conflict.tier)==='3_ALTITUDE_ALLOCATION') errors.push(`Airspace conflict ${conflict.id} may not auto-generate Tier 3 at STARTEX.`)
+    if(!AIRSPACE_CONFLICT_STATUSES.has(String(conflict.status||'').toUpperCase())) errors.push(`Airspace conflict ${conflict.id} has invalid status.`)
+    if(!hasMeaningfulValue(conflict.impact)) errors.push(`Airspace conflict ${conflict.id} requires an operational impact.`)
+  }
+  if(isObject(airspace?.summary)){
+    const computed=recomputeAirspaceSummary(airspace)
+    for(const [key,value] of Object.entries(computed)){ if(Number(airspace.summary[key])!==value) errors.push(`airspace.summary.${key} does not match the records.`) }
+  }else errors.push('airspace.summary must be an object.')
 
   for(const requirement of list(world.requirements)){
     if(!incidentIds.has(requirement.incidentId)) errors.push(`Requirement ${requirement.id} references an unknown incident.`)
@@ -111,7 +163,7 @@ export function validateAdvanceResult(result,state) {
     if(!Array.isArray(result[key])) errors.push(`${key} must be an array.`)
   }
 
-  const allowedCollections=new Set(['incidents','requirements','missions','assets','deliveries','oversight','exercise'])
+  const allowedCollections=new Set(['incidents','requirements','missions','assets','deliveries','oversight','airspace_restrictions','airspace_conflicts','exercise'])
   const existing={
     incidents:new Set(list(state.incidents).map(item=>item.id)),
     requirements:new Set(list(state.requirements?.items).map(item=>item.id)),
@@ -119,6 +171,8 @@ export function validateAdvanceResult(result,state) {
     assets:new Set(list(state.assetControl?.assets).map(item=>item.id)),
     deliveries:new Set(list(state.dissemination?.deliveries).map(item=>item.id)),
     oversight:new Set(list(state.oversight?.cases).map(item=>item.id)),
+    airspace_restrictions:new Set(list(state.airspace?.restrictions).map(item=>item.id)),
+    airspace_conflicts:new Set(list(state.airspace?.conflicts).map(item=>item.id)),
   }
 
   for(const patch of list(result.patches)){
@@ -207,7 +261,7 @@ export function normalizeInitialWorld(world) {
       id:`${incident?.code||'REG'}-PROD-${String(index+1).padStart(3,'0')}`,
       incidentId,
       requirementId:requirementByOldId.get(item.requirementId)||item.requirementId,
-      missionId:missionByOldId.get(item.missionId)||item.missionId,
+      missionId:(()=>{const mapped=missionByOldId.get(item.missionId)||item.missionId;return copy.missions.find(m=>m.id===mapped||m.callsign===item.missionId||m.platform===item.missionId)?.id||mapped})(),
       incident:item.incident||item.fire||incident?.name,
       fire:item.fire||item.incident||incident?.name,
     }
@@ -221,7 +275,7 @@ export function normalizeInitialWorld(world) {
       id:`${incident?.code||'REG'}-PRODUCT-${String(index+1).padStart(3,'0')}`,
       incidentId,
       requirementId:requirementByOldId.get(item.requirementId)||item.requirementId,
-      missionId:missionByOldId.get(item.missionId)||item.missionId,
+      missionId:(()=>{const mapped=missionByOldId.get(item.missionId)||item.missionId;return copy.missions.find(m=>m.id===mapped||m.callsign===item.missionId||m.platform===item.missionId)?.id||mapped})(),
     }
   })
 
@@ -285,6 +339,43 @@ export function normalizeInitialWorld(world) {
     const mission=missionById.get(item.missionId)
     return mission?{...item,sourcePlatform:mission.callsign}:item
   })
+
+
+  const rawAirspace=isObject(copy.airspace)?copy.airspace:{restrictions:list(copy.airspace),conflicts:[],summary:{}}
+  copy.airspace={
+    restrictions:list(rawAirspace.restrictions).map((item,index)=>{
+      const incidentId=incidentByOldId.get(item.incidentId)||item.incidentId
+      const incident=copy.incidents.find(candidate=>candidate.id===incidentId)
+      const affectedMissions=list(item.affectedMissions||item.affectedMissionIds).map(value=>{
+        const mapped=missionByOldId.get(value)||value
+        const match=copy.missions.find(m=>m.id===mapped||m.callsign===value||m.platform===value)
+        return match?.id
+      }).filter(Boolean)
+      const occupancy=[...FTA_REFERENCE_TABLE,...list(item.altitudeOccupancy).slice(FTA_REFERENCE_TABLE.length)]
+      return {
+        ...item,
+        id:item.id||`AIRSPACE-${String(index+1).padStart(3,'0')}`,
+        incidentId,
+        incident:item.incident||incident?.name||'Regional',
+        operationalLabel:item.operationalLabel||item.name||`${item.type||'TFR'} — ${incident?.name||'Regional'}`,
+        centerLat:Number(item.centerLat??incident?.lat),
+        centerLng:Number(item.centerLng??incident?.lng),
+        affectedMissions,
+        status:String(item.status||'PENDING').toUpperCase(),
+        coordinationStatus:String(item.coordinationStatus||'UNCOORDINATED').toUpperCase(),
+        altitudeOccupancy:occupancy,
+        verticalSeparationRule:'500 ft minimum between assigned layers',
+      }
+    }),
+    conflicts:list(rawAirspace.conflicts).map((item,index)=>({
+      ...item,
+      id:item.id||`AIRSPACE-CONFLICT-${String(index+1).padStart(3,'0')}`,
+      missionId:(()=>{const mapped=missionByOldId.get(item.missionId)||item.missionId;return copy.missions.find(m=>m.id===mapped||m.callsign===item.missionId||m.platform===item.missionId)?.id||mapped})(),
+      status:String(item.status||'NOT_STARTED').toUpperCase(),
+    })),
+    summary:{},
+  }
+  copy.airspace.summary=recomputeAirspaceSummary(copy.airspace)
 
   return copy
 }

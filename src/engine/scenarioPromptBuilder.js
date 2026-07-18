@@ -1,6 +1,7 @@
 import { CAPABILITY_LIBRARY } from './capabilityLibrary.js'
 import { ROLE_AUTHORITY } from './roleAuthority.js'
 import { GACC_COORDINATION_CENTERS } from '../data/californiaGaccLocations.js'
+import { FTA_REFERENCE_TABLE, AIRSPACE_PRINCIPLES } from '../data/airspaceReference.js'
 
 const list = (value) => Array.isArray(value) ? value : []
 const take = (items,count=20) => list(items).slice(-count)
@@ -32,6 +33,12 @@ export function buildInitializationContext(state) {
     locationDiversityRequirement:'Choose a fresh mix of real incident locations for each exercise. Consider coastal, valley, foothill, mountain, desert, and wildland-urban interface settings appropriate to the selected GACC. Avoid repeatedly defaulting to the same small cluster of locations.',
     gaccPerspective:'The Remote Sensing Coordinator operates from a California GACC-style regional coordination perspective.',
     outputPurpose:'Return a complete fresh world. Do not preserve Pine Ridge, Bear Creek, Eagle Peak, or other static demo entities.',
+    airspaceGenerationRequirement:{
+      stateShape:'Return airspace as an object with restrictions[], conflicts[], and summary.',
+      controlledFtaReference:FTA_REFERENCE_TABLE,
+      controlledPrinciples:AIRSPACE_PRINCIPLES,
+      guidance:'Generate complete mission-access coordination records tied to existing incidents and missions. Populate managingAgency, effectiveWindow, altitudeFloor, altitudeCeiling, affectedMissions, coordinationStatus, coordinationOwner, deadline, and lastUpdated when knowable. Keep exact contacts/frequencies null unless grounded. Use Tier 1 feasibility and Tier 2 entry coordination at STARTEX; do not auto-generate Tier 3 altitude allocation conflicts.',
+    },
     incidentSituationRequirements:{
       requiredForEveryIncident:true,
       fields:[
@@ -103,7 +110,7 @@ export function buildAdvanceContext(state) {
       upads:list(state.upads),
       products:list(state.products),
       deliveries:list(state.dissemination?.deliveries),
-      airspace:list(state.airspace),
+      airspace:state.airspace&&typeof state.airspace==='object'?state.airspace:{restrictions:[],conflicts:[],summary:{}},
       oversight:list(state.oversight?.cases),
       decisionWindows:list(state.exercise?.decisionWindows),
     },
