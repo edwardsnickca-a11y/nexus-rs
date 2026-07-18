@@ -9,6 +9,7 @@ import SyncMatrix from './components/SyncMatrix.jsx'
 import AssetAllocation from './components/AssetAllocation.jsx'
 import Platforms from './components/Platforms.jsx'
 import Requirements from './components/Requirements.jsx'
+import AirspaceWorkspace from './components/AirspaceWorkspace.jsx'
 import Dissemination from './components/Dissemination.jsx'
 import ResourceDesk from './components/ResourceDesk.jsx'
 import IntelligenceOversight from './components/IntelligenceOversight.jsx'
@@ -359,6 +360,13 @@ export default function App(){
  const toggleProtection=(missionId)=>setMissionState(prev=>({...prev,currentOps:{...prev.currentOps,missions:prev.currentOps.missions.map(m=>m.id===missionId?{...m,protected:!m.protected}:m)},crossPeriodImpacts:[...prev.crossPeriodImpacts,{id:`x-${Date.now()}`,source:'Current Ops',target:"Tomorrow's Plan",impact:`Mission protection changed for ${missionId}; OP ${Number(prev.exercise?.activeOperationalPeriod || prev.operationalPeriod || 1) + 1} availability must be rechecked.`}]}))
  const notifyCoordinator=(missionId)=>{setMissionState(prev=>({...prev,currentOps:{...prev.currentOps,missions:prev.currentOps.missions.map(m=>m.id===missionId?{...m,coordinatorNotified:true}:m)}}));recordDecision('coordination',`Coordinator notified of ${missionId} impact`)}
  const updateCurrentMission=(missionId,changes)=>setMissionState(prev=>({...prev,currentOps:{...prev.currentOps,missions:(prev.currentOps?.missions||[]).map(m=>m.id===missionId?{...m,...changes}:m)},decisions:[...(prev.decisions||[]),{id:`decision-${Date.now()}`,type:'mission_execution_update',detail:`Updated ${missionId}: ${Object.keys(changes).join(', ')}`,asOf:prev.exercise?.localIncidentTime||prev.asOf||'CURRENT LOCAL',role:currentRole}]}))
+ const updateAirspaceAction=(actionId,changes)=>setMissionState(prev=>{
+  const current=prev.airspace
+  const nextAirspace=Array.isArray(current)
+   ? current
+   : {...(current||{}),conflicts:(current?.conflicts||[]).map(item=>item.id===actionId?{...item,...changes}:item)}
+  return {...prev,airspace:nextAirspace,decisions:[...(prev.decisions||[]),{id:`decision-${Date.now()}`,type:'airspace_coordination_update',detail:`Updated airspace action ${actionId}: ${Object.keys(changes).join(', ')}`,asOf:prev.exercise?.localIncidentTime||prev.asOf||'CURRENT LOCAL',role:currentRole}]}
+ })
  const markTaskable=(reqId)=>setMissionState(prev=>{const reqs=prev.tomorrowPlan.requirements.map(r=>r.id===reqId?{...r,taskable:true,status:r.upad==='Unassigned'?'draft':'ready'}:r);const blockers=prev.tomorrowPlan.blockers.filter(b=>!b.includes('Fire Bravo EEIs'));return {...prev,tomorrowPlan:{...prev.tomorrowPlan,requirements:reqs,blockers,readiness:Math.min(100,prev.tomorrowPlan.readiness+12)}}})
  const assignUpad=(reqId)=>setMissionState(prev=>{const reqs=prev.tomorrowPlan.requirements.map(r=>r.id===reqId?{...r,upad:'UPAD-NW',status:r.taskable?'ready':'draft'}:r);const blockers=prev.tomorrowPlan.blockers.filter(b=>!b.includes('UPAD support'));return {...prev,tomorrowPlan:{...prev.tomorrowPlan,requirements:reqs,blockers,readiness:Math.min(100,prev.tomorrowPlan.readiness+10)}}})
  const approvePlan=()=>setMissionState(prev=>({...prev,tomorrowPlan:{...prev.tomorrowPlan,approved:true,status:'approved',readiness:100}}))
@@ -514,7 +522,7 @@ export default function App(){
   requirements:<Requirements role={currentRole} missionState={workspaceMissionState} readOnly={readOnly} onUpdateRequirement={updateRequirement} onValidateRequirement={validateRequirement} onSendForward={sendRequirementForward} onAddRequirement={addRequirement} onRequestClarification={requestClarification} onAskAdvisor={(text)=>{submitFreeTextDecision(text);setActive('advisor')}}/>,
   platforms:<Platforms role={currentRole} missionState={missionState}/>,
   upad:<Dissemination role={currentRole} missionState={workspaceMissionState} readOnly={readOnly} onUpdateDelivery={updateDelivery} onVerifyReceipt={verifyReceipt} onRecordFeedback={recordCustomerFeedback}/>,
-  airspace:<Placeholder title="Airspace / TFR"/>,
+  airspace:<AirspaceWorkspace role={currentRole} missionState={workspaceMissionState} readOnly={readOnly} onUpdateAirspaceAction={updateAirspaceAction}/> ,
   resources:<ResourceDesk role={currentRole} missionState={workspaceMissionState} readOnly={readOnly} onRecordUse={recordResourceUse}/>,
   oversight:<IntelligenceOversight role={currentRole} missionState={workspaceMissionState} readOnly={readOnly} onUpdateCase={updateOversightCase} onAddCase={addOversightCase}/>,
   transition:<OperationalTransition role={currentRole} missionState={missionState} onTransition={approveLifecycleTransition}/>,
@@ -577,9 +585,9 @@ export default function App(){
    <div className="main-shell">
      <Header role={currentRole} missionState={missionState} onReset={resetActiveExercise} portalMode={portalMode}/>
      {!portalMode && <ExerciseStatusBar missionState={missionState} onStart={confirmStartEx} onAdvance={advanceExercise} onTransition={reviewTransition} onEnd={()=>setShowEndEx(true)} onAar={()=>setActive('aar')}/>}
-     <main className={portalMode?'portal-workspace':'workspace'} style={!portalMode&&(active==='sync'||active==='requirements')?{gridTemplateColumns:'minmax(0,1fr)',maxWidth:'none'}:undefined}>
+     <main className={portalMode?'portal-workspace':'workspace'} style={!portalMode&&(active==='sync'||active==='requirements'||active==='airspace')?{gridTemplateColumns:'minmax(0,1fr)',maxWidth:'none'}:undefined}>
        <div>{content}</div>
-       {!portalMode && active!=='sync' && active!=='requirements' && active!=='platforms' && <AdvisorPanel role={currentRole} missionState={missionState} operationalSummary={deriveOperationalSummary(missionState)} onSubmitDecision={submitFreeTextDecision} pending={advisorPending} busy={advisorBusy} mode={advisorMode} onConfirm={confirmAdvisorAction} onCancel={cancelAdvisorAction}/>}
+       {!portalMode && active!=='sync' && active!=='requirements' && active!=='platforms' && active!=='airspace' && <AdvisorPanel role={currentRole} missionState={missionState} operationalSummary={deriveOperationalSummary(missionState)} onSubmitDecision={submitFreeTextDecision} pending={advisorPending} busy={advisorBusy} mode={advisorMode} onConfirm={confirmAdvisorAction} onCancel={cancelAdvisorAction}/>}
      </main>
    </div>
    {showEndEx && <EndExModal missionState={missionState} onCancel={()=>setShowEndEx(false)} onConfirm={confirmEndEx}/>}
